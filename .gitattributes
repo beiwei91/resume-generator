@@ -1,0 +1,10 @@
+# 文本文件统一按 LF 存储，避免 Windows 上的换行符噪声
+* text=auto eol=lf
+
+# 二进制文件：不做行尾转换，也不参与 diff / merge
+*.png binary
+*.ico binary
+*.pdf binary
+
+# 启动器是 UTF-16LE 编码的脚本，当二进制处理最安全
+*.vbs binary

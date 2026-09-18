@@ -1,0 +1,215 @@
+/**
+ * tests/verify-app.mjs —— 验证「双击即用」这条链路（需要本机 Chrome / Edge）
+ *
+ *   1. 图标：PNG 尺寸、ICO 内嵌尺寸
+ *   2. 启动器：生成的命令、URL 百分号编码、目标文件、浏览器能否真的打开
+ *   3. 桌面快捷方式
+ *   4. 单文件便携版：无外部引用、file:// 可用、localStorage 可用
+ *   5. 纯静态自检：应用里不再有任何本地服务相关代码或网络请求
+ *
+ * 用法：node tests/verify-app.mjs
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const BUILD = path.join(ROOT, '.build');
+const ICONS = path.join(ROOT, 'assets', 'icons');
+const LAUNCHER = '启动简历生成器.vbs';
+fs.mkdirSync(BUILD, { recursive: true });
+
+let pass = 0;
+const failures = [];
+function check(name, ok, detail) {
+  if (ok) { pass++; console.log('  ✓ ' + name + (detail ? '  (' + detail + ')' : '')); }
+  else { failures.push(name + (detail ? ' → ' + detail : '')); console.log('  ✗ ' + name + (detail ? ' → ' + detail : '')); }
+}
+function section(title) { console.log('\n' + title); }
+
+function findBrowser() {
+  const list = [
+    process.env.RESUME_BROWSER,
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Google\\Chrome\\Application\\chrome.exe'),
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/usr/bin/google-chrome'
+  ].filter(Boolean);
+  return list.find((p) => { try { return fs.existsSync(p); } catch (e) { return false; } }) || null;
+}
+
+const browser = findBrowser();
+
+/** noVirtualTime=true 时不加 --virtual-time-budget（有些异步流程需要真实时间） */
+function chrome(flags, noVirtualTime) {
+  return spawnSync(browser, [
+    '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    '--disable-extensions', '--mute-audio', '--hide-scrollbars',
+    '--user-data-dir=' + path.join(BUILD, '.chrome-profile')
+  ].concat(noVirtualTime ? [] : ['--virtual-time-budget=15000']).concat(flags),
+    { encoding: 'utf8', timeout: 180000, windowsHide: true });
+}
+
+const dumpDom = (url) => String(chrome(['--dump-dom', url]).stdout || '');
+const logPath = path.join(ROOT, '.launcher.log');
+
+function cscript(args) {
+  const res = spawnSync('cscript', ['//nologo', path.join(ROOT, LAUNCHER)].concat(args),
+    { encoding: 'utf8', timeout: 120000, windowsHide: true });
+  return { status: res.status, text: String(res.stdout || '') + String(res.stderr || '') };
+}
+
+function readLog() {
+  return fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf16le') : '';
+}
+
+function pngSize(buf) {
+  if (!buf || buf.length < 24 || buf.readUInt32BE(0) !== 0x89504e47) return null;
+  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+}
+
+/* ================================================================== 1. 图标 */
+
+section('图标');
+for (const [name, size] of [['icon-192.png', 192], ['icon-256.png', 256], ['icon-512.png', 512], ['icon-maskable-512.png', 512]]) {
+  const p = path.join(ICONS, name);
+  const dim = fs.existsSync(p) ? pngSize(fs.readFileSync(p)) : null;
+  check(name, !!dim && dim.w === size && dim.h === size, dim ? dim.w + '×' + dim.h : '缺失');
+}
+const icoPath = path.join(ICONS, 'resume.ico');
+let icoDetail = '缺失';
+let icoOk = false;
+if (fs.existsSync(icoPath)) {
+  const buf = fs.readFileSync(icoPath);
+  const dim = pngSize(buf.subarray(22));
+  icoOk = buf.readUInt16LE(2) === 1 && !!dim && dim.w === 256;
+  icoDetail = dim ? '内嵌 PNG ' + dim.w + '×' + dim.h : '格式异常';
+}
+check('resume.ico（快捷方式图标）', icoOk, icoDetail);
+
+/* ================================================================== 2. 启动器 */
+
+section('启动器（双击即用）');
+const launcherPath = path.join(ROOT, LAUNCHER);
+if (!fs.existsSync(launcherPath)) {
+  check(LAUNCHER, false, '缺失');
+} else {
+  const head = fs.readFileSync(launcherPath).subarray(0, 2);
+  check(LAUNCHER + '（UTF-16LE + BOM）', head[0] === 0xff && head[1] === 0xfe, fs.statSync(launcherPath).size + ' B');
+
+  fs.rmSync(logPath, { force: true });
+  fs.rmSync(path.join(ROOT, '.server.json'), { force: true });
+  const res = cscript(['--dry-run', '--quiet']);
+  const log = readLog();
+
+  check('dry-run 正常结束', res.status === 0, res.text.trim().slice(0, 160));
+  check('不产生任何后台服务文件', !fs.existsSync(path.join(ROOT, '.server.json')));
+
+  const cmd = ((/命令\s*(.+)/.exec(log) || [])[1] || '').trim();
+  check('解析出启动命令', !!cmd, cmd || '日志里没有命令');
+  check('用 --app 打开（应用窗口，无地址栏）', /--app="?file:\/\/\//.test(cmd), cmd.slice(0, 150));
+  check('命令行是纯 ASCII（中文路径必须百分号编码，否则经命令行转发会被破坏）',
+    !!cmd && !/[^\x00-\x7F]/.test(cmd),
+    /[^\x00-\x7F]/.test(cmd) ? '命令里含非 ASCII 字符' : '纯 ASCII');
+
+  const url = ((/--app="?([^"\s]+)"?/.exec(cmd) || [])[1] || '').trim();
+  let filePath = '';
+  try { filePath = decodeURIComponent(url.replace(/^file:\/\/\//, '')); } catch (e) { filePath = ''; }
+  check('URL 指向的文件存在', !!filePath && fs.existsSync(filePath), filePath);
+  check('百分号编码与 Node 的 pathToFileURL 完全一致',
+    !!filePath && url === pathToFileURL(filePath).href, '启动器=' + url);
+
+  if (url && browser) {
+    const dom = dumpDom(url);
+    check('浏览器能直接打开该页面（不依赖任何服务）',
+      /class="r-name">张三/.test(dom) && /resume-sheet/.test(dom), '输出 ' + dom.length + ' 字符');
+  }
+
+  fs.rmSync(logPath, { force: true });
+  cscript(['--dry-run', '--quiet', '--tab']);
+  const tabCmd = ((/命令\s*(.+)/.exec(readLog()) || [])[1] || '').trim();
+  check('--tab 改用本地文件路径打开（等同双击，最稳）',
+    /^"[A-Za-z]:\\[^"]+\.html"$/.test(tabCmd), tabCmd || '未解析出命令');
+}
+
+/* ================================================================== 3. 快捷方式 */
+
+section('桌面快捷方式');
+const outDir = path.join(BUILD, 'shortcut');
+fs.rmSync(outDir, { recursive: true, force: true });
+spawnSync('cscript', ['//nologo', path.join(ROOT, '创建桌面快捷方式.vbs'), '--out=' + outDir, '--quiet'],
+  { encoding: 'utf8', timeout: 120000, windowsHide: true });
+const lnk = path.join(outDir, '简历生成器.lnk');
+let lnkOk = false;
+let lnkDetail = '未生成';
+if (fs.existsSync(lnk)) {
+  const buf = fs.readFileSync(lnk);
+  const hasWscript = buf.includes(Buffer.from('wscript.exe', 'utf16le'));
+  const hasLauncher = buf.includes(Buffer.from(LAUNCHER, 'utf16le'));
+  lnkOk = buf.readUInt32LE(0) === 0x0000004c && hasWscript && hasLauncher;
+  lnkDetail = buf.length + ' B，指向 wscript=' + hasWscript + '，目标脚本=' + hasLauncher;
+}
+check('生成「简历生成器」快捷方式', lnkOk, lnkDetail);
+
+/* ================================================================== 4. 单文件便携版 */
+
+section('单文件便携版');
+const build = spawnSync(process.execPath, [path.join(ROOT, 'build-single.mjs')],
+  { cwd: ROOT, encoding: 'utf8', timeout: 60000, windowsHide: true });
+const single = path.join(ROOT, '简历生成器-单文件.html');
+check('打包脚本执行成功', build.status === 0 && fs.existsSync(single),
+  String(build.stdout || build.stderr || '').trim().split('\n').pop());
+
+if (fs.existsSync(single)) {
+  const html = fs.readFileSync(single, 'utf8');
+  check('没有残留外部引用', !/(?:src|href)="assets?\//.test(html));
+  check('样式与脚本已内联', /<style>/.test(html) && /==== assets\/app\.js ====/.test(html));
+  check('体积合理', html.length > 20000 && html.length < 2000000, (html.length / 1024).toFixed(1) + ' KB');
+
+  const dom = dumpDom(pathToFileURL(single).href);
+  check('file:// 直接打开能渲染简历', /class="r-name">张三/.test(dom) && /resume-sheet/.test(dom));
+  check('状态栏显示已保存（说明 localStorage 可用）', /已保存|已加载/.test(dom));
+
+  const shot = path.join(BUILD, 'single-file.png');
+  fs.rmSync(shot, { force: true });
+  chrome(['--screenshot=' + shot, '--window-size=1400,900', pathToFileURL(single).href]);
+  check('截图生成', fs.existsSync(shot), path.relative(ROOT, shot));
+}
+
+/* ================================================================== 5. 纯静态自检 */
+
+section('纯静态自检（服务相关的东西都已移除）');
+const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const appJs = fs.readFileSync(path.join(ROOT, 'assets', 'app.js'), 'utf8');
+check('index.html 不再引用 manifest / Service Worker',
+  !/rel="manifest"/.test(index) && !/serviceWorker/.test(index));
+check('index.html 不再有「安装为应用」入口', !/btnInstall/.test(index));
+check('界面里不再有本地服务状态条', !/serviceBadge|btnQuitService/.test(index) && !/service-badge/.test(fs.readFileSync(path.join(ROOT, 'assets', 'app.css'), 'utf8')));
+check('app.js 不再调用服务接口', !/__alive|__info|__shutdown|EventSource/.test(appJs));
+check('app.js 没有任何网络请求', !/\bfetch\s*\(/.test(appJs));
+check('根目录不再有服务端文件',
+  !['server.js', 'sw.js', 'manifest.webmanifest', '停止简历生成器.vbs'].some((f) => fs.existsSync(path.join(ROOT, f))));
+
+section('证件照入口');
+check('工具栏有「证件照」按钮与隐藏的选图输入',
+  /id="btnPhoto"/.test(index) && /id="photoInput"[^>]*type="file"/.test(index));
+check('排版面板有宽度 / 方位 / 形状 / 移除控件',
+  /id="photoSizeInput"/.test(index) && /id="photoAlignSelect"/.test(index) &&
+  /id="photoShapeSelect"/.test(index) && /id="btnRemovePhoto"/.test(index));
+check('语法速查里写了证件照用法',
+  /photo:/.test(index) && /photoSize/.test(index) && /photoShape/.test(index));
+check('示例证件照素材存在', fs.existsSync(path.join(ROOT, 'assets', 'sample-photo.png')));
+
+/* ================================================================== 结果 */
+
+console.log('\n结果');
+console.log('  通过 ' + pass + ' 项，失败 ' + failures.length + ' 项');
+if (failures.length) {
+  failures.forEach((f) => console.log('   - ' + f));
+  process.exit(1);
+}
+console.log('  验证通过 ✓');

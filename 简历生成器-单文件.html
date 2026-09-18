@@ -1,0 +1,2481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<!-- 简历生成器 · 单文件便携版（构建于 2026-09-18）
+     直接双击用浏览器打开即可：写 Markdown、实时预览 A4、导出 PDF。
+     没有外部依赖，可以拷到任何地方离线使用。
+     由 build-single.mjs 生成，请勿手工编辑；改源码后重新运行该脚本。 -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>简历生成器 · Markdown → PDF</title>
+<style>
+/* ==== assets/resume.css ==== */
+/*!
+ * resume.css —— 简历纸张样式（预览与 PDF 共用，不含编辑器界面样式）
+ * 变量：--r-accent / --r-font-size / --r-line-height / --r-margin-y / --r-margin-x
+ */
+
+:root {
+  --r-paper-w: 210mm;
+  --r-paper-h: 297mm;
+  --r-ink: #1f2937;
+  --r-ink-strong: #111827;
+  --r-ink-soft: #6b7280;
+  --r-line: #e5e7eb;
+  --r-font-stack: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+    "Source Han Sans SC", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif;
+  --r-font-serif-stack: "Songti SC", "SimSun", "Source Han Serif SC", "Noto Serif CJK SC",
+    Georgia, "Times New Roman", serif;
+}
+
+/* ---------------------------------------------------------------- 纸张 */
+
+.resume-sheet {
+  --r-accent: #2563eb;
+  --r-font-size: 14px;
+  --r-line-height: 1.65;
+  --r-margin-y: 16mm;
+  --r-margin-x: 18mm;
+
+  box-sizing: border-box;
+  width: var(--r-paper-w);
+  min-height: var(--r-paper-h);
+  padding: var(--r-margin-y) var(--r-margin-x);
+  background: #fff;
+  color: var(--r-ink);
+  font-family: var(--r-font-stack);
+  font-size: var(--r-font-size);
+  line-height: var(--r-line-height);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.resume-sheet.font-serif { font-family: var(--r-font-serif-stack); }
+
+.resume-sheet a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--r-accent) 45%, transparent);
+}
+
+.resume-sheet strong { font-weight: 700; color: var(--r-ink-strong); }
+.resume-sheet em { font-style: normal; color: var(--r-accent); font-weight: 600; }
+.resume-sheet code {
+  font-family: Consolas, "Cascadia Mono", Menlo, monospace;
+  font-size: .92em;
+  background: #f3f4f6;
+  border-radius: 3px;
+  padding: 0 3px;
+}
+.resume-sheet del { color: var(--r-ink-soft); }
+
+/* ---------------------------------------------------------------- 抬头 */
+
+.r-header { margin-bottom: 12px; }
+.r-header-main { flex: 1 1 auto; min-width: 0; }
+
+/* 证件照本体（布局规则在模板之后统一处理） */
+.r-photo {
+  flex: 0 0 auto;
+  width: var(--r-photo-w, 26mm);
+  height: auto;
+  display: block;
+  background: #fff;
+  border: 1px solid #dbe1ea;
+  border-radius: 3px;
+}
+
+/* 正文里插入的图片 */
+.r-inline-img { max-width: 100%; height: auto; border-radius: 2px; }
+
+.r-name {
+  margin: 0;
+  font-size: 2em;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--r-ink-strong);
+}
+.r-subtitle {
+  margin: 4px 0 0;
+  font-size: 1.05em;
+  font-weight: 600;
+  color: var(--r-accent);
+}
+.r-contacts {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-size: .93em;
+  color: #4b5563;
+}
+.r-contacts li { display: flex; align-items: baseline; }
+.r-contacts li + li::before {
+  content: "";
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  margin-right: 11px;
+  transform: translateY(-3px);
+}
+
+/* ---------------------------------------------------------------- 章节与条目 */
+
+.r-section { margin-top: 15px; }
+.r-section-title {
+  margin: 0 0 8px;
+  font-size: 1.05em;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--r-ink-strong);
+  border-bottom: 1.5px solid var(--r-line);
+  padding-bottom: 4px;
+}
+.r-subhead {
+  margin: 8px 0 3px;
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--r-ink-strong);
+}
+
+.r-entry { margin: 0 0 10px; }
+.r-entry:last-child { margin-bottom: 0; }
+.r-entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.r-entry-title {
+  margin: 0;
+  font-size: 1.02em;
+  font-weight: 700;
+  color: var(--r-ink-strong);
+}
+.r-entry-role { font-weight: 600; font-size: .95em; color: #374151; margin-left: 8px; }
+.r-entry-role::before { content: "·"; margin-right: 6px; color: var(--r-accent); font-weight: 700; }
+.r-entry-meta {
+  font-size: .9em;
+  color: var(--r-ink-soft);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  padding-left: 8px;
+}
+.r-entry-sub { margin: 2px 0 4px; font-size: .92em; color: var(--r-ink-soft); }
+
+/* ---------------------------------------------------------------- 列表 / 表格 / 其他 */
+
+.r-list { margin: 4px 0 0; padding-left: 1.15em; }
+.r-list .r-list { margin: 2px 0; padding-left: 1.1em; }
+.r-list li { margin: 2px 0; padding-left: 1px; }
+.r-list li::marker { color: var(--r-accent); }
+.r-list li > .r-list { margin-top: 2px; }
+
+.r-paragraph { margin: 4px 0; }
+.r-quote {
+  margin: 6px 0;
+  padding: 6px 12px;
+  border-left: 3px solid var(--r-accent);
+  background: color-mix(in srgb, var(--r-accent) 6%, #fff);
+  color: #374151;
+}
+.r-hr { border: 0; border-top: 1px solid var(--r-line); margin: 12px 0; }
+
+.r-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 0;
+  font-size: .95em;
+}
+.r-table th,
+.r-table td { padding: 3px 10px 3px 0; vertical-align: top; }
+.r-table th {
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid var(--r-line);
+  white-space: nowrap;
+}
+.r-table td { border-bottom: 1px dashed #eef2f7; }
+.r-table tr:last-child td { border-bottom: 0; }
+.r-table .ta-center { text-align: center; }
+.r-table .ta-right { text-align: right; }
+
+/* 分页标记（屏幕上显示提示，打印时只保留分页行为） */
+.page-break { break-after: page; page-break-after: always; }
+.page-break > span { display: none; }
+@media screen {
+  .page-break {
+    height: 0;
+    margin: 14px 0;
+    border-top: 1px dashed #cbd5e1;
+    position: relative;
+  }
+  .page-break > span {
+    display: inline-block;
+    position: absolute;
+    right: 0;
+    top: -9px;
+    font-size: 10px;
+    line-height: 16px;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: #e2e8f0;
+    color: #475569;
+    letter-spacing: .05em;
+  }
+}
+
+/* ---------------------------------------------------------------- 模板一：经典 */
+
+.resume-sheet.tpl-classic .r-header {
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--r-accent);
+}
+.resume-sheet.tpl-classic .r-contacts { justify-content: center; }
+.resume-sheet.tpl-classic .r-section-title::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: .92em;
+  border-radius: 1px;
+  background: var(--r-accent);
+  margin-right: 8px;
+  transform: translateY(1px);
+}
+.resume-sheet.tpl-classic .r-section:first-of-type { margin-top: 14px; }
+
+/* ---------------------------------------------------------------- 模板二：现代 */
+
+.resume-sheet.tpl-modern .r-header {
+  padding-bottom: 8px;
+  border-bottom: 3px solid var(--r-accent);
+}
+.resume-sheet.tpl-modern .r-name { color: var(--r-accent); }
+.resume-sheet.tpl-modern .r-subtitle { color: #374151; font-weight: 500; letter-spacing: .06em; }
+.resume-sheet.tpl-modern .r-section-title {
+  display: inline-block;
+  border: 0;
+  padding: 2px 10px 3px;
+  border-radius: 3px;
+  color: #fff;
+  background: var(--r-accent);
+  letter-spacing: .12em;
+}
+.resume-sheet.tpl-modern .r-section { margin-top: 16px; }
+.resume-sheet.tpl-modern .r-entry-title { color: var(--r-ink-strong); }
+.resume-sheet.tpl-modern .r-entry-meta { color: #4b5563; }
+
+/* ---------------------------------------------------------------- 模板三：紧凑 */
+
+.resume-sheet.tpl-compact { line-height: calc(var(--r-line-height) * .96); }
+.resume-sheet.tpl-compact .r-header {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--r-line);
+  margin-bottom: 8px;
+}
+.resume-sheet.tpl-compact .r-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+}
+.resume-sheet.tpl-compact .r-name { font-size: 1.55em; }
+.resume-sheet.tpl-compact .r-subtitle { margin: 0; }
+.resume-sheet.tpl-compact .r-contacts { margin: 0; flex: 1 1 100%; font-size: .9em; }
+.resume-sheet.tpl-compact .r-section { margin-top: 9px; }
+.resume-sheet.tpl-compact .r-section-title {
+  border: 0;
+  border-left: 3px solid var(--r-accent);
+  padding: 0 0 0 8px;
+  margin-bottom: 5px;
+  letter-spacing: .06em;
+}
+.resume-sheet.tpl-compact .r-entry { margin-bottom: 7px; }
+.resume-sheet.tpl-compact .r-list { margin-top: 2px; }
+
+/* ---------------------------------------------------------------- 证件照布局 */
+/* 放在三套模板之后：有照片时抬头改成「文字 + 照片」两列，
+   照片与文字块垂直居中，避免姓名被挤在变窄的居中列里、照片下方留一块空白 */
+
+.resume-sheet.has-photo .r-header {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+  text-align: left;
+}
+.resume-sheet.has-photo .r-header-main { text-align: left; }
+.resume-sheet.has-photo .r-contacts { justify-content: flex-start; }
+.resume-sheet.tpl-compact.has-photo .r-header-main { align-items: baseline; }
+
+/* 照片放左边（DOM 里文字在前，视觉上用 row-reverse 调换） */
+.resume-sheet.has-photo.photo-left .r-header { flex-direction: row-reverse; }
+
+/* 照片形状：圆角（默认）/ 圆形（裁成正方形）/ 直角 */
+.resume-sheet.has-photo.shape-square .r-photo { border-radius: 0; }
+.resume-sheet.has-photo.shape-circle .r-photo {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* ---------------------------------------------------------------- 打印 */
+
+@media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .resume-sheet {
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    zoom: 1 !important;
+  }
+  .resume-sheet a { border-bottom: 0; }
+  .r-entry,
+  .r-table tr,
+  .r-quote,
+  .r-header,
+  .r-list > li { break-inside: avoid; }
+  .r-section-title,
+  .r-entry-head,
+  .r-subhead { break-after: avoid; }
+  .page-break { height: 0 !important; margin: 0 !important; border: 0 !important; }
+  .page-break > span { display: none !important; }
+  .page-guide,
+  .page-guide-label { display: none !important; }
+}
+</style>
+<style>
+/* ==== assets/app.css ==== */
+/*!
+ * app.css —— 编辑器 / 预览工作台界面样式（只作用于界面，不影响纸张与打印结果）
+ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #eef1f6;
+  color: #1f2937;
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+  font-size: 14px;
+}
+
+body { overflow: hidden; }
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------ 顶部工具栏 */
+
+.appbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 14px;
+  background: #fff;
+  border-bottom: 1px solid #dfe4ec;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  flex-wrap: wrap;
+  z-index: 5;
+}
+
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand .logo {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-text b { font-size: 14px; letter-spacing: .02em; }
+.brand-text i { font-style: normal; font-size: 11px; color: #7c8698; letter-spacing: .04em; }
+
+.appbar-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.bar-sep { width: 1px; height: 20px; background: #e2e6ee; margin: 0 4px; }
+
+.doc-name {
+  width: 160px;
+  padding: 6px 9px;
+  border: 1px solid #d3d9e3;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 600;
+  color: #111827;
+  background: #fbfcfe;
+}
+.doc-name:focus { outline: 2px solid #bfdbfe; border-color: #93c5fd; }
+
+.btn, .tool, .btn-select {
+  font: inherit;
+  color: #26303f;
+  background: #fff;
+  border: 1px solid #d3d9e3;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s, border-color .12s, box-shadow .12s;
+}
+.btn:hover, .tool:hover, .btn-select:hover { background: #f4f7fb; border-color: #b9c3d3; }
+.btn:active, .tool:active { transform: translateY(1px); }
+.btn-primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, .3);
+}
+.btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+
+.doc-name + .btn-select { max-width: 150px; }
+
+/* ------------------------------------------------------------ 工作区 */
+
+.workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--editor-w, 460px) 7px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: #fff;
+}
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #e6eaf1;
+  background: #f8fafc;
+  flex-wrap: wrap;
+  min-height: 42px;
+}
+.pane-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5b6579;
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+.tools { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-left: auto; }
+.tool { padding: 4px 8px; font-size: 12.5px; }
+.tool-bold { font-weight: 700; }
+.tool-italic { font-style: italic; font-family: Georgia, serif; }
+.tool-sep { width: 1px; height: 16px; background: #e2e6ee; }
+.inline-field { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #5b6579; }
+
+#tplSelect, #fontSelect, #marginSelect, #zoomSelect,
+#photoAlignSelect, #photoShapeSelect {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 4px 6px;
+  border: 1px solid #d3d9e3;
+  border-radius: 6px;
+  background: #fff;
+  color: #26303f;
+}
+
+.field-row { display: flex; align-items: center; gap: 12px; }
+.field-row label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #5b6579;
+}
+
+.swatches { display: inline-flex; gap: 4px; }
+.swatch {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+  cursor: pointer;
+  padding: 0;
+}
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px #2563eb; }
+.color-input {
+  width: 30px; height: 26px;
+  padding: 1px;
+  border: 1px solid #d3d9e3;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* 编辑器 */
+
+.editor-pane { border-right: 0; }
+#editor {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  resize: none;
+  padding: 14px 16px 24px;
+  font-family: "Cascadia Mono", Consolas, "JetBrains Mono", Menlo, monospace;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #1f2937;
+  background: #fff;
+  tab-size: 2;
+  outline: none;
+}
+#editor::placeholder { color: #a9b3c4; }
+
+.splitter {
+  cursor: col-resize;
+  background: #e6eaf1;
+  position: relative;
+}
+.splitter::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  border-radius: 2px;
+  background: transparent;
+}
+.splitter:hover::after, .splitter.dragging::after { background: #93c5fd; }
+
+/* 预览 */
+
+.preview-pane { background: #eef1f6; }
+.preview-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 22px 24px 60px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.sheet-wrap {
+  position: relative;
+  display: inline-block;
+  transform-origin: top left;
+  zoom: var(--preview-zoom, 1);
+  filter: drop-shadow(0 6px 20px rgba(15, 23, 42, .16));
+}
+.sheet-wrap .resume-sheet { border-radius: 2px; }
+
+.page-guide {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed #b6c2d4;
+  pointer-events: none;
+  z-index: 2;
+}
+.page-guide-label {
+  position: absolute;
+  right: 6px;
+  top: -9px;
+  font-size: 10px;
+  line-height: 16px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #dbe3ef;
+  color: #4b5563;
+  letter-spacing: .04em;
+}
+
+/* 排版设置面板 */
+
+.settings-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e6eaf1;
+}
+.settings-panel[hidden] { display: none; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 170px; }
+.field > label { font-size: 12px; color: #5b6579; display: flex; justify-content: space-between; gap: 10px; }
+.field > label b { color: #2563eb; font-weight: 600; }
+.field input[type="range"] { width: 100%; accent-color: #2563eb; }
+.field.check { flex-direction: row; align-items: center; gap: 7px; min-width: 0; font-size: 12.5px; color: #3d4757; }
+.field.check input { accent-color: #2563eb; }
+
+/* 状态栏 */
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #64708a;
+  background: #fff;
+  border-top: 1px solid #dfe4ec;
+}
+.statusbar .dot { color: #c2cad8; }
+.statusbar .grow { flex: 1; }
+.statusbar .tip { color: #98a2b3; }
+#statusSaved.saved { color: #0f766e; }
+#statusPages.overflow { color: #b45309; font-weight: 600; }
+
+/* 提示与弹窗 */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 46px;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #fff;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .28);
+  z-index: 40;
+  max-width: 70vw;
+}
+.toast[hidden] { display: none; }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .45);
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  z-index: 50;
+}
+.modal[hidden] { display: none; }
+.modal-card {
+  background: #fff;
+  border-radius: 12px;
+  width: min(760px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, .35);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e6eaf1;
+}
+.modal-body { padding: 14px 16px 20px; overflow: auto; }
+.help-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.help-table th, .help-table td { text-align: left; padding: 7px 10px; vertical-align: top; border-bottom: 1px solid #eef2f7; }
+.help-table th { color: #5b6579; font-size: 12px; letter-spacing: .06em; }
+.help-table code {
+  font-family: "Cascadia Mono", Consolas, Menlo, monospace;
+  font-size: 12px;
+  background: #f3f6fb;
+  border: 1px solid #e6eaf1;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.help-note { font-size: 12.5px; color: #7c8698; margin: 12px 0 0; }
+
+/* ------------------------------------------------------------ 打印：只留纸张 */
+
+@media print {
+  html, body { height: auto; overflow: visible; background: #fff; }
+  .appbar, .statusbar, .editor-pane, .splitter,
+  .preview-pane .pane-head, .settings-panel, .modal, .toast { display: none !important; }
+  .workspace { display: block; }
+  .pane, .preview-pane { display: block; background: #fff; }
+  .preview-scroll { display: block; overflow: visible; padding: 0; }
+  .sheet-wrap {
+    zoom: 1 !important;
+    display: block;
+    filter: none !important;
+    position: static;
+  }
+  .page-guide { display: none !important; }
+}
+
+/* 窄屏堆叠 */
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .editor-pane { min-height: 45vh; border-bottom: 1px solid #e6eaf1; }
+  .splitter { display: none; }
+  .preview-scroll { justify-content: flex-start; }
+}
+</style>
+<meta name="application-name" content="简历生成器">
+<link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,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">
+<style id="printPageStyle">@page { size: A4; }</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <header class="appbar">
+    <div class="brand">
+      <span class="logo">简</span>
+      <span class="brand-text">
+        <b>简历生成器</b>
+        <i>Markdown → A4 → PDF</i>
+      </span>
+    </div>
+
+    <div class="appbar-main">
+      <input id="docName" class="doc-name" type="text" value="我的简历" spellcheck="false"
+             title="文档名（同时作为导出 PDF 的文件名）">
+      <select id="docList" class="btn-select" title="打开浏览器中已保存的简历"></select>
+      <button id="btnNew" class="btn" type="button">新建</button>
+      <button id="btnSaveAs" class="btn" type="button">另存为</button>
+      <button id="btnDelDoc" class="btn" type="button">删除</button>
+      <span class="bar-sep"></span>
+      <button id="btnOpen" class="btn" type="button">导入 MD</button>
+      <button id="btnDownload" class="btn" type="button">下载 MD</button>
+      <button id="btnSaveDisk" class="btn" type="button">保存到磁盘</button>
+      <span class="bar-sep"></span>
+      <button id="btnHelp" class="btn" type="button">语法速查</button>
+      <button id="btnPdf" class="btn btn-primary" type="button">导出 PDF</button>
+      <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown" hidden>
+      <input id="photoInput" type="file" accept="image/*" hidden>
+    </div>
+  </header>
+
+  <div class="workspace" id="workspace">
+
+    <section class="pane editor-pane">
+      <div class="pane-head">
+        <span class="pane-title">Markdown 源文件</span>
+        <div class="tools">
+          <button class="tool tool-bold" type="button" data-act="bold" title="加粗 (Ctrl+B)">B</button>
+          <button class="tool tool-italic" type="button" data-act="italic" title="斜体">I</button>
+          <button class="tool" type="button" data-act="code" title="行内代码">&lt;/&gt;</button>
+          <span class="tool-sep"></span>
+          <button class="tool" type="button" data-act="section" title="插入章节 ##">章节</button>
+          <button class="tool" type="button" data-act="entry" title="插入条目 ### 公司 · 职位 | 时间">条目</button>
+          <button class="tool" type="button" data-act="list" title="插入要点">要点</button>
+          <button class="tool" type="button" data-act="table" title="插入表格">表格</button>
+          <span class="tool-sep"></span>
+          <button class="tool" type="button" data-act="break" title="插入手动分页 ---">分页</button>
+          <button class="tool" type="button" data-act="hr" title="插入分隔线 ***">分隔线</button>
+          <span class="tool-sep"></span>
+          <button class="tool" type="button" id="btnPhoto" title="插入 / 更换证件照（会自动压缩成内嵌图片，跟着 .md 文件走，导出 PDF 不会丢图）">证件照</button>
+        </div>
+      </div>
+      <textarea id="editor" spellcheck="false" autocomplete="off"
+        placeholder="# 姓名&#10;职位 | 手机 | 邮箱&#10;&#10;## 工作经历&#10;### 公司 · 职位 | 2021.06 – 至今&#10;- 做了什么，成果如何"></textarea>
+    </section>
+
+    <div class="splitter" id="splitter" title="拖动调整编辑区宽度"></div>
+
+    <section class="pane preview-pane">
+      <div class="pane-head">
+        <span class="pane-title">预览 · A4</span>
+        <div class="tools">
+          <label class="inline-field">模板
+            <select id="tplSelect"></select>
+          </label>
+          <span class="swatches" id="accentSwatches"></span>
+          <input id="accentInput" class="color-input" type="color" value="#2563eb" title="主色">
+          <button id="btnFit" class="tool" type="button" title="让纸张适应预览区宽度">适应宽度</button>
+          <button id="btnMore" class="tool" type="button" aria-expanded="false">排版 ▾</button>
+        </div>
+      </div>
+
+      <div class="settings-panel" id="settingsPanel" hidden>
+        <div class="field">
+          <label for="fontSelect">字体</label>
+          <select id="fontSelect">
+            <option value="sans">无衬线（雅黑 / 苹方）</option>
+            <option value="serif">衬线（宋体 / 思源宋体）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fontSizeInput">字号 <b id="fontSizeVal">14px</b></label>
+          <input id="fontSizeInput" type="range" min="10" max="20" step="0.5">
+        </div>
+        <div class="field">
+          <label for="lineHeightInput">行距 <b id="lineHeightVal">1.65</b></label>
+          <input id="lineHeightInput" type="range" min="1.15" max="2.4" step="0.05">
+        </div>
+        <div class="field">
+          <label for="marginSelect">页边距</label>
+          <select id="marginSelect"></select>
+        </div>
+        <div class="field">
+          <label for="zoomSelect">缩放</label>
+          <select id="zoomSelect">
+            <option value="fit">适应宽度</option>
+            <option value="0.5">50%</option>
+            <option value="0.75">75%</option>
+            <option value="1">100%</option>
+            <option value="1.25">125%</option>
+            <option value="1.5">150%</option>
+          </select>
+        </div>
+        <label class="field check"><input id="guideToggle" type="checkbox"> 显示分页参考线</label>
+        <label class="field check"><input id="autoSaveToggle" type="checkbox"> 自动保存到浏览器</label>
+        <div class="field" id="photoField" hidden>
+          <label for="photoSizeInput">证件照宽度 <b id="photoSizeVal">26mm</b></label>
+          <input id="photoSizeInput" type="range" min="18" max="40" step="1">
+          <div class="field-row">
+            <label for="photoAlignSelect">位置
+              <select id="photoAlignSelect">
+                <option value="right">右侧</option>
+                <option value="left">左侧</option>
+              </select>
+            </label>
+            <label for="photoShapeSelect">形状
+              <select id="photoShapeSelect">
+                <option value="rounded">圆角</option>
+                <option value="circle">圆形</option>
+                <option value="square">直角</option>
+              </select>
+            </label>
+          </div>
+          <button id="btnRemovePhoto" class="tool" type="button" title="从简历里移除证件照">移除证件照</button>
+        </div>
+      </div>
+
+      <div class="preview-scroll" id="previewScroll">
+        <div class="sheet-wrap" id="sheetWrap">
+          <article id="sheet" class="resume-sheet tpl-classic font-sans"></article>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="statusbar">
+    <span id="statusDoc">未命名</span>
+    <span class="dot">·</span>
+    <span id="statusStats">0 字</span>
+    <span class="dot">·</span>
+    <span id="statusPages">共 1 页</span>
+    <span class="dot">·</span>
+    <span id="statusSaved">未保存</span>
+    <span class="grow"></span>
+    <span class="tip">打印对话框里选「另存为 PDF」并取消页眉页脚</span>
+  </footer>
+</div>
+
+<div class="modal" id="helpModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <b>Markdown 语法速查</b>
+      <button class="btn" id="btnHelpClose" type="button">关闭</button>
+    </div>
+    <div class="modal-body">
+      <table class="help-table">
+        <thead><tr><th>写法</th><th>效果</th></tr></thead>
+        <tbody>
+          <tr><td><code># 张三</code></td><td>姓名（整篇只写一次）</td></tr>
+          <tr><td><code>前端工程师 | 138… | me@mail.com | github.com/me</code></td><td>紧跟姓名的一行：第一段是职位，其余按 <code>|</code> 拆成联系方式（邮箱 / 网址自动变链接）</td></tr>
+          <tr><td><code>## 工作经历</code></td><td>章节标题</td></tr>
+          <tr><td><code>### 某公司 · 高级前端 | 2021.06 – 至今</code></td><td>条目：<code>·</code> 前是主标题，后是职位，<code>|</code> 后是右对齐的时间 / 地点</td></tr>
+          <tr><td><code>- 负责 xxx，性能提升 40%</code></td><td>要点；行首空两格再加 <code>-</code> 是二级要点</td></tr>
+          <tr><td><code>**2021.06 – 2024.05**</code></td><td>写在条目下的独立一行时，作为灰色副信息行</td></tr>
+          <tr><td><code>**加粗**</code> <code>*斜体*</code> <code>`代码`</code> <code>[文字](链接)</code></td><td>行内样式，可混用</td></tr>
+          <tr><td><code>| 技能 | 说明 |</code><br><code>| --- | --- |</code></td><td>表格（第二行是分隔行）</td></tr>
+          <tr><td><code>&gt; 引用</code></td><td>高亮引用块（适合个人简介）</td></tr>
+          <tr><td><code>---</code> 单独一行</td><td>手动分页；<code>***</code> 是分隔线</td></tr>
+          <tr><td><code>---<br>template: modern<br>accent: #0f766e<br>---</code></td><td>文首配置块：模板 / 主色 / 字体 / 字号 / 行距 / 页边距（界面上的排版控件会自动改写这里）</td></tr>
+          <tr><td><code>photo: ./证件照.jpg</code><br><code>photoSize: 26mm</code><br><code>photoAlign: right</code><br><code>photoShape: rounded</code></td><td>抬头证件照：<code>photoSize</code> 是宽度（高度按图片比例），<code>photoAlign</code> 取 <code>right</code>/<code>left</code>，<code>photoShape</code> 取 <code>rounded</code>/<code>circle</code>/<code>square</code>。<br>也可以直接在姓名下一行写 <code>![证件照](照片路径)</code>。<br>地址支持本地相对路径、网址、<code>file://</code> 或内嵌 data URI —— 推荐点工具栏的「证件照」按钮插入（自动压缩为内嵌图片，跟着 .md 文件走，导出 PDF 不会丢图）</td></tr>
+          <tr><td><code>![说明](图片路径)</code></td><td>正文里插入图片，最大宽度不会超出纸张</td></tr>
+        </tbody>
+      </table>
+      <p class="help-note">标题层级最高支持 <code>####</code>（小标题）。文首配置块必须是文件的第一段内容。</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ==== assets/resume-md.js ==== */
+/*!
+ * resume-md.js —— 轻量 Markdown → 简历 HTML 渲染引擎（零依赖，浏览器 / Node 通用）
+ *
+ * 语法约定（详见 README.md）：
+ *   #  姓名            → 简历抬头（第一个 h1）
+ *   ## 章节标题         → 章节
+ *   ### 公司 · 职位 | 时间 → 条目（用 · 分隔主副标题，用 | 分隔右对齐的时间/地点）
+ *   -  列表项           → 要点（支持两级缩进）
+ *   | a | b |          → 表格
+ *   ---                → 手动分页（*** 为分隔线）
+ *   开头 --- ... ---    → 前置配置（模板 / 主色 / 字号 / 行距 / 页边距 / 字体）
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.ResumeMD = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  /* ------------------------------------------------------------------ 常量 */
+
+  var DEFAULTS = {
+    template: 'classic',
+    accent: '#2563eb',
+    font: 'sans',
+    fontSize: '14px',
+    lineHeight: '1.65',
+    margin: '16mm 18mm',
+    photo: '',
+    photoSize: '26mm',
+    photoAlign: 'right',
+    photoShape: 'rounded'
+  };
+  var TEMPLATES = ['classic', 'modern', 'compact'];
+  var FONTS = ['sans', 'serif'];
+  var PHOTO_ALIGNS = ['right', 'left'];
+  var PHOTO_SHAPES = ['rounded', 'circle', 'square'];
+  var MARGIN_PRESETS = [
+    { label: '窄 (12mm / 14mm)', value: '12mm 14mm' },
+    { label: '常规 (16mm / 18mm)', value: '16mm 18mm' },
+    { label: '宽 (20mm / 22mm)', value: '20mm 22mm' }
+  ];
+  var ACCENT_PRESETS = ['#2563eb', '#0f766e', '#b91c1c', '#7c3aed', '#c2410c', '#111827'];
+  var FRONT_KEYS = ['template', 'accent', 'font', 'fontSize', 'lineHeight', 'margin', 'photo', 'photoSize', 'photoAlign', 'photoShape'];
+  var A4 = { width: 210, height: 297 }; // mm
+  var MM_PER_PX = 25.4 / 96;
+  var TOKEN = '\u0001';
+
+  /* ------------------------------------------------------------------ 基础工具 */
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function toMm(value, unit) {
+    var n = parseFloat(value);
+    if (!isFinite(n)) return 0;
+    switch (unit) {
+      case 'cm': return n * 10;
+      case 'in': return n * 25.4;
+      case 'pt': return n * 25.4 / 72;
+      case 'px': return n * MM_PER_PX;
+      default: return n; // mm
+    }
+  }
+
+  var LENGTH_RE = /^\s*(\d+(?:\.\d+)?)(mm|cm|in|pt|px)?\s*(?:(\d+(?:\.\d+)?)(mm|cm|in|pt|px)?)?\s*$/;
+
+  function normalizeMargin(v) {
+    var m = LENGTH_RE.exec(String(v == null ? '' : v));
+    if (!m) return DEFAULTS.margin;
+    var a = (m[1] || '') + (m[2] || 'mm');
+    if (m[3] == null && m[4] == null) return a;
+    return a + ' ' + ((m[3] || '') + (m[4] || m[2] || 'mm'));
+  }
+
+  /** 证件照只按宽度算，高度按图片自身比例 */
+  function normalizePhotoSize(v) {
+    var m = LENGTH_RE.exec(String(v == null ? '' : v));
+    if (!m) return DEFAULTS.photoSize;
+    return (m[1] || '') + (m[2] || 'mm');
+  }
+
+  /**
+   * 只放行安全的证件照来源：内嵌 data URI、http(s)、file://、相对路径。
+   * 另外允许直接写 Windows 绝对路径（D:\photos\me.jpg），会转成 file:///D:/photos/me.jpg。
+   * 其它协议（javascript: 等）一律拒绝。
+   */
+  function sanitizePhoto(raw) {
+    var u = String(raw == null ? '' : raw).trim().replace(/^["']|["']$/g, '');
+    if (!u) return '';
+    if (/^data:image\/(png|jpe?g|webp|gif|bmp);base64,[A-Za-z0-9+/=]+$/i.test(u)) return u;
+    if (/^https?:\/\//i.test(u)) return u;
+    if (/^file:\/\//i.test(u)) return u;
+    if (/^[a-z]:[\\/]/i.test(u)) return 'file:///' + u.replace(/\\/g, '/');
+    if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return '';
+    return u;
+  }
+
+  function clampNum(v, min, max, dft) {
+    var n = parseFloat(v);
+    if (!isFinite(n)) return dft;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function normalizeSettings(meta) {
+    meta = meta || {};
+    var tpl = String(meta.template == null ? '' : meta.template).trim();
+    var font = String(meta.font == null ? '' : meta.font).trim();
+    var accent = String(meta.accent == null ? '' : meta.accent).trim();
+    return {
+      template: TEMPLATES.indexOf(tpl) >= 0 ? tpl : DEFAULTS.template,
+      accent: /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(accent) ? accent.toLowerCase() : DEFAULTS.accent,
+      font: FONTS.indexOf(font) >= 0 ? font : DEFAULTS.font,
+      fontSize: (Math.round(clampNum(meta.fontSize, 10, 20, 14) * 100) / 100) + 'px',
+      lineHeight: String(Math.round(clampNum(meta.lineHeight, 1.15, 2.4, 1.65) * 100) / 100),
+      margin: normalizeMargin(meta.margin),
+      photo: sanitizePhoto(meta.photo),
+      photoSize: normalizePhotoSize(meta.photoSize),
+      photoAlign: PHOTO_ALIGNS.indexOf(String(meta.photoAlign || '').trim()) >= 0 ? String(meta.photoAlign).trim() : DEFAULTS.photoAlign,
+      photoShape: PHOTO_SHAPES.indexOf(String(meta.photoShape || '').trim()) >= 0 ? String(meta.photoShape).trim() : DEFAULTS.photoShape
+    };
+  }
+
+  /** 把 settings 拆成 { y, x } 两方向的毫米值，供预览分页计算使用 */
+  function marginMm(settings) {
+    var m = LENGTH_RE.exec(normalizeMargin((settings || {}).margin));
+    if (!m) return { y: 16, x: 18 };
+    var y = toMm(m[1], m[2] || 'mm');
+    var x = (m[3] == null) ? y : toMm(m[3], m[4] || m[2] || 'mm');
+    return { y: y, x: x };
+  }
+
+  /* ------------------------------------------------------------------ 行内语法 */
+
+  function safeUrl(url) {
+    var u = String(url == null ? '' : url).trim();
+    if (/^(https?:|mailto:|tel:)/i.test(u)) return u;
+    if (/^www\./i.test(u)) return 'https://' + u;
+    if (/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(u)) return 'mailto:' + u;
+    if (/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(u)) return 'https://' + u;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return '#';   // 屏蔽 javascript: 等协议
+    return u;
+  }
+
+  function inline(text) {
+    if (text == null) return '';
+    var bucket = [];
+    function stash(html) {
+      bucket.push(html);
+      return TOKEN + (bucket.length - 1) + TOKEN;
+    }
+
+    var s = esc(text);
+
+    // 1) 先把链接、图片、裸链接抽成占位符，避免后续规则破坏 href/src
+    //    图片必须排在链接前面，否则 ![alt](url) 会被当成普通链接
+    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, alt, src) {
+      var u = sanitizePhoto(src);
+      if (!u) return alt;   // 不安全的地址：退化成文字
+      return stash('<img class="r-inline-img" src="' + esc(u) + '" alt="' + alt + '">');
+    });
+    s = s.replace(/\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, label, href) {
+      return stash('<a href="' + esc(safeUrl(href)) + '" target="_blank" rel="noreferrer">' + label + '</a>');
+    });
+    s = s.replace(/(^|[\s(（【])((?:https?:\/\/|www\.)[^\s<)）】]+)/g, function (m, pre, url) {
+      var tail = '';
+      var trail = /[.,;:、。]+$/.exec(url);
+      if (trail) { tail = trail[0]; url = url.slice(0, -tail.length); }
+      return pre + stash('<a href="' + esc(safeUrl(url)) + '" target="_blank" rel="noreferrer">' + url + '</a>') + tail;
+    });
+    s = s.replace(/([\w.+-]+@[\w-]+\.[\w.]+)/g, function (m, mail) {
+      return stash('<a href="mailto:' + mail + '">' + mail + '</a>');
+    });
+
+    // 2) 其余行内标记
+    s = s.replace(/`([^`]+?)`/g, '<code>$1</code>');
+    s = s.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/__([^_]+?)__/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[^*\w])\*([^*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
+    s = s.replace(/~~([^~]+?)~~/g, '<del>$1</del>');
+
+    // 3) 还原占位符
+    return s.replace(new RegExp(TOKEN + '(\\d+)' + TOKEN, 'g'), function (m, i) {
+      return bucket[+i] || '';
+    });
+  }
+
+  /** 联系方式：邮箱 / 网址 / 域名自动变成可点击链接，其余行内语法照常解析 */
+  function contactHTML(text) {
+    var t = String(text == null ? '' : text).trim();
+    if (/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(t)) return '<a href="mailto:' + t + '">' + esc(t) + '</a>';
+    var m = /(https?:\/\/[^\s]+|www\.[^\s]+|[\w-]+\.(?:com|cn|net|org|io|dev|me|xyz|top|edu)(?:\/[^\s]*)?)/i.exec(t);
+    if (!m) return inline(t);
+    var url = m[1];
+    var href = /^https?:/i.test(url) ? url : 'https://' + url;
+    return inline(t.slice(0, m.index)) +
+      '<a href="' + esc(href) + '" target="_blank" rel="noreferrer">' + esc(url) + '</a>' +
+      inline(t.slice(m.index + url.length));
+  }
+
+  /* ------------------------------------------------------------------ 前置配置 */
+
+  function splitFrontMatter(text) {
+    var src = String(text == null ? '' : text).replace(/\r\n?/g, '\n');
+    var m = /^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/.exec(src);
+    if (!m) return { meta: {}, body: src, raw: null, extra: [] };
+    var meta = {};
+    var order = [];
+    m[1].split('\n').forEach(function (line) {
+      var t = line.trim();
+      if (!t || t.charAt(0) === '#') return;
+      var kv = /^([A-Za-z][\w-]*)\s*[:=]\s*(.*)$/.exec(t);
+      if (!kv) return;
+      meta[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, '');
+      order.push(kv[1]);
+    });
+    return {
+      meta: meta,
+      body: src.slice(m[0].length),
+      raw: m[0],
+      extra: order.filter(function (k) { return FRONT_KEYS.indexOf(k) < 0; })
+    };
+  }
+
+  function serializeFrontMatter(settings, extraKeys, extraMeta) {
+    var s = normalizeSettings(settings);
+    // 没有证件照时不写 photo / photoSize / photoAlign / photoShape，避免配置块里出现空键
+    var photoKeys = { photo: 1, photoSize: 1, photoAlign: 1, photoShape: 1 };
+    var lines = FRONT_KEYS.filter(function (k) {
+      if (photoKeys[k]) return !!s.photo;
+      return true;
+    }).map(function (k) { return k + ': ' + s[k]; });
+    (extraKeys || []).forEach(function (k) {
+      if (extraMeta && extraMeta[k] != null && FRONT_KEYS.indexOf(k) < 0) lines.push(k + ': ' + extraMeta[k]);
+    });
+    return '---\n' + lines.join('\n') + '\n---\n';
+  }
+
+  /** 更新（或补写）文首配置块，正文保持不变 */
+  function upsertFrontMatter(md, patch) {
+    var fm = splitFrontMatter(md);
+    var settings = normalizeSettings(Object.assign({}, fm.meta, patch || {}));
+    var body = fm.body.replace(/^\n+/, '');
+    return serializeFrontMatter(settings, fm.extra, fm.meta) + '\n' + body;
+  }
+
+  /* ------------------------------------------------------------------ 块级解析 */
+
+  var LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+
+  function splitRow(line) {
+    return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
+  }
+
+  function isTableSeparator(line) {
+    if (!line) return false;
+    var t = line.trim();
+    if (t.indexOf('-') < 0) return false;
+    if (!/^\|?[\s:|-]+\|?$/.test(t)) return false;
+    return splitRow(t).every(function (c) { return /^:?-{2,}:?$/.test(c); });
+  }
+
+  function makeEntry(raw) {
+    var text = String(raw).trim();
+    var meta = '';
+    var pipe = text.indexOf('|');
+    if (pipe >= 0) {
+      meta = text.slice(pipe + 1).trim();
+      text = text.slice(0, pipe).trim();
+    }
+    var title = text;
+    var subtitle = '';
+    var dot = /\s+[·•‧・]\s*|\s*[·•‧・]\s+/.exec(text);
+    if (dot) {
+      title = text.slice(0, dot.index).trim();
+      subtitle = text.slice(dot.index + dot[0].length).trim();
+    }
+    return { type: 'entry', title: title, subtitle: subtitle, meta: meta, sub: '', children: [] };
+  }
+
+  function buildList(items) {
+    var base = Math.min.apply(null, items.map(function (i) { return i.indent; }));
+    var root = { type: 'list', ordered: items[0].ordered, items: [] };
+    var stack = [{ node: root, indent: base }];
+    items.forEach(function (it) {
+      while (stack.length > 1 && it.indent < stack[stack.length - 1].indent) stack.pop();
+      var top = stack[stack.length - 1];
+      if (it.indent > top.indent && top.node.items.length) {
+        var parent = top.node.items[top.node.items.length - 1];
+        parent.children = parent.children || { type: 'list', ordered: it.ordered, items: [] };
+        parent.children.items.push({ text: it.text, children: null });
+        stack.push({ node: parent.children, indent: it.indent });
+      } else {
+        top.node.items.push({ text: it.text, children: null });
+      }
+    });
+    return root;
+  }
+
+  function parseDocument(body) {
+    var src = String(body == null ? '' : body).replace(/\r\n?/g, '\n');
+    var lines = src.split('\n');
+    var doc = { header: null, children: [] };
+    var cur = { section: null, entry: null };
+
+    function target() { return cur.entry || cur.section || doc; }
+    function push(node) { target().children.push(node); }
+    function ensureSection() {
+      if (!cur.section) {
+        cur.section = { type: 'section', title: '', children: [] };
+        doc.children.push(cur.section);
+      }
+      return cur.section;
+    }
+    function headerLine(text) {
+      if (!doc.header) doc.header = { name: '', subtitle: '', contacts: [] };
+      var segs = text.split('|').map(function (s) { return s.trim(); }).filter(Boolean);
+      if (segs.length > 1) {
+        if (!doc.header.subtitle) doc.header.subtitle = segs.shift();
+        segs.forEach(function (s) { doc.header.contacts.push(s); });
+      } else if (segs.length === 1) {
+        if (!doc.header.subtitle) doc.header.subtitle = segs[0];
+        else doc.header.contacts.push(segs[0]);
+      }
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].replace(/\s+$/, '');
+      var t = line.trim();
+      if (!t) continue;
+
+      // 分页 / 分隔线
+      if (/^-{3,}$/.test(t) || /^\\(?:pagebreak|newpage)$/i.test(t)) { push({ type: 'pagebreak' }); continue; }
+      if (/^([*_])\1{2,}$/.test(t)) { push({ type: 'hr' }); continue; }
+
+      // 标题
+      var hm = /^(#{1,6})\s+(.*?)\s*#*$/.exec(t);
+      if (hm) {
+        var level = hm[1].length;
+        var txt = hm[2].trim();
+        if (level === 1) {
+          doc.header = { name: txt, subtitle: '', contacts: [] };
+          cur.section = null; cur.entry = null;
+        } else if (level === 2) {
+          cur.section = { type: 'section', title: txt, children: [] };
+          cur.entry = null;
+          doc.children.push(cur.section);
+        } else if (level === 3) {
+          var sec = ensureSection();
+          cur.entry = makeEntry(txt);
+          sec.children.push(cur.entry);
+        } else {
+          push({ type: 'subhead', text: txt });
+        }
+        continue;
+      }
+
+      // 引用
+      if (/^>\s?/.test(t)) { push({ type: 'quote', text: t.replace(/^>\s?/, '') }); continue; }
+
+      // 紧跟姓名的独立图片行 = 证件照（等价于配置块里的 photo:）
+      var photoLine = /^!\[[^\]]*\]\(([^)\s]+)\)$/.exec(t);
+      if (photoLine && doc.header && !cur.section && !cur.entry) {
+        if (!doc.header.photo) doc.header.photo = photoLine[1];
+        continue;
+      }
+
+      // 表格
+      if (t.charAt(0) === '|' && isTableSeparator(lines[i + 1])) {
+        var head = splitRow(t);
+        var aligns = splitRow(lines[i + 1]).map(function (c) {
+          if (/^:-+:$/.test(c)) return 'center';
+          if (/-+:$/.test(c)) return 'right';
+          return 'left';
+        });
+        var rows = [];
+        var j = i + 2;
+        while (j < lines.length && /^\s*\|/.test(lines[j])) { rows.push(splitRow(lines[j])); j++; }
+        push({ type: 'table', head: head, aligns: aligns, rows: rows });
+        i = j - 1;
+        continue;
+      }
+
+      // 列表
+      var lm = LIST_RE.exec(line);
+      if (lm) {
+        var items = [];
+        while (i < lines.length) {
+          var m2 = LIST_RE.exec(lines[i]);
+          if (!m2) break;
+          items.push({
+            indent: m2[1].replace(/\t/g, '  ').length,
+            ordered: /\d/.test(m2[2]),
+            text: m2[3].trim()
+          });
+          i++;
+        }
+        i--;
+        push(buildList(items));
+        continue;
+      }
+
+      // 抬头信息 / 普通段落
+      if (doc.header && !cur.section && !cur.entry) { headerLine(t); continue; }
+
+      var entry = cur.entry;
+      if (entry) {
+        var hasList = entry.children.some(function (c) { return c.type === 'list'; });
+        var looksMeta = /(\d{4}|至今|今|present)/i.test(t) || /[|｜]/.test(t) || /[·•‧・]/.test(t);
+        if (!entry.sub && !hasList && looksMeta && t.length <= 80) {
+          // 整行加粗的副信息（时间 / 地点 / 团队）去掉加粗标记，交给 .r-entry-sub 样式
+          entry.sub = t.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^__(.+)__$/, '$1');
+          continue;
+        }
+      }
+      push({ type: 'paragraph', text: t });
+    }
+
+    return doc;
+  }
+
+  /* ------------------------------------------------------------------ 渲染 */
+
+  function renderList(list) {
+    var ordered = list.ordered && list.items.every(function (i) { return /^\d/.test(i.text) || true; });
+    var tag = list.ordered ? 'ol' : 'ul';
+    var html = '<' + tag + ' class="r-list">';
+    list.items.forEach(function (item) {
+      html += '<li>' + inline(item.text);
+      if (item.children) html += renderList(item.children);
+      html += '</li>';
+    });
+    return html + '</' + tag + '>';
+  }
+
+  function renderTable(table) {
+    var html = '<table class="r-table"><thead><tr>';
+    table.head.forEach(function (c, idx) {
+      html += '<th class="ta-' + (table.aligns[idx] || 'left') + '">' + inline(c) + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+    table.rows.forEach(function (row) {
+      html += '<tr>';
+      table.head.forEach(function (_, idx) {
+        html += '<td class="ta-' + (table.aligns[idx] || 'left') + '">' + inline(row[idx] == null ? '' : row[idx]) + '</td>';
+      });
+      html += '</tr>';
+    });
+    return html + '</tbody></table>';
+  }
+
+  function renderEntry(entry) {
+    var html = '<div class="r-entry">';
+    html += '<div class="r-entry-head"><h3 class="r-entry-title">' + inline(entry.title);
+    if (entry.subtitle) html += '<span class="r-entry-role">' + inline(entry.subtitle) + '</span>';
+    html += '</h3>';
+    if (entry.meta) html += '<span class="r-entry-meta">' + inline(entry.meta) + '</span>';
+    html += '</div>';
+    if (entry.sub) html += '<p class="r-entry-sub">' + inline(entry.sub) + '</p>';
+    html += renderChildren(entry.children);
+    return html + '</div>';
+  }
+
+  function renderChildren(nodes) {
+    var html = '';
+    (nodes || []).forEach(function (node) {
+      switch (node.type) {
+        case 'section':
+          if (!node.title) { html += renderChildren(node.children); break; }
+          html += '<section class="r-section"><h2 class="r-section-title"><span>' + inline(node.title) + '</span></h2>' +
+            renderChildren(node.children) + '</section>';
+          break;
+        case 'entry':
+          html += renderEntry(node);
+          break;
+        case 'list':
+          html += renderList(node);
+          break;
+        case 'table':
+          html += renderTable(node);
+          break;
+        case 'quote':
+          html += '<blockquote class="r-quote">' + inline(node.text) + '</blockquote>';
+          break;
+        case 'paragraph':
+          html += '<p class="r-paragraph">' + inline(node.text) + '</p>';
+          break;
+        case 'subhead':
+          html += '<h4 class="r-subhead">' + inline(node.text) + '</h4>';
+          break;
+        case 'hr':
+          html += '<hr class="r-hr">';
+          break;
+        case 'pagebreak':
+          html += '<div class="page-break"><span>手动分页</span></div>';
+          break;
+        default:
+          break;
+      }
+    });
+    return html;
+  }
+
+  function renderHeader(header, settings) {
+    var photo = sanitizePhoto(header.photo || (settings && settings.photo) || '');
+    var html = '<header class="r-header">';
+    html += '<div class="r-header-main">';
+    if (header.name) html += '<h1 class="r-name">' + inline(header.name) + '</h1>';
+    if (header.subtitle) html += '<p class="r-subtitle">' + inline(header.subtitle) + '</p>';
+    if (header.contacts && header.contacts.length) {
+      html += '<ul class="r-contacts">' + header.contacts.map(function (c) {
+        return '<li>' + contactHTML(c) + '</li>';
+      }).join('') + '</ul>';
+    }
+    html += '</div>';
+    if (photo) html += '<img class="r-photo" src="' + esc(photo) + '" alt="证件照">';
+    return html + '</header>';
+  }
+
+  function sheetClasses(settings, hasPhoto) {
+    var cls = 'resume-sheet tpl-' + settings.template + ' font-' + settings.font;
+    if (hasPhoto) {
+      cls += ' has-photo photo-' + settings.photoAlign + ' shape-' + settings.photoShape;
+    }
+    return cls;
+  }
+
+  function styleVars(settings) {
+    var mm = marginMm(settings);
+    return [
+      '--r-accent: ' + settings.accent,
+      '--r-font-size: ' + settings.fontSize,
+      '--r-line-height: ' + settings.lineHeight,
+      '--r-margin-y: ' + mm.y + 'mm',
+      '--r-margin-x: ' + mm.x + 'mm',
+      '--r-photo-w: ' + settings.photoSize
+    ].join('; ');
+  }
+
+  function pageRule(settings) {
+    return '@page { size: A4; margin: ' + normalizeMargin(settings.margin) + '; }';
+  }
+
+  /* ------------------------------------------------------------------ 对外 API */
+
+  function renderResume(md, overrides) {
+    var fm = splitFrontMatter(md);
+    var settings = normalizeSettings(Object.assign({}, fm.meta, overrides || {}));
+    var doc = parseDocument(fm.body);
+    var hasPhoto = !!(settings.photo || (doc.header && doc.header.photo));
+    var html = (doc.header ? renderHeader(doc.header, settings) : '') + renderChildren(doc.children);
+
+    var plain = fm.body
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/[#*`>_~|\-]/g, '')
+      .replace(/\s/g, '');
+    var stats = {
+      chars: plain.length,
+      sections: (html.match(/class="r-section"/g) || []).length,
+      entries: (html.match(/class="r-entry"/g) || []).length,
+      bullets: (html.match(/<li>/g) || []).length,
+      manualBreaks: (html.match(/class="page-break"/g) || []).length,
+      hasPhoto: hasPhoto
+    };
+
+    return {
+      html: html,
+      settings: settings,
+      meta: fm.meta,
+      header: doc.header,
+      doc: doc,
+      stats: stats,
+      hasPhoto: hasPhoto,
+      sheetClasses: sheetClasses(settings, hasPhoto),
+      style: styleVars(settings)
+    };
+  }
+
+  /** 生成一个完整、可独立打开（也可被无头浏览器打印）的 HTML 文档 */
+  function toDocumentHTML(md, options) {
+    options = options || {};
+    var r = renderResume(md, options.settings);
+    var title = options.title || (r.header && r.header.name) || '简历';
+    var css = options.css || '';
+    var preview = !!options.preview;
+    return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<title>' + esc(title) + '</title>\n' +
+      '<style>\n' + pageRule(r.settings) + '\n' +
+      'html, body { margin: 0; padding: 0; background: #fff; }\n' +
+      (preview ? '' : 'body.resume-export .resume-sheet { width: auto; min-height: 0; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }\n') +
+      css + '\n</style>\n</head>\n<body class="' + (preview ? 'resume-preview' : 'resume-export') + '">\n' +
+      '<article class="' + r.sheetClasses + '" style="' + r.style + '">' + r.html + '</article>\n' +
+      '</body>\n</html>\n';
+  }
+
+  return {
+    DEFAULTS: DEFAULTS,
+    TEMPLATES: TEMPLATES,
+    FONTS: FONTS,
+    MARGIN_PRESETS: MARGIN_PRESETS,
+    PHOTO_ALIGNS: PHOTO_ALIGNS,
+    PHOTO_SHAPES: PHOTO_SHAPES,
+    ACCENT_PRESETS: ACCENT_PRESETS,
+    FRONT_KEYS: FRONT_KEYS,
+    A4: A4,
+    MM_PER_PX: MM_PER_PX,
+    esc: esc,
+    inline: inline,
+    sanitizePhoto: sanitizePhoto,
+    normalizePhotoSize: normalizePhotoSize,
+    splitFrontMatter: splitFrontMatter,
+    serializeFrontMatter: serializeFrontMatter,
+    upsertFrontMatter: upsertFrontMatter,
+    normalizeSettings: normalizeSettings,
+    normalizeMargin: normalizeMargin,
+    marginMm: marginMm,
+    parseDocument: parseDocument,
+    renderResume: renderResume,
+    toDocumentHTML: toDocumentHTML,
+    pageRule: pageRule
+  };
+});
+</script>
+<script>
+/* ==== assets/app.js ==== */
+/*!
+ * app.js —— 简历生成器工作台逻辑
+ * 数据流：Markdown 文本（含文首配置块）是唯一数据源 → 解析渲染 → 预览 / 打印导出
+ */
+(function () {
+  'use strict';
+
+  var MD = window.ResumeMD;
+  if (!MD) {
+    document.body.innerHTML = '<p style="padding:24px;font:16px sans-serif">assets/resume-md.js 加载失败，请确认文件完整。</p>';
+    return;
+  }
+
+  /* ------------------------------------------------------------ 常量与状态 */
+
+  var LS = { prefs: 'resume-gen:prefs', docs: 'resume-gen:docs', current: 'resume-gen:current' };
+  var PAPER_W_PX = MD.A4.width / MD.MM_PER_PX;   // A4 宽（未缩放 CSS px）
+  var PAGE_H_PX = MD.A4.height / MD.MM_PER_PX;   // A4 高（未缩放 CSS px）
+
+  var SAMPLE = [
+    '---',
+    'template: classic',
+    'accent: #2563eb',
+    'font: sans',
+    'fontSize: 14px',
+    'lineHeight: 1.65',
+    'margin: 16mm 18mm',
+    '---',
+    '',
+    '# 张三',
+    '',
+    '前端工程师 | 138-0000-0000 | zhangsan@example.com | github.com/zhangsan | 上海',
+    '',
+    '## 个人简介',
+    '',
+    '> 6 年前端开发经验，专注大型 Web 应用的性能优化与工程化建设；主导过 3 个百万级 DAU 项目的前端架构升级，首屏性能平均提升 45%。',
+    '',
+    '## 工作经历',
+    '',
+    '### 某某科技有限公司 · 高级前端工程师 | 2021.06 – 至今',
+    '',
+    '**上海 · 电商中台组（8 人）**',
+    '',
+    '- 主导交易链路前端重构，将单体应用拆分为 6 个微前端子应用，发布耗时由 40 分钟降至 8 分钟。',
+    '- 建设公司级组件库（58 个组件，接入率 82%），新项目搭建成本从 5 天缩短到 0.5 天。',
+    '- 推动首屏性能专项：路由级代码分割 + 图片懒加载 + 接口聚合，**LCP 从 3.4s 优化到 1.6s**。',
+    '  - 建立性能预算与 CI 卡点，阻止劣化合入主干。',
+    '',
+    '### 某某网络技术有限公司 · 前端工程师 | 2019.03 – 2021.05',
+    '',
+    '- 独立负责 B 端数据看板（React + ECharts），支撑 200+ 企业客户的日常运营分析。',
+    '- 设计可视化配置平台，运营可自助搭建 30 种图表，需求交付周期缩短 60%。',
+    '',
+    '## 项目经历',
+    '',
+    '### 开源项目 · 轻量表单引擎 | 2022.03 – 2022.11',
+    '',
+    '- GitHub 1.2k Star，JSON Schema 驱动表单渲染与校验，已被 20+ 团队接入。',
+    '- 采用 monorepo + Changesets 管理 5 个包，单元测试覆盖率 91%。',
+    '',
+    '## 技能清单',
+    '',
+    '| 技能 | 说明 |',
+    '| --- | --- |',
+    '| 语言 | TypeScript、JavaScript (ES2023)、HTML/CSS、Node.js |',
+    '| 框架 | React、Vue 3、Next.js、NestJS |',
+    '| 方向 | 工程化（Vite / Webpack / monorepo / CI/CD）、性能优化、微前端、数据可视化 |',
+    '',
+    '## 教育背景',
+    '',
+    '### 某某大学 · 计算机科学与技术 · 本科 | 2015.09 – 2019.06',
+    '',
+    '- 主修课程：数据结构、操作系统、计算机网络、数据库原理；GPA 3.7/4.0。',
+    '- 校级科技创新一等奖（2018）。',
+    '',
+    '## 其他信息',
+    '',
+    '- 技术博客 60 篇原创文章，年阅读量 30 万+；英语 CET-6，可无障碍阅读英文技术文档。',
+    ''
+  ].join('\n');
+
+  var NEW_DOC = [
+    '---',
+    'template: classic',
+    'accent: #2563eb',
+    'font: sans',
+    'fontSize: 14px',
+    'lineHeight: 1.65',
+    'margin: 16mm 18mm',
+    '---',
+    '',
+    '# 姓名',
+    '',
+    '求职意向 | 手机号 | 邮箱 | 城市',
+    '',
+    '## 个人简介',
+    '',
+    '> 一句话说明你的核心竞争力、年限与代表成果。',
+    '',
+    '## 工作经历',
+    '',
+    '### 公司名称 · 职位 | 起止时间',
+    '',
+    '- 做了什么：负责的模块、技术方案。',
+    '- 结果如何：用数字量化（性能、效率、营收、规模）。',
+    '',
+    '## 技能清单',
+    '',
+    '| 技能 | 说明 |',
+    '| --- | --- |',
+    '| 语言 |  |',
+    '| 框架 |  |',
+    '',
+    '## 教育背景',
+    '',
+    '### 学校 · 专业 · 学历 | 起止时间',
+    '',
+    '- 主修课程、GPA、奖项。',
+    ''
+  ].join('\n');
+
+  var state = {
+    name: '我的简历',
+    markdown: SAMPLE,
+    settings: MD.normalizeSettings({}),
+    fileHandle: null,
+    pages: 1,
+    savedAt: 0,
+    dirty: false
+  };
+
+  var prefs = Object.assign(
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false },
+    readJSON(LS.prefs, {})
+  );
+
+  var renderTimer = null;
+  var saveTimer = null;
+  var toastTimer = null;
+  var guideTimer = null;
+
+  /* ------------------------------------------------------------ DOM */
+
+  var $ = function (id) { return document.getElementById(id); };
+  var editor = $('editor');
+  var sheet = $('sheet');
+  var sheetWrap = $('sheetWrap');
+  var previewScroll = $('previewScroll');
+  var workspace = $('workspace');
+  var splitter = $('splitter');
+  var toastEl = $('toast');
+  var helpModal = $('helpModal');
+
+  /* ------------------------------------------------------------ 本地存储小工具 */
+
+  function readJSON(key, dft) {
+    try {
+      var raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : dft;
+    } catch (e) { return dft; }
+  }
+  function writeJSON(key, value) {
+    try { window.localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* 隐私模式忽略 */ }
+  }
+  function readRaw(key) {
+    try { return window.localStorage.getItem(key); } catch (e) { return null; }
+  }
+  function writeRaw(key, value) {
+    try { window.localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+  }
+  function savePrefs() { writeJSON(LS.prefs, prefs); }
+
+  /* ------------------------------------------------------------ 渲染 */
+
+  function scheduleRender() {
+    window.clearTimeout(renderTimer);
+    renderTimer = window.setTimeout(render, 100);
+  }
+  function scheduleGuides() {
+    window.clearTimeout(guideTimer);
+    guideTimer = window.setTimeout(updateGuides, 60);
+  }
+
+  function render() {
+    var r = MD.renderResume(state.markdown);
+    state.settings = r.settings;
+    state.header = r.header;
+
+    sheet.className = r.sheetClasses;
+    sheet.setAttribute('style', r.style);
+    sheet.innerHTML = r.html;
+
+    $('printPageStyle').textContent = MD.pageRule(r.settings);
+
+    syncControls(r.settings);
+    updateGuides();
+    updateStats(r);
+
+    var base = fileName().replace(/\.md$/i, '');
+    document.title = base + ' · 简历生成器';
+    $('statusDoc').textContent = state.name || '未命名';
+  }
+
+  function currentZoom() {
+    if (prefs.zoom === 'fit') {
+      var avail = previewScroll.clientWidth - 56;
+      var z = avail / PAPER_W_PX;
+      return Math.min(2, Math.max(0.3, isFinite(z) && z > 0 ? z : 1));
+    }
+    var n = parseFloat(prefs.zoom);
+    return isFinite(n) && n > 0 ? n : 1;
+  }
+
+  function applyZoom() {
+    sheetWrap.style.zoom = String(currentZoom());
+    scheduleGuides();
+  }
+
+  /** 计算分页位置（返回未缩放布局 px 的数组，均为“下一页开始处”） */
+  function pageBreaks() {
+    var zoom = currentZoom();
+    var sheetRect = sheet.getBoundingClientRect();
+    var sheetTop = sheetRect.top;
+    var sheetH = sheetRect.height / zoom;
+
+    var breaks = [];
+    var nodes = sheet.querySelectorAll('.page-break');
+    for (var i = 0; i < nodes.length; i++) {
+      breaks.push((nodes[i].getBoundingClientRect().top - sheetTop) / zoom);
+    }
+    breaks.sort(function (a, b) { return a - b; });
+
+    var positions = [];
+    var cursor = PAGE_H_PX;
+    var prev = 0;
+    var guard = 0;
+    while (cursor <= sheetH - 2 && guard++ < 200) {
+      for (var k = 0; k < breaks.length; k++) {
+        if (breaks[k] > prev + 6 && breaks[k] <= cursor - 2) { cursor = breaks[k]; break; }
+      }
+      positions.push(cursor);
+      prev = cursor;
+      cursor += PAGE_H_PX;
+    }
+    return { positions: positions, height: sheetH };
+  }
+
+  function updateGuides() {
+    var old = sheetWrap.querySelectorAll('.page-guide');
+    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+
+    var info = pageBreaks();
+    state.pages = 1 + info.positions.length;
+
+    if (prefs.guides) {
+      info.positions.forEach(function (top, idx) {
+        var d = document.createElement('div');
+        d.className = 'page-guide';
+        d.style.top = top + 'px';
+        var label = document.createElement('span');
+        label.className = 'page-guide-label';
+        label.textContent = '第 ' + (idx + 2) + ' 页开始';
+        d.appendChild(label);
+        sheetWrap.appendChild(d);
+      });
+    }
+    updateStats();
+  }
+
+  function updateStats(r) {
+    var stats = r ? r.stats : MD.renderResume(state.markdown).stats;
+    $('statusStats').textContent = stats.chars + ' 字 · ' + stats.sections + ' 章节 · ' + stats.entries + ' 条目';
+
+    var pageEl = $('statusPages');
+    pageEl.textContent = '共 ' + state.pages + ' 页';
+    pageEl.classList.toggle('overflow', state.pages > 1);
+    if (state.pages > 1) pageEl.textContent += '（多页简历请留意接缝）';
+  }
+
+  /* ------------------------------------------------------------ 排版控件 ↔ 文首配置 */
+
+  function buildStaticOptions() {
+    MD.TEMPLATES.forEach(function (t) {
+      var o = document.createElement('option');
+      o.value = t;
+      o.textContent = { classic: '经典（居中抬头）', modern: '现代（色块标题）', compact: '紧凑（单行抬头）' }[t] || t;
+      $('tplSelect').appendChild(o);
+    });
+    MD.MARGIN_PRESETS.forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p.value;
+      o.textContent = p.label;
+      $('marginSelect').appendChild(o);
+    });
+    MD.ACCENT_PRESETS.forEach(function (color) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'swatch';
+      b.style.background = color;
+      b.title = color;
+      b.dataset.color = color;
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () { patchSettings({ accent: color }); });
+      $('accentSwatches').appendChild(b);
+    });
+  }
+
+  function syncControls(s) {
+    $('tplSelect').value = s.template;
+    $('fontSelect').value = s.font;
+    $('accentInput').value = s.accent;
+    $('fontSizeInput').value = parseFloat(s.fontSize);
+    $('fontSizeVal').textContent = parseFloat(s.fontSize) + 'px';
+    $('lineHeightInput').value = parseFloat(s.lineHeight);
+    $('lineHeightVal').textContent = s.lineHeight;
+
+    var swatches = $('accentSwatches').querySelectorAll('.swatch');
+    for (var i = 0; i < swatches.length; i++) {
+      swatches[i].setAttribute('aria-pressed', String(swatches[i].dataset.color.toLowerCase() === s.accent.toLowerCase()));
+    }
+
+    var sel = $('marginSelect');
+    var found = false;
+    for (var j = 0; j < sel.options.length; j++) {
+      if (sel.options[j].value === s.margin) found = true;
+    }
+    if (!found) {
+      var o = document.createElement('option');
+      o.value = s.margin;
+      o.textContent = '自定义 (' + s.margin + ')';
+      sel.appendChild(o);
+    }
+    sel.value = s.margin;
+
+    $('zoomSelect').value = String(prefs.zoom);
+    $('guideToggle').checked = !!prefs.guides;
+    $('autoSaveToggle').checked = !!prefs.autoSave;
+    if (prefs.zoom === 'fit') applyZoom();
+
+    // 证件照：没有照片时整行隐藏
+    var hasPhoto = !!(s.photo || (state.header && state.header.photo));
+    $('photoField').hidden = !hasPhoto;
+    $('photoSizeInput').value = parseFloat(s.photoSize) || 26;
+    $('photoSizeVal').textContent = s.photoSize;
+    $('photoAlignSelect').value = s.photoAlign;
+    $('photoShapeSelect').value = s.photoShape;
+  }
+
+  /** 把排版参数写回 Markdown 文首配置块（保持正文不动） */
+  function patchSettings(patch) {
+    var next = MD.upsertFrontMatter(state.markdown, patch);
+    if (next === state.markdown) return;
+    setMarkdown(next, true);
+  }
+
+  /* ------------------------------------------------------------ 编辑与保存 */
+
+  function fileName() {
+    var base = String(state.name || '我的简历').replace(/[\\/:*?"<>|]/g, '-').replace(/\.md$/i, '');
+    return (base || '我的简历') + '.md';
+  }
+
+  function setMarkdown(text, keepCaret) {
+    var s = editor.selectionStart;
+    var e = editor.selectionEnd;
+    state.markdown = text;
+    editor.value = text;
+    if (keepCaret) {
+      editor.selectionStart = Math.min(s, text.length);
+      editor.selectionEnd = Math.min(e, text.length);
+    }
+    markDirty();
+    scheduleRender();
+    scheduleAutoSave();
+  }
+
+  function markDirty() {
+    state.dirty = true;
+    var el = $('statusSaved');
+    el.classList.remove('saved');
+    el.textContent = '未保存';
+  }
+
+  function scheduleAutoSave() {
+    window.clearTimeout(saveTimer);
+    if (!prefs.autoSave) return;
+    saveTimer = window.setTimeout(function () { saveCurrent(true); }, 900);
+  }
+
+  function loadDocs() { return readJSON(LS.docs, {}); }
+  function writeDocs(docs) { writeJSON(LS.docs, docs); }
+
+  function saveCurrent(silent) {
+    if (!state.name) state.name = '我的简历';
+    var docs = loadDocs();
+    docs[state.name] = state.markdown;
+    writeDocs(docs);
+    writeRaw(LS.current, state.name);
+    state.dirty = false;
+    state.savedAt = Date.now();
+    var el = $('statusSaved');
+    el.classList.add('saved');
+    el.textContent = '已保存 ' + new Date().toTimeString().slice(0, 5);
+    refreshDocList();
+    if (!silent) toast('已保存到浏览器存储（文档：' + state.name + '）');
+  }
+
+  function refreshDocList() {
+    var docs = loadDocs();
+    var names = Object.keys(docs);
+    var sel = $('docList');
+    sel.innerHTML = '';
+    if (!names.length) {
+      var o = document.createElement('option');
+      o.value = '';
+      o.textContent = '（暂无已保存文档）';
+      sel.appendChild(o);
+      sel.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    names.sort(function (a, b) { return a.localeCompare(b, 'zh-Hans-CN'); });
+    names.forEach(function (n) {
+      var opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      sel.appendChild(opt);
+    });
+    sel.value = docs[state.name] != null ? state.name : names[0];
+  }
+
+  function openDoc(name) {
+    var docs = loadDocs();
+    if (docs[name] == null) return;
+    if (name === state.name) return;
+    state.name = name;
+    state.fileHandle = null;
+    $('docName').value = name;
+    setMarkdown(docs[name], false);
+    writeRaw(LS.current, name);
+    $('statusSaved').classList.add('saved');
+    $('statusSaved').textContent = '已打开';
+    render();
+    toast('已打开《' + name + '》');
+  }
+
+  function newDoc() {
+    var name = '未命名简历 ' + new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    state.name = name;
+    state.fileHandle = null;
+    $('docName').value = name;
+    setMarkdown(NEW_DOC, false);
+    saveCurrent(true);
+    render();
+    toast('已新建空白简历');
+  }
+
+  function saveAs() {
+    var input = window.prompt('另存为（浏览器内的文档名）：', state.name || '我的简历');
+    if (input == null) return;
+    var name = input.trim();
+    if (!name) return;
+    state.name = name;
+    $('docName').value = name;
+    saveCurrent();
+    render();
+  }
+
+  function deleteDoc() {
+    var docs = loadDocs();
+    if (!docs[state.name]) {
+      toast('当前文档尚未保存到浏览器');
+      return;
+    }
+    if (!window.confirm('确定删除《' + state.name + '》？该操作不可撤销。')) return;
+    delete docs[state.name];
+    writeDocs(docs);
+    var names = Object.keys(docs);
+    if (names.length) {
+      state.name = names[0];
+      $('docName').value = state.name;
+      setMarkdown(docs[state.name], false);
+    } else {
+      state.name = '我的简历';
+      $('docName').value = state.name;
+      setMarkdown(NEW_DOC, false);
+    }
+    saveCurrent(true);
+    refreshDocList();
+    render();
+    toast('已删除');
+  }
+
+  function downloadMD() {
+    var blob = new Blob([state.markdown], { type: 'text/markdown;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fileName();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+    toast('已下载 ' + fileName());
+  }
+
+  function saveToDisk() {
+    var name = fileName();
+    if (window.showSaveFilePicker) {
+      var opts = {
+        suggestedName: name,
+        types: [{ description: 'Markdown 文件', accept: { 'text/markdown': ['.md', '.markdown'] } }]
+      };
+      var p = state.fileHandle ? state.fileHandle.createWritable() : window.showSaveFilePicker(opts).then(function (h) {
+        state.fileHandle = h;
+        return h.createWritable();
+      });
+      p.then(function (w) {
+        return w.write(state.markdown).then(function () { return w.close(); });
+      }).then(function () {
+        var el = $('statusSaved');
+        el.classList.add('saved');
+        el.textContent = '已写入磁盘';
+        state.dirty = false;
+        toast('已保存到磁盘：' + (state.fileHandle && state.fileHandle.name || name));
+      }).catch(function (err) {
+        if (err && err.name === 'AbortError') return;
+        if (state.fileHandle) state.fileHandle = null;
+        downloadMD();
+      });
+      return;
+    }
+    downloadMD();
+  }
+
+  function importFile(file) {
+    if (!file) return;
+    file.text().then(function (text) {
+      state.name = file.name.replace(/\.(md|markdown|txt)$/i, '') || '导入的简历';
+      state.fileHandle = null;
+      $('docName').value = state.name;
+      setMarkdown(text, false);
+      saveCurrent(true);
+      render();
+      toast('已导入 ' + file.name);
+    }).catch(function () { toast('读取文件失败'); });
+  }
+
+  function exportPdf() {
+    render();
+    document.title = fileName().replace(/\.md$/i, '');
+    toast('在打印对话框中选择「另存为 PDF」；建议取消勾选“页眉和页脚”', 4200);
+    window.setTimeout(function () { window.print(); }, 160);
+  }
+
+  /* ------------------------------------------------------------ 编辑器小工具 */
+
+  function onEditorInput() {
+    state.markdown = editor.value;
+    markDirty();
+    scheduleRender();
+    scheduleAutoSave();
+  }
+
+  function wrapSelection(before, after, placeholder) {
+    var s = editor.selectionStart;
+    var e = editor.selectionEnd;
+    var sel = editor.value.slice(s, e) || placeholder || '';
+    var v = editor.value;
+    editor.value = v.slice(0, s) + before + sel + after + v.slice(e);
+    editor.selectionStart = s + before.length;
+    editor.selectionEnd = s + before.length + sel.length;
+    editor.focus();
+    onEditorInput();
+  }
+
+  function insertText(text) {
+    var s = editor.selectionStart;
+    var e = editor.selectionEnd;
+    var v = editor.value;
+    editor.value = v.slice(0, s) + text + v.slice(e);
+    editor.selectionStart = editor.selectionEnd = s + text.length;
+    editor.focus();
+    onEditorInput();
+  }
+
+  function insertBlock(text) {
+    var s = editor.selectionStart;
+    var e = editor.selectionEnd;
+    var v = editor.value;
+    var before = v.slice(0, s);
+    var lead = (!before || /\n[ \t]*$/.test(before)) ? '' : '\n';
+    var insert = lead + text + '\n';
+    editor.value = before + insert + v.slice(e);
+    editor.selectionStart = editor.selectionEnd = s + insert.length;
+    editor.focus();
+    onEditorInput();
+  }
+
+  function applyAct(act) {
+    switch (act) {
+      case 'bold': wrapSelection('**', '**', '加粗文字'); break;
+      case 'italic': wrapSelection('*', '*', '斜体文字'); break;
+      case 'code': wrapSelection('`', '`', 'code'); break;
+      case 'section': insertBlock('## 章节标题'); break;
+      case 'entry': insertBlock('### 公司名称 · 职位 | 2021.06 – 至今\n\n- 负责……，结果：……'); break;
+      case 'list': insertBlock('- 要点内容'); break;
+      case 'table': insertBlock('| 技能 | 说明 |\n| --- | --- |\n| 语言 | TypeScript、JavaScript |\n| 框架 | React、Vue 3 |'); break;
+      case 'break': insertBlock('---'); break;
+      case 'hr': insertBlock('***'); break;
+      default: break;
+    }
+  }
+
+  /* ------------------------------------------------------------ 证件照 */
+
+  var PHOTO_MAX_SIDE = 720;      // 压缩后最长边（像素），足够 A4 打印
+  var PHOTO_QUALITY = 0.86;
+
+  /** 选图 → 等比压缩 → 内嵌成 data URI 写进配置块（图片跟着 .md 走，PDF 与单文件版都不会丢） */
+  function insertPhoto(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { toast('请选择图片文件'); return; }
+
+    var reader = new FileReader();
+    reader.onerror = function () { toast('读取图片失败，换一张试试'); };
+    reader.onload = function () {
+      var img = new Image();
+      img.onerror = function () { toast('这张图片解不开，换一张试试'); };
+      img.onload = function () {
+        var scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width * scale));
+        var h = Math.max(1, Math.round(img.height * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';     // 铺白底：透明区域在 PDF 里会变黑
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+
+        var dataUri = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+        patchSettings({ photo: dataUri, photoSize: state.settings.photoSize || '26mm' });
+        toast('已插入证件照：' + w + '×' + h + '，约 ' + Math.round(dataUri.length / 1024) +
+          ' KB，已内嵌进 .md（可在「排版」里调宽度或移除）', 4200);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removePhoto() {
+    if (!state.settings.photo && !(state.header && state.header.photo)) {
+      toast('当前简历没有证件照');
+      return;
+    }
+    var next = MD.upsertFrontMatter(state.markdown, { photo: '' });
+    // 同时清掉「姓名下面那行独立图片」（photo 的另一种写法），只处理第一个 ## 之前的部分
+    var idx = next.search(/^##[ \t]/m);
+    var head = idx < 0 ? next : next.slice(0, idx);
+    var body = idx < 0 ? '' : next.slice(idx);
+    head = head.replace(/^[ \t]*!\[[^\]]*\]\([^)\r\n]+\)[ \t]*\r?\n/m, '');
+    setMarkdown(head + body, true);
+    toast('已移除证件照');
+  }
+
+  /* ------------------------------------------------------------ 提示与弹窗 */
+
+  function toast(message, timeout) {
+    toastEl.textContent = message;
+    toastEl.hidden = false;
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () { toastEl.hidden = true; }, timeout || 2400);
+  }
+
+  function toggleHelp(show) {
+    helpModal.hidden = show === undefined ? !helpModal.hidden : !show;
+    if (!helpModal.hidden) prefs.helpSeen = true;
+  }
+
+  /* ------------------------------------------------------------ 事件绑定 */
+
+  function bind() {
+    editor.addEventListener('input', onEditorInput);
+
+    editor.addEventListener('keydown', function (ev) {
+      var mod = ev.ctrlKey || ev.metaKey;
+
+      if (ev.key === 'Tab') {
+        ev.preventDefault();
+        insertText('  ');
+        return;
+      }
+      if (mod && ev.key.toLowerCase() === 's') {
+        ev.preventDefault();
+        if (state.fileHandle) saveToDisk(); else saveCurrent();
+        return;
+      }
+      if (mod && ev.key.toLowerCase() === 'b') {
+        ev.preventDefault();
+        applyAct('bold');
+        return;
+      }
+      if (mod && ev.key.toLowerCase() === 'p') {
+        ev.preventDefault();
+        exportPdf();
+        return;
+      }
+      if (ev.key === 'Enter' && !ev.shiftKey) {
+        var pos = editor.selectionStart;
+        if (pos !== editor.selectionEnd) return;
+        var lineStart = editor.value.lastIndexOf('\n', pos - 1) + 1;
+        var line = editor.value.slice(lineStart, pos);
+        var m = /^([ \t]*)([-*+]|\d+[.)])([ \t]+)(.*)$/.exec(line);
+        if (!m) return;
+        ev.preventDefault();
+        if (!m[4].trim()) {                       // 空条目 → 退出列表
+          editor.value = editor.value.slice(0, lineStart) + editor.value.slice(pos);
+          editor.selectionStart = editor.selectionEnd = lineStart;
+          onEditorInput();
+          return;
+        }
+        var marker = m[2];
+        if (/\d/.test(marker)) marker = (parseInt(marker, 10) + 1) + marker.replace(/^\d+/, '');
+        insertText('\n' + m[1] + marker + m[3]);
+      }
+    });
+
+    // 拖动 .md 文件到编辑区即可导入
+    ['dragover', 'drop'].forEach(function (type) {
+      editor.addEventListener(type, function (ev) {
+        ev.preventDefault();
+        if (type === 'drop' && ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]) {
+          importFile(ev.dataTransfer.files[0]);
+        }
+      });
+    });
+
+    var tools = document.querySelectorAll('.tool[data-act]');
+    for (var i = 0; i < tools.length; i++) {
+      tools[i].addEventListener('click', function () { applyAct(this.dataset.act); });
+    }
+
+    $('btnPdf').addEventListener('click', exportPdf);
+    $('btnDownload').addEventListener('click', downloadMD);
+    $('btnSaveDisk').addEventListener('click', saveToDisk);
+    $('btnNew').addEventListener('click', newDoc);
+    $('btnSaveAs').addEventListener('click', saveAs);
+    $('btnDelDoc').addEventListener('click', deleteDoc);
+    $('btnHelp').addEventListener('click', function () { toggleHelp(true); });
+    $('btnHelpClose').addEventListener('click', function () { toggleHelp(false); });
+    helpModal.addEventListener('click', function (ev) { if (ev.target === helpModal) toggleHelp(false); });
+
+    $('btnOpen').addEventListener('click', function () {
+      if (window.showOpenFilePicker) {
+        window.showOpenFilePicker({
+          types: [{ description: 'Markdown 文件', accept: { 'text/markdown': ['.md', '.markdown', '.txt'] } }],
+          multiple: false
+        }).then(function (handles) {
+          if (!handles || !handles[0]) return;
+          state.fileHandle = handles[0];
+          return handles[0].getFile().then(importFile);
+        }).catch(function () { /* 用户取消 */ });
+      } else {
+        $('fileInput').click();
+      }
+    });
+
+    $('fileInput').addEventListener('change', function () {
+      if (this.files && this.files[0]) importFile(this.files[0]);
+      this.value = '';
+    });
+
+    $('docName').addEventListener('change', function () {
+      var next = this.value.trim() || '我的简历';
+      var docs = loadDocs();
+      if (next !== state.name && docs[state.name] != null) {
+        docs[next] = state.markdown;
+        delete docs[state.name];
+        writeDocs(docs);
+      }
+      state.name = next;
+      this.value = next;
+      saveCurrent(true);
+      render();
+    });
+    $('docName').addEventListener('input', function () { $('statusDoc').textContent = this.value || '未命名'; });
+
+    $('docList').addEventListener('change', function () { openDoc(this.value); });
+
+    $('tplSelect').addEventListener('change', function () { patchSettings({ template: this.value }); });
+    $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });
+    $('accentInput').addEventListener('input', function () { patchSettings({ accent: this.value }); });
+    $('fontSizeInput').addEventListener('input', function () { patchSettings({ fontSize: parseFloat(this.value) + 'px' }); });
+    $('lineHeightInput').addEventListener('input', function () { patchSettings({ lineHeight: String(parseFloat(this.value)) }); });
+    $('marginSelect').addEventListener('change', function () { patchSettings({ margin: this.value }); });
+    $('zoomSelect').addEventListener('change', function () {
+      prefs.zoom = this.value === 'fit' ? 'fit' : parseFloat(this.value);
+      savePrefs(); applyZoom();
+    });
+    $('guideToggle').addEventListener('change', function () {
+      prefs.guides = this.checked; savePrefs(); updateGuides();
+    });
+    $('autoSaveToggle').addEventListener('change', function () {
+      prefs.autoSave = this.checked; savePrefs();
+      toast(this.checked ? '已开启自动保存' : '已关闭自动保存');
+    });
+
+    $('btnFit').addEventListener('click', function () {
+      prefs.zoom = 'fit'; savePrefs(); $('zoomSelect').value = 'fit'; applyZoom();
+    });
+
+    // 证件照
+    $('btnPhoto').addEventListener('click', function () { $('photoInput').click(); });
+    $('photoInput').addEventListener('change', function () {
+      if (this.files && this.files[0]) insertPhoto(this.files[0]);
+      this.value = '';
+    });
+    $('photoSizeInput').addEventListener('input', function () {
+      patchSettings({ photoSize: parseFloat(this.value) + 'mm' });
+    });
+    $('photoAlignSelect').addEventListener('change', function () {
+      patchSettings({ photoAlign: this.value });
+    });
+    $('photoShapeSelect').addEventListener('change', function () {
+      patchSettings({ photoShape: this.value });
+    });
+    $('btnRemovePhoto').addEventListener('click', removePhoto);
+
+    $('btnMore').addEventListener('click', function () {
+      var panel = $('settingsPanel');
+      panel.hidden = !panel.hidden;
+      this.setAttribute('aria-expanded', String(!panel.hidden));
+      this.textContent = panel.hidden ? '排版 ▾' : '排版 ▴';
+    });
+
+    // 拖动分隔条
+    splitter.addEventListener('mousedown', function (ev) {
+      ev.preventDefault();
+      splitter.classList.add('dragging');
+      var left = workspace.getBoundingClientRect().left;
+      function move(e2) {
+        var w = Math.min(Math.max(e2.clientX - left, 280), window.innerWidth * 0.75);
+        workspace.style.setProperty('--editor-w', w + 'px');
+        prefs.editorWidth = Math.round(w);
+      }
+      function up() {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+        splitter.classList.remove('dragging');
+        savePrefs();
+        applyZoom();
+      }
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+    });
+
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && !helpModal.hidden) toggleHelp(false);
+    });
+
+    // 浏览器不给本地文件系统选择器时（用 file:// 直接打开），提前说明保存会退化成下载
+    if (!window.showSaveFilePicker) {
+      $('btnSaveDisk').title = '直接用浏览器打开 HTML 时，保存会用「下载」代替系统文件选择器；' +
+        '功能一样，只是需要手动选择保存位置';
+    }
+
+    window.addEventListener('resize', function () { if (prefs.zoom === 'fit') applyZoom(); });
+    previewScroll.addEventListener('scroll', function () { /* 预留：滚动同步 */ });
+
+    window.addEventListener('beforeunload', function (ev) {
+      if (!prefs.autoSave && state.dirty) {
+        ev.preventDefault();
+        ev.returnValue = '';
+      }
+    });
+  }
+
+  /* ------------------------------------------------------------ 启动 */
+
+  function init() {
+    buildStaticOptions();
+    bind();
+
+    workspace.style.setProperty('--editor-w', (prefs.editorWidth || 460) + 'px');
+
+    var docs = loadDocs();
+    var current = readRaw(LS.current);
+    if (current && docs[current] != null) {
+      state.name = current;
+      state.markdown = docs[current];
+    } else {
+      var names = Object.keys(docs);
+      if (names.length) {
+        state.name = names[0];
+        state.markdown = docs[names[0]];
+      } else {
+        state.name = '我的简历';
+        state.markdown = SAMPLE;
+        saveCurrent(true);
+      }
+    }
+
+    $('docName').value = state.name;
+    editor.value = state.markdown;
+
+    render();
+    refreshDocList();
+    applyZoom();
+    $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
+
+    // 应用快捷方式：index.html?action=new 直接新建一份空白简历
+    try {
+      if (new URLSearchParams(window.location.search).get('action') === 'new') newDoc();
+    } catch (e) { /* 老浏览器忽略 */ }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+</body>
+</html>

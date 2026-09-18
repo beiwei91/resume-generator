@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>简历生成器 · Markdown → PDF</title>
+<link rel="stylesheet" href="assets/resume.css">
+<link rel="stylesheet" href="assets/app.css">
+<meta name="application-name" content="简历生成器">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+<style id="printPageStyle">@page { size: A4; }</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <header class="appbar">
+    <div class="brand">
+      <span class="logo">简</span>
+      <span class="brand-text">
+        <b>简历生成器</b>
+        <i>Markdown → A4 → PDF</i>
+      </span>
+    </div>
+
+    <div class="appbar-main">
+      <input id="docName" class="doc-name" type="text" value="我的简历" spellcheck="false"
+             title="文档名（同时作为导出 PDF 的文件名）">
+      <select id="docList" class="btn-select" title="打开浏览器中已保存的简历"></select>
+      <button id="btnNew" class="btn" type="button">新建</button>
+      <button id="btnSaveAs" class="btn" type="button">另存为</button>
+      <button id="btnDelDoc" class="btn" type="button">删除</button>
+      <span class="bar-sep"></span>
+      <button id="btnOpen" class="btn" type="button">导入 MD</button>
+      <button id="btnDownload" class="btn" type="button">下载 MD</button>
+      <button id="btnSaveDisk" class="btn" type="button">保存到磁盘</button>
+      <span class="bar-sep"></span>
+      <button id="btnHelp" class="btn" type="button">语法速查</button>
+      <button id="btnPdf" class="btn btn-primary" type="button">导出 PDF</button>
+      <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown" hidden>
+      <input id="photoInput" type="file" accept="image/*" hidden>
+    </div>
+  </header>
+
+  <div class="workspace" id="workspace">
+
+    <section class="pane editor-pane">
+      <div class="pane-head">
+        <span class="pane-title">Markdown 源文件</span>
+        <div class="tools">
+          <button class="tool tool-bold" type="button" data-act="bold" title="加粗 (Ctrl+B)">B</button>
+          <button class="tool tool-italic" type="button" data-act="italic" title="斜体">I</button>
+          <button class="tool" type="button" data-act="code" title="行内代码">&lt;/&gt;</button>
+          <span class="tool-sep"></span>
+          <button class="tool" type="button" data-act="section" title="插入章节 ##">章节</button>
+          <button class="tool" type="button" data-act="entry" title="插入条目 ### 公司 · 职位 | 时间">条目</button>
+          <button class="tool" type="button" data-act="list" title="插入要点">要点</button>
+          <button class="tool" type="button" data-act="table" title="插入表格">表格</button>
+          <span class="tool-sep"></span>
+          <button class="tool" type="button" data-act="break" title="插入手动分页 ---">分页</button>
+          <button class="tool" type="button" data-act="hr" title="插入分隔线 ***">分隔线</button>
+          <span class="tool-sep"></span>
+          <button class="tool" type="button" id="btnPhoto" title="插入 / 更换证件照（会自动压缩成内嵌图片，跟着 .md 文件走，导出 PDF 不会丢图）">证件照</button>
+        </div>
+      </div>
+      <textarea id="editor" spellcheck="false" autocomplete="off"
+        placeholder="# 姓名&#10;职位 | 手机 | 邮箱&#10;&#10;## 工作经历&#10;### 公司 · 职位 | 2021.06 – 至今&#10;- 做了什么，成果如何"></textarea>
+    </section>
+
+    <div class="splitter" id="splitter" title="拖动调整编辑区宽度"></div>
+
+    <section class="pane preview-pane">
+      <div class="pane-head">
+        <span class="pane-title">预览 · A4</span>
+        <div class="tools">
+          <label class="inline-field">模板
+            <select id="tplSelect"></select>
+          </label>
+          <span class="swatches" id="accentSwatches"></span>
+          <input id="accentInput" class="color-input" type="color" value="#2563eb" title="主色">
+          <button id="btnFit" class="tool" type="button" title="让纸张适应预览区宽度">适应宽度</button>
+          <button id="btnMore" class="tool" type="button" aria-expanded="false">排版 ▾</button>
+        </div>
+      </div>
+
+      <div class="settings-panel" id="settingsPanel" hidden>
+        <div class="field">
+          <label for="fontSelect">字体</label>
+          <select id="fontSelect">
+            <option value="sans">无衬线（雅黑 / 苹方）</option>
+            <option value="serif">衬线（宋体 / 思源宋体）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fontSizeInput">字号 <b id="fontSizeVal">14px</b></label>
+          <input id="fontSizeInput" type="range" min="10" max="20" step="0.5">
+        </div>
+        <div class="field">
+          <label for="lineHeightInput">行距 <b id="lineHeightVal">1.65</b></label>
+          <input id="lineHeightInput" type="range" min="1.15" max="2.4" step="0.05">
+        </div>
+        <div class="field">
+          <label for="marginSelect">页边距</label>
+          <select id="marginSelect"></select>
+        </div>
+        <div class="field">
+          <label for="zoomSelect">缩放</label>
+          <select id="zoomSelect">
+            <option value="fit">适应宽度</option>
+            <option value="0.5">50%</option>
+            <option value="0.75">75%</option>
+            <option value="1">100%</option>
+            <option value="1.25">125%</option>
+            <option value="1.5">150%</option>
+          </select>
+        </div>
+        <label class="field check"><input id="guideToggle" type="checkbox"> 显示分页参考线</label>
+        <label class="field check"><input id="autoSaveToggle" type="checkbox"> 自动保存到浏览器</label>
+        <div class="field" id="photoField" hidden>
+          <label for="photoSizeInput">证件照宽度 <b id="photoSizeVal">26mm</b></label>
+          <input id="photoSizeInput" type="range" min="18" max="40" step="1">
+          <div class="field-row">
+            <label for="photoAlignSelect">位置
+              <select id="photoAlignSelect">
+                <option value="right">右侧</option>
+                <option value="left">左侧</option>
+              </select>
+            </label>
+            <label for="photoShapeSelect">形状
+              <select id="photoShapeSelect">
+                <option value="rounded">圆角</option>
+                <option value="circle">圆形</option>
+                <option value="square">直角</option>
+              </select>
+            </label>
+          </div>
+          <button id="btnRemovePhoto" class="tool" type="button" title="从简历里移除证件照">移除证件照</button>
+        </div>
+      </div>
+
+      <div class="preview-scroll" id="previewScroll">
+        <div class="sheet-wrap" id="sheetWrap">
+          <article id="sheet" class="resume-sheet tpl-classic font-sans"></article>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="statusbar">
+    <span id="statusDoc">未命名</span>
+    <span class="dot">·</span>
+    <span id="statusStats">0 字</span>
+    <span class="dot">·</span>
+    <span id="statusPages">共 1 页</span>
+    <span class="dot">·</span>
+    <span id="statusSaved">未保存</span>
+    <span class="grow"></span>
+    <span class="tip">打印对话框里选「另存为 PDF」并取消页眉页脚</span>
+  </footer>
+</div>
+
+<div class="modal" id="helpModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <b>Markdown 语法速查</b>
+      <button class="btn" id="btnHelpClose" type="button">关闭</button>
+    </div>
+    <div class="modal-body">
+      <table class="help-table">
+        <thead><tr><th>写法</th><th>效果</th></tr></thead>
+        <tbody>
+          <tr><td><code># 张三</code></td><td>姓名（整篇只写一次）</td></tr>
+          <tr><td><code>前端工程师 | 138… | me@mail.com | github.com/me</code></td><td>紧跟姓名的一行：第一段是职位，其余按 <code>|</code> 拆成联系方式（邮箱 / 网址自动变链接）</td></tr>
+          <tr><td><code>## 工作经历</code></td><td>章节标题</td></tr>
+          <tr><td><code>### 某公司 · 高级前端 | 2021.06 – 至今</code></td><td>条目：<code>·</code> 前是主标题，后是职位，<code>|</code> 后是右对齐的时间 / 地点</td></tr>
+          <tr><td><code>- 负责 xxx，性能提升 40%</code></td><td>要点；行首空两格再加 <code>-</code> 是二级要点</td></tr>
+          <tr><td><code>**2021.06 – 2024.05**</code></td><td>写在条目下的独立一行时，作为灰色副信息行</td></tr>
+          <tr><td><code>**加粗**</code> <code>*斜体*</code> <code>`代码`</code> <code>[文字](链接)</code></td><td>行内样式，可混用</td></tr>
+          <tr><td><code>| 技能 | 说明 |</code><br><code>| --- | --- |</code></td><td>表格（第二行是分隔行）</td></tr>
+          <tr><td><code>&gt; 引用</code></td><td>高亮引用块（适合个人简介）</td></tr>
+          <tr><td><code>---</code> 单独一行</td><td>手动分页；<code>***</code> 是分隔线</td></tr>
+          <tr><td><code>---<br>template: modern<br>accent: #0f766e<br>---</code></td><td>文首配置块：模板 / 主色 / 字体 / 字号 / 行距 / 页边距（界面上的排版控件会自动改写这里）</td></tr>
+          <tr><td><code>photo: ./证件照.jpg</code><br><code>photoSize: 26mm</code><br><code>photoAlign: right</code><br><code>photoShape: rounded</code></td><td>抬头证件照：<code>photoSize</code> 是宽度（高度按图片比例），<code>photoAlign</code> 取 <code>right</code>/<code>left</code>，<code>photoShape</code> 取 <code>rounded</code>/<code>circle</code>/<code>square</code>。<br>也可以直接在姓名下一行写 <code>![证件照](照片路径)</code>。<br>地址支持本地相对路径、网址、<code>file://</code> 或内嵌 data URI —— 推荐点工具栏的「证件照」按钮插入（自动压缩为内嵌图片，跟着 .md 文件走，导出 PDF 不会丢图）</td></tr>
+          <tr><td><code>![说明](图片路径)</code></td><td>正文里插入图片，最大宽度不会超出纸张</td></tr>
+        </tbody>
+      </table>
+      <p class="help-note">标题层级最高支持 <code>####</code>（小标题）。文首配置块必须是文件的第一段内容。</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="assets/resume-md.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

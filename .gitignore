@@ -1,0 +1,14 @@
+# 中间产物与临时文件
+.build/
+
+# 启动器日志；可选-本地服务 里的服务会用到 .server.json / .server.log
+.launcher.log
+.server.json
+.server.log
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.log

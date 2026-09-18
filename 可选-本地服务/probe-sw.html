@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>SW 探针</title>
+</head>
+<body>
+<p>正在注册 Service Worker…</p>
+<script>
+/* 测试用页面：验证 sw.js 能注册、能预缓存。
+   时序很关键：register() 必须**同步发起**，随后用忙等阻塞主线程 ——
+   这样既推迟了 load 事件（dump-dom 在 load 后才发生），又给浏览器进程留出真实安装时间。
+   最后把脚本从 DOM 移除、只留结果文本，避免 dump 出来的源码干扰解析。 */
+var swReg = navigator.serviceWorker.register('../sw.js');
+var busyUntil = Date.now() + 2500;
+while (Date.now() < busyUntil) { /* busy wait */ }
+
+(async function () {
+  var out = [];
+  try {
+    var reg = await swReg;
+    await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise(function (_, reject) { setTimeout(function () { reject(new Error('ready 超时')); }, 6000); })
+    ]);
+    var keys = await caches.keys();
+    var entries = 0, detail = [];
+    for (var i = 0; i < keys.length; i++) {
+      var c = await caches.open(keys[i]);
+      var reqs = await c.keys();
+      entries += reqs.length;
+      detail.push(keys[i] + ':' + reqs.length);
+    }
+    out.push('OK');
+    out.push('scope=' + reg.scope);
+    out.push('caches=' + detail.join(','));
+    out.push('entries=' + entries);
+    out.push('controlled=' + !!navigator.serviceWorker.controller);
+  } catch (e) {
+    out.push('FAIL ' + ((e && e.message) || e));
+  }
+
+  var text = 'SWRESULT>>>' + out.join(' | ') + '<<<END';
+  document.title = text;
+  var scripts = document.querySelectorAll('script');
+  for (var k = 0; k < scripts.length; k++) scripts[k].remove();
+  document.body.textContent = text;
+})();
+</script>
+</body>
+</html>

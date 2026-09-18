@@ -1,0 +1,349 @@
+/*!
+ * resume.css —— 简历纸张样式（预览与 PDF 共用，不含编辑器界面样式）
+ * 变量：--r-accent / --r-font-size / --r-line-height / --r-margin-y / --r-margin-x
+ */
+
+:root {
+  --r-paper-w: 210mm;
+  --r-paper-h: 297mm;
+  --r-ink: #1f2937;
+  --r-ink-strong: #111827;
+  --r-ink-soft: #6b7280;
+  --r-line: #e5e7eb;
+  --r-font-stack: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+    "Source Han Sans SC", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif;
+  --r-font-serif-stack: "Songti SC", "SimSun", "Source Han Serif SC", "Noto Serif CJK SC",
+    Georgia, "Times New Roman", serif;
+}
+
+/* ---------------------------------------------------------------- 纸张 */
+
+.resume-sheet {
+  --r-accent: #2563eb;
+  --r-font-size: 14px;
+  --r-line-height: 1.65;
+  --r-margin-y: 16mm;
+  --r-margin-x: 18mm;
+
+  box-sizing: border-box;
+  width: var(--r-paper-w);
+  min-height: var(--r-paper-h);
+  padding: var(--r-margin-y) var(--r-margin-x);
+  background: #fff;
+  color: var(--r-ink);
+  font-family: var(--r-font-stack);
+  font-size: var(--r-font-size);
+  line-height: var(--r-line-height);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.resume-sheet.font-serif { font-family: var(--r-font-serif-stack); }
+
+.resume-sheet a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--r-accent) 45%, transparent);
+}
+
+.resume-sheet strong { font-weight: 700; color: var(--r-ink-strong); }
+.resume-sheet em { font-style: normal; color: var(--r-accent); font-weight: 600; }
+.resume-sheet code {
+  font-family: Consolas, "Cascadia Mono", Menlo, monospace;
+  font-size: .92em;
+  background: #f3f4f6;
+  border-radius: 3px;
+  padding: 0 3px;
+}
+.resume-sheet del { color: var(--r-ink-soft); }
+
+/* ---------------------------------------------------------------- 抬头 */
+
+.r-header { margin-bottom: 12px; }
+.r-header-main { flex: 1 1 auto; min-width: 0; }
+
+/* 证件照本体（布局规则在模板之后统一处理） */
+.r-photo {
+  flex: 0 0 auto;
+  width: var(--r-photo-w, 26mm);
+  height: auto;
+  display: block;
+  background: #fff;
+  border: 1px solid #dbe1ea;
+  border-radius: 3px;
+}
+
+/* 正文里插入的图片 */
+.r-inline-img { max-width: 100%; height: auto; border-radius: 2px; }
+
+.r-name {
+  margin: 0;
+  font-size: 2em;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--r-ink-strong);
+}
+.r-subtitle {
+  margin: 4px 0 0;
+  font-size: 1.05em;
+  font-weight: 600;
+  color: var(--r-accent);
+}
+.r-contacts {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-size: .93em;
+  color: #4b5563;
+}
+.r-contacts li { display: flex; align-items: baseline; }
+.r-contacts li + li::before {
+  content: "";
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  margin-right: 11px;
+  transform: translateY(-3px);
+}
+
+/* ---------------------------------------------------------------- 章节与条目 */
+
+.r-section { margin-top: 15px; }
+.r-section-title {
+  margin: 0 0 8px;
+  font-size: 1.05em;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--r-ink-strong);
+  border-bottom: 1.5px solid var(--r-line);
+  padding-bottom: 4px;
+}
+.r-subhead {
+  margin: 8px 0 3px;
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--r-ink-strong);
+}
+
+.r-entry { margin: 0 0 10px; }
+.r-entry:last-child { margin-bottom: 0; }
+.r-entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.r-entry-title {
+  margin: 0;
+  font-size: 1.02em;
+  font-weight: 700;
+  color: var(--r-ink-strong);
+}
+.r-entry-role { font-weight: 600; font-size: .95em; color: #374151; margin-left: 8px; }
+.r-entry-role::before { content: "·"; margin-right: 6px; color: var(--r-accent); font-weight: 700; }
+.r-entry-meta {
+  font-size: .9em;
+  color: var(--r-ink-soft);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  padding-left: 8px;
+}
+.r-entry-sub { margin: 2px 0 4px; font-size: .92em; color: var(--r-ink-soft); }
+
+/* ---------------------------------------------------------------- 列表 / 表格 / 其他 */
+
+.r-list { margin: 4px 0 0; padding-left: 1.15em; }
+.r-list .r-list { margin: 2px 0; padding-left: 1.1em; }
+.r-list li { margin: 2px 0; padding-left: 1px; }
+.r-list li::marker { color: var(--r-accent); }
+.r-list li > .r-list { margin-top: 2px; }
+
+.r-paragraph { margin: 4px 0; }
+.r-quote {
+  margin: 6px 0;
+  padding: 6px 12px;
+  border-left: 3px solid var(--r-accent);
+  background: color-mix(in srgb, var(--r-accent) 6%, #fff);
+  color: #374151;
+}
+.r-hr { border: 0; border-top: 1px solid var(--r-line); margin: 12px 0; }
+
+.r-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 0;
+  font-size: .95em;
+}
+.r-table th,
+.r-table td { padding: 3px 10px 3px 0; vertical-align: top; }
+.r-table th {
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid var(--r-line);
+  white-space: nowrap;
+}
+.r-table td { border-bottom: 1px dashed #eef2f7; }
+.r-table tr:last-child td { border-bottom: 0; }
+.r-table .ta-center { text-align: center; }
+.r-table .ta-right { text-align: right; }
+
+/* 分页标记（屏幕上显示提示，打印时只保留分页行为） */
+.page-break { break-after: page; page-break-after: always; }
+.page-break > span { display: none; }
+@media screen {
+  .page-break {
+    height: 0;
+    margin: 14px 0;
+    border-top: 1px dashed #cbd5e1;
+    position: relative;
+  }
+  .page-break > span {
+    display: inline-block;
+    position: absolute;
+    right: 0;
+    top: -9px;
+    font-size: 10px;
+    line-height: 16px;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: #e2e8f0;
+    color: #475569;
+    letter-spacing: .05em;
+  }
+}
+
+/* ---------------------------------------------------------------- 模板一：经典 */
+
+.resume-sheet.tpl-classic .r-header {
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--r-accent);
+}
+.resume-sheet.tpl-classic .r-contacts { justify-content: center; }
+.resume-sheet.tpl-classic .r-section-title::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: .92em;
+  border-radius: 1px;
+  background: var(--r-accent);
+  margin-right: 8px;
+  transform: translateY(1px);
+}
+.resume-sheet.tpl-classic .r-section:first-of-type { margin-top: 14px; }
+
+/* ---------------------------------------------------------------- 模板二：现代 */
+
+.resume-sheet.tpl-modern .r-header {
+  padding-bottom: 8px;
+  border-bottom: 3px solid var(--r-accent);
+}
+.resume-sheet.tpl-modern .r-name { color: var(--r-accent); }
+.resume-sheet.tpl-modern .r-subtitle { color: #374151; font-weight: 500; letter-spacing: .06em; }
+.resume-sheet.tpl-modern .r-section-title {
+  display: inline-block;
+  border: 0;
+  padding: 2px 10px 3px;
+  border-radius: 3px;
+  color: #fff;
+  background: var(--r-accent);
+  letter-spacing: .12em;
+}
+.resume-sheet.tpl-modern .r-section { margin-top: 16px; }
+.resume-sheet.tpl-modern .r-entry-title { color: var(--r-ink-strong); }
+.resume-sheet.tpl-modern .r-entry-meta { color: #4b5563; }
+
+/* ---------------------------------------------------------------- 模板三：紧凑 */
+
+.resume-sheet.tpl-compact { line-height: calc(var(--r-line-height) * .96); }
+.resume-sheet.tpl-compact .r-header {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--r-line);
+  margin-bottom: 8px;
+}
+.resume-sheet.tpl-compact .r-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+}
+.resume-sheet.tpl-compact .r-name { font-size: 1.55em; }
+.resume-sheet.tpl-compact .r-subtitle { margin: 0; }
+.resume-sheet.tpl-compact .r-contacts { margin: 0; flex: 1 1 100%; font-size: .9em; }
+.resume-sheet.tpl-compact .r-section { margin-top: 9px; }
+.resume-sheet.tpl-compact .r-section-title {
+  border: 0;
+  border-left: 3px solid var(--r-accent);
+  padding: 0 0 0 8px;
+  margin-bottom: 5px;
+  letter-spacing: .06em;
+}
+.resume-sheet.tpl-compact .r-entry { margin-bottom: 7px; }
+.resume-sheet.tpl-compact .r-list { margin-top: 2px; }
+
+/* ---------------------------------------------------------------- 证件照布局 */
+/* 放在三套模板之后：有照片时抬头改成「文字 + 照片」两列，
+   照片与文字块垂直居中，避免姓名被挤在变窄的居中列里、照片下方留一块空白 */
+
+.resume-sheet.has-photo .r-header {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+  text-align: left;
+}
+.resume-sheet.has-photo .r-header-main { text-align: left; }
+.resume-sheet.has-photo .r-contacts { justify-content: flex-start; }
+.resume-sheet.tpl-compact.has-photo .r-header-main { align-items: baseline; }
+
+/* 照片放左边（DOM 里文字在前，视觉上用 row-reverse 调换） */
+.resume-sheet.has-photo.photo-left .r-header { flex-direction: row-reverse; }
+
+/* 照片形状：圆角（默认）/ 圆形（裁成正方形）/ 直角 */
+.resume-sheet.has-photo.shape-square .r-photo { border-radius: 0; }
+.resume-sheet.has-photo.shape-circle .r-photo {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* ---------------------------------------------------------------- 打印 */
+
+@media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .resume-sheet {
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    zoom: 1 !important;
+  }
+  .resume-sheet a { border-bottom: 0; }
+  .r-entry,
+  .r-table tr,
+  .r-quote,
+  .r-header,
+  .r-list > li { break-inside: avoid; }
+  .r-section-title,
+  .r-entry-head,
+  .r-subhead { break-after: avoid; }
+  .page-break { height: 0 !important; margin: 0 !important; border: 0 !important; }
+  .page-break > span { display: none !important; }
+  .page-guide,
+  .page-guide-label { display: none !important; }
+}
