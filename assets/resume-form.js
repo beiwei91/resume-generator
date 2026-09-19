@@ -55,7 +55,7 @@
     var prefixLines = prefix ? prefix.split('\n').length - 1 : 0;
     var lines = fm.body.split('\n');
 
-    var header = { nameIdx: -1, name: '', info: { subtitle: '', contacts: [] }, infoIdx: [], start: 0 };
+    var header = { nameIdx: -1, name: '', info: { subtitle: '', contacts: [] }, infoIdx: [], photoIdx: -1, start: 0 };
     var sections = [];
     var i;
 
@@ -80,6 +80,9 @@
       for (i = header.nameIdx + 1; i < headerEnd; i++) {
         if (!lines[i].trim()) continue;
         if (HEAD_RE.test(lines[i].trim())) continue;
+        // 姓名下一行的「独立图片」是证件照（与渲染引擎的约定一致），不能当成抬头信息，
+        // 否则表单会把它显示成职位/联系方式，一编辑就把照片那行冲掉
+        if (/^!\[[^\]]*\]\([^)\s]+\)$/.test(lines[i].trim())) { header.photoIdx = i; continue; }
         header.infoIdx.push(i);
         segs = segs.concat(lines[i].split('|').map(function (s) { return s.trim(); }).filter(Boolean));
       }
@@ -277,18 +280,28 @@
         if (String(info.subtitle || '').trim()) segs.push(String(info.subtitle).trim());
         (info.contacts || []).forEach(function (c) { if (String(c || '').trim()) segs.push(String(c).trim()); });
 
-        var startDel = w.header.nameIdx + 1;
-        var endDel = Math.max.apply(null, w.header.infoIdx.concat([startDel]));
-        if (w.header.infoIdx.length) endDel = w.header.infoIdx[w.header.infoIdx.length - 1] + 1;
-        else endDel = startDel;
+        // 没有内容要写、原本也没有抬头行：保持原样（否则每次敲键盘都会重排文档空白）
+        if (!segs.length && !w.header.infoIdx.length) return null;
 
-        var block = segs.length ? ['', segs.join(' | ')] : [];
-        // 保证姓名与下一段之间恰好一个空行
-        var head = lines.slice(0, startDel);
-        while (head.length && !head[head.length - 1].trim()) head.pop();
-        var rest = lines.slice(endDel);
-        while (rest.length && !rest[0].trim()) rest.shift();
-        return head.concat(block, [''], rest);
+        var out = lines.slice();
+        var idx = w.header.infoIdx.slice();
+        var text = segs.join(' | ');
+
+        if (idx.length) {
+          // 只动抬头那几行：姓名下的证件照行必须原样留着（否则一改职位就把照片删了）
+          if (segs.length) out[idx[0]] = text;
+          for (var i = idx.length - 1; i >= (segs.length ? 1 : 0); i--) out.splice(idx[i], 1);
+          return out;
+        }
+
+        // 原本没有抬头行 —— 插到证件照行之后（没有照片就紧跟姓名）
+        var at = (w.header.photoIdx >= 0 ? w.header.photoIdx : w.header.nameIdx) + 1;
+        var block = [];
+        if (out[at - 1] && out[at - 1].trim()) block.push('');
+        block.push(text);
+        var after = out.slice(at);
+        while (after.length && !after[0].trim()) after.shift();
+        return out.slice(0, at).concat(block, [''], after);
       });
     },
 
@@ -452,6 +465,21 @@
       });
     },
 
+    /** 在指定要点下面加一条子要点（二级缩进，插在该要点所有子项之后） */
+    addSubBullet: function (md, si, ei, afterBi) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        var list = ei == null ? s.items : (s.entries[ei] ? s.entries[ei].bullets : null);
+        if (!list || !list.length) return null;
+        var target = (afterBi != null && list[afterBi]) ? list[afterBi] : list[list.length - 1];
+        var indent = target.indent + 2;
+        var at = blockRange(lines, target.idx, s.end)[1];
+        var line = new Array(indent + 1).join(' ') + '- ';
+        return lines.slice(0, at).concat([line], lines.slice(at));
+      });
+    },
+
     removeBullet: function (md, si, ei, bi) {
       return withBody(md, function (lines, w) {
         var b = bulletAt(w, si, ei, bi);
@@ -477,11 +505,12 @@
       });
     },
 
-    /** 段落 / 引用整块替换（引用会保留 > 前缀） */
+    /** 段落 / 引用整块替换（引用会保留 > 前缀）；只对这两种章节生效，避免误清列表或表格 */
     setSectionText: function (md, si, text) {
       return withBody(md, function (lines, w) {
         var s = sec(w, si);
         if (!s) return null;
+        if (s.kind !== 'quote' && s.kind !== 'paragraph' && s.kind !== 'empty') return null;
         var value = String(text == null ? '' : text);
         var block = value.split('\n').map(function (l) {
           return s.quote ? ('> ' + l).replace(/\s+$/, '') : l;
@@ -556,6 +585,7 @@
     setEntrySub: ops.setEntrySub,
     setBullet: ops.setBullet,
     addBullet: ops.addBullet,
+    addSubBullet: ops.addSubBullet,
     removeBullet: ops.removeBullet,
     moveBullet: ops.moveBullet,
     setSectionText: ops.setSectionText,

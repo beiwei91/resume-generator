@@ -20,7 +20,11 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const ROOT = __dirname;
+// 已经移回项目根目录时用自己所在目录；就地留在这个子目录时自动指向上一级，
+// 免得「双击了启动器却打开一个 404 的页面」
+const ROOT = fs.existsSync(path.join(__dirname, 'index.html'))
+  ? __dirname
+  : path.dirname(__dirname);
 const STATE_FILE = path.join(ROOT, '.server.json');
 
 function readArg(name, fallback) {

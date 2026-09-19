@@ -383,6 +383,21 @@ console.log('\n应用界面打印（界面元素不能跟正文一起导出）')
     leaked.length === 0, leaked.length ? '混进了：' + leaked.join('、') : '干净（注意别用「表单」这类词做关键词——示例简历里有「轻量表单引擎」）');
 }
 
+console.log('\n命令行导出：异常输出路径与非法样式参数');
+{
+  const weird = path.join(BUILD, '带 空格 与中文.pdf');
+  fs.rmSync(weird, { force: true });
+  const r = spawnSync(process.execPath, [
+    path.join(ROOT, 'export-pdf.mjs'), 'resume.sample.md', '-o', weird,
+    '--template', 'modern', '--accent', '不是颜色', '--margin', '乱写'
+  ], { cwd: ROOT, stdio: 'ignore', timeout: 180000, windowsHide: true });
+  const okFile = fs.existsSync(weird);
+  const meta = okFile ? pageMeta(fs.readFileSync(weird)) : null;
+  check('输出路径含空格与中文、样式参数非法时仍能导出标准 A4',
+    r.status === 0 && okFile && meta.pages === 1 && Math.abs(meta.box.w - A4.w) < 2 && Math.abs(meta.box.h - A4.h) < 2,
+    meta ? meta.pages + ' 页，' + meta.box.w.toFixed(1) + ' × ' + meta.box.h.toFixed(1) + ' pt' : '导出失败（exit ' + r.status + '）');
+}
+
 console.log('\n结果');
 console.log('  通过 ' + pass + ' 项，失败 ' + failures.length + ' 项');
 if (failures.length) {

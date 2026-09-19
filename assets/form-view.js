@@ -274,31 +274,26 @@
       var add = el('button', 'fbtn', '+ 添加要点');
       add.type = 'button';
       add.addEventListener('click', function () {
-        apply(Form.addBullet(api.getMd(), si, ei, bullets.length - 1), true,
+        // 加在「最外层最后一条」之后：即使末尾是子要点，新增的也是同级要点
+        var baseIndent = bullets.length ? Math.min.apply(null, bullets.map(function (b) { return b.indent; })) : 0;
+        var lastOuter = -1;
+        bullets.forEach(function (b, i) { if (b.indent === baseIndent) lastOuter = i; });
+        apply(Form.addBullet(api.getMd(), si, ei, lastOuter >= 0 ? lastOuter : null), true,
           'sec:' + si + ':entry:' + (ei == null ? 'x' : ei) + ':bullet:' + bullets.length);
       });
       group.appendChild(add);
 
       if (ei != null && bullets.length) {
-        var indentLast = bullets[bullets.length - 1];
-        if (indentLast.indent === 0) {
-          var sub = el('button', 'fbtn fbtn-mini', '+ 给上一条加子要点');
-          sub.type = 'button';
-          sub.title = '行首缩进两个空格的二级要点';
-          sub.addEventListener('click', function () {
-            var md = Form.addBullet(api.getMd(), si, ei, bullets.length - 1);
-            // 把刚插入的那条改成二级缩进
-            var w = Form.walk(md);
-            var list = w.sections[si].entries[ei].bullets;
-            var last = list[list.length - 1];
-            md = Form.setBullet(md, si, ei, list.length - 1, last.text || '子要点');
-            var lines = md.split('\n');
-            lines[last.idx] = '  ' + lines[last.idx].replace(/^\s*/, '');
-            md = lines.join('\n');
-            apply(md, true, 'sec:' + si + ':entry:' + ei + ':bullet:' + (list.length - 1));
-          });
-          group.appendChild(sub);
-        }
+        var sub = el('button', 'fbtn fbtn-mini', '+ 给最后一条加子要点');
+        sub.type = 'button';
+        sub.title = '行首缩进两个空格的二级要点';
+        sub.addEventListener('click', function () {
+          var md = Form.addSubBullet(api.getMd(), si, ei, bullets.length - 1);
+          if (md === api.getMd()) return;
+          var list2 = Form.walk(md).sections[si].entries[ei].bullets;
+          apply(md, true, 'sec:' + si + ':entry:' + ei + ':bullet:' + (list2.length - 1));
+        });
+        group.appendChild(sub);
       }
       body.appendChild(group);
     }

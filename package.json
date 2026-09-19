@@ -4,7 +4,7 @@
   "private": true,
   "description": "简历生成器：表单 / Markdown 双模式编辑，实时 A4 预览 + 导出 PDF（零依赖，双击即用）",
   "scripts": {
-    "test": "node tests/smoke.mjs && node tests/form.mjs",
+    "test": "node tests/smoke.mjs && node tests/form.mjs && node tests/edge.mjs",
     "verify": "node tests/verify-export.mjs",
     "verify:app": "node tests/verify-app.mjs",
     "pdf": "node export-pdf.mjs resume.sample.md -o 简历.pdf",

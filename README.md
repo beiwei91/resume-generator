@@ -148,9 +148,11 @@ node export-pdf.mjs --help
 ## 自检
 
 ```powershell
-npm test            # 渲染引擎 47 项 + 表单逻辑 41 项断言（解析、行内语法、模块识别、逐块改写）
-npm run verify      # 导出链路：真的调 Chrome 出 PDF，校验 A4 尺寸、页边距、分页
-npm run verify:app  # 双击即用链路：图标、启动器命令与 URL 编码、快捷方式、单文件版、表单渲染、无服务残留
+npm test            # 渲染引擎 47 + 表单逻辑 41 + 边界/不变式 38 = 126 项断言
+npm run verify      # 导出链路 21 项：真的调 Chrome 出 PDF，校验 A4 尺寸、页边距、分页、
+                    # 证件照进 PDF，以及「打印时不会夹带界面元素」
+npm run verify:app  # 双击即用 / 窄屏 / 子路径部署 53 项：图标、启动器命令与 URL 编码、
+                    # 快捷方式、单文件版、表单渲染、窄屏规则、GitHub Pages 子路径
 ```
 
 ## 目录结构

@@ -207,36 +207,33 @@
   function splitFrontMatter(text) {
     var src = String(text == null ? '' : text).replace(/\r\n?/g, '\n');
     var m = /^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/.exec(src);
-    if (!m) return { meta: {}, body: src, raw: null, extra: [] };
+    if (!m) return { meta: {}, body: src, raw: null, extraLines: [] };
     var meta = {};
-    var order = [];
+    var extraLines = [];
     m[1].split('\n').forEach(function (line) {
-      var t = line.trim();
-      if (!t || t.charAt(0) === '#') return;
-      var kv = /^([A-Za-z][\w-]*)\s*[:=]\s*(.*)$/.exec(t);
-      if (!kv) return;
-      meta[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, '');
-      order.push(kv[1]);
+      // 只把「认识的键」收进 meta；注释、空行、中文键、自定义键一律原样保留，
+      // 免得改写配置块时把它们悄悄删掉
+      var kv = /^\s*([^\s:=][^:=]*?)\s*[:=]\s*(.*)$/.exec(line);
+      var key = kv ? kv[1].trim() : '';
+      if (kv && FRONT_KEYS.indexOf(key) >= 0) {
+        meta[key] = kv[2].trim().replace(/^["']|["']$/g, '');
+      } else {
+        extraLines.push(line);
+      }
     });
-    return {
-      meta: meta,
-      body: src.slice(m[0].length),
-      raw: m[0],
-      extra: order.filter(function (k) { return FRONT_KEYS.indexOf(k) < 0; })
-    };
+    while (extraLines.length && !extraLines[extraLines.length - 1].trim()) extraLines.pop();
+    return { meta: meta, body: src.slice(m[0].length), raw: m[0], extraLines: extraLines };
   }
 
-  function serializeFrontMatter(settings, extraKeys, extraMeta) {
+  function serializeFrontMatter(settings, extraLines) {
     var s = normalizeSettings(settings);
-    // 没有证件照时不写 photo / photoSize / photoAlign / photoShape，避免配置块里出现空键
+    // 没有证件照时不写 photo 相关几行，避免配置块里出现空键
     var photoKeys = { photo: 1, photoSize: 1, photoAlign: 1, photoShape: 1 };
     var lines = FRONT_KEYS.filter(function (k) {
       if (photoKeys[k]) return !!s.photo;
       return true;
     }).map(function (k) { return k + ': ' + s[k]; });
-    (extraKeys || []).forEach(function (k) {
-      if (extraMeta && extraMeta[k] != null && FRONT_KEYS.indexOf(k) < 0) lines.push(k + ': ' + extraMeta[k]);
-    });
+    (extraLines || []).forEach(function (line) { lines.push(line); });
     return '---\n' + lines.join('\n') + '\n---\n';
   }
 
@@ -245,7 +242,7 @@
     var fm = splitFrontMatter(md);
     var settings = normalizeSettings(Object.assign({}, fm.meta, patch || {}));
     var body = fm.body.replace(/^\n+/, '');
-    return serializeFrontMatter(settings, fm.extra, fm.meta) + '\n' + body;
+    return serializeFrontMatter(settings, fm.extraLines) + '\n' + body;
   }
 
   /* ------------------------------------------------------------------ 块级解析 */
