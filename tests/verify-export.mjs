@@ -135,6 +135,115 @@ function pageMeta(buf) {
   };
 }
 
+/** 对象号 → 解压后的流内容（PDF 里每个字体有自己的 ToUnicode 表，必须按字体分开映射） */
+function streamsByObject(buf) {
+  const s = buf.toString('latin1');
+  const out = new Map();
+  const objRe = /(\d+)\s+0\s+obj\b/g;
+  let m;
+  while ((m = objRe.exec(s))) {
+    const start = m.index;
+    const endObj = s.indexOf('endobj', start);
+    const span = s.slice(start, endObj < 0 ? s.length : endObj);
+    const sm = /stream\r?\n/.exec(span);
+    if (!sm) continue;
+    const from = start + sm.index + sm[0].length;
+    const to = s.indexOf('endstream', from);
+    if (to < 0) continue;
+    try { out.set(Number(m[1]), zlib.inflateSync(buf.subarray(from, to)).toString('latin1')); }
+    catch (e) { /* 未压缩或非流对象，忽略 */ }
+    objRe.lastIndex = to;
+  }
+  return out;
+}
+
+/** 解析一段 ToUnicode CMap，返回 码位 → 字符 */
+function parseCMap(text) {
+  const map = new Map();
+  const hexToStr = (hex) => {
+    let out = '';
+    for (let i = 0; i + 4 <= hex.length; i += 4) out += String.fromCharCode(parseInt(hex.substr(i, 4), 16));
+    return out;
+  };
+  let m;
+  const charRe = /beginbfchar([\s\S]*?)endbfchar/g;
+  while ((m = charRe.exec(text))) {
+    const pairRe = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g;
+    let p;
+    while ((p = pairRe.exec(m[1]))) map.set(parseInt(p[1], 16), hexToStr(p[2]));
+  }
+  const rangeRe = /beginbfrange([\s\S]*?)endbfrange/g;
+  while ((m = rangeRe.exec(text))) {
+    const rRe = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]+)>|\[([\s\S]*?)\])/g;
+    let r;
+    while ((r = rRe.exec(m[1]))) {
+      const lo = parseInt(r[1], 16);
+      const hi = parseInt(r[2], 16);
+      if (r[3]) {
+        const dst = parseInt(r[3], 16);
+        for (let c = lo; c <= hi && c - lo < 65536; c++) map.set(c, String.fromCharCode(dst + (c - lo)));
+      } else if (r[4]) {
+        (r[4].match(/<([0-9A-Fa-f]+)>/g) || []).forEach((item, i) => {
+          map.set(lo + i, hexToStr(item.slice(1, -1)));
+        });
+      }
+    }
+  }
+  return map;
+}
+
+/** /F4 → 该字体的码位映射表 */
+function fontMaps(buf) {
+  const objs = streamsByObject(buf);
+  const raw = buf.toString('latin1');
+  const fontToCmap = new Map();
+  let m;
+  const fontRe = /(\d+)\s+0\s+obj\s*<<([\s\S]*?)>>/g;
+  while ((m = fontRe.exec(raw))) {
+    const body = m[2];
+    if (body.indexOf('/Font') < 0) continue;
+    const tu = /\/ToUnicode\s+(\d+)\s+0\s+R/.exec(body);
+    if (!tu) continue;
+    const cmapText = objs.get(Number(tu[1]));
+    if (cmapText) fontToCmap.set(Number(m[1]), parseCMap(cmapText));
+  }
+  const nameToFont = new Map();
+  const resRe = /\/Font\s*<<([\s\S]*?)>>/g;
+  while ((m = resRe.exec(raw))) {
+    const pairRe = /\/([A-Za-z0-9]+)\s+(\d+)\s+0\s+R/g;
+    let p;
+    while ((p = pairRe.exec(m[1]))) nameToFont.set('/' + p[1], Number(p[2]));
+  }
+  const byName = new Map();
+  nameToFont.forEach((objNum, name) => {
+    if (fontToCmap.has(objNum)) byName.set(name, fontToCmap.get(objNum));
+  });
+  return byName;
+}
+
+/** 还原 PDF 里的文字（用于断言 PDF 里到底有什么） */
+function pdfText(buf) {
+  const byName = fontMaps(buf);
+  const fallback = new Map();
+  byName.forEach((map) => map.forEach((v, k) => { if (!fallback.has(k)) fallback.set(k, v); }));
+
+  let out = '';
+  streamsByObject(buf).forEach((txt) => {
+    if (txt.indexOf('\0') !== -1) return;
+    if (!CONTENT_STREAM_RE.test(txt) || !/\bBT\b/.test(txt) || !/\d+ Tf/.test(txt)) return;
+    let cur = fallback;
+    const re = /\/([A-Za-z0-9]+)\s+[\d.]+\s+Tf|<([0-9A-Fa-f]+)>/g;
+    let m;
+    while ((m = re.exec(txt))) {
+      if (m[1]) { cur = byName.get('/' + m[1]) || fallback; continue; }
+      const hex = m[2];
+      for (let i = 0; i + 4 <= hex.length; i += 4) out += cur.get(parseInt(hex.substr(i, 4), 16)) || '';
+    }
+    out += '\n';
+  });
+  return out;
+}
+
 /* ---------------------------------------------------------------- 用例 */
 
 fs.mkdirSync(BUILD, { recursive: true });
@@ -236,6 +345,43 @@ fs.rmSync(shotProfile, { recursive: true, force: true });
 // 用干净的 profile：否则界面会从 localStorage 读回上一次运行保存的文档，截不到默认示例
 chrome(['--screenshot=' + shotApp, '--window-size=1600,1000', '--force-device-scale-factor=1.5', pathToFileURL(path.join(ROOT, 'index.html')).href], shotProfile);
 check('界面截图生成', fs.existsSync(shotApp), path.relative(ROOT, shotApp));
+
+console.log('\n应用界面打印（界面元素不能跟正文一起导出）');
+{
+  // 打印时的页盒宽约 794px（A4），会命中「窄屏」媒体查询 —— 曾经因此把
+  // 「编辑 / 预览」切换条印进了 PDF，这里专门守这条
+  const profile = path.join(BUILD, '.print-profile');
+  const seed = path.join(BUILD, 'seed-prefs.html');
+  fs.rmSync(profile, { recursive: true, force: true });
+  fs.writeFileSync(seed, '<!doctype html><meta charset="utf-8"><script>localStorage.setItem("resume-gen:prefs", ' +
+    JSON.stringify(JSON.stringify({ zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: true, mode: 'form', mobileView: 'edit' })) +
+    ');</script>seeded', 'utf8');
+
+  const args = [
+    '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    '--disable-extensions', '--mute-audio', '--hide-scrollbars',
+    '--disable-background-networking', '--disable-component-update', '--proxy-server=direct://',
+    '--user-data-dir=' + profile, '--virtual-time-budget=15000'
+  ];
+  const run = (extra) => spawnSync(browser, args.concat(extra), { encoding: 'utf8', timeout: 180000, windowsHide: true });
+
+  run(['--dump-dom', pathToFileURL(seed).href]);          // 预置偏好（file:// 同源）
+  const appPdf = path.join(BUILD, 'app-print.pdf');
+  fs.rmSync(appPdf, { force: true });
+  run(['--no-pdf-header-footer', '--print-to-pdf-no-header', '--print-to-pdf=' + appPdf,
+    pathToFileURL(path.join(ROOT, 'index.html')).href]);
+
+  const okFile = fs.existsSync(appPdf);
+  const buf = okFile ? fs.readFileSync(appPdf) : null;
+  const text = buf ? pdfText(buf) : '';
+  const meta = buf ? pageMeta(buf) : null;
+  check('应用页面能被打印成 PDF', okFile && meta && meta.pages >= 1, meta ? meta.pages + ' 页' : '打印失败');
+  check('PDF 里有简历正文', /张三/.test(text),
+    '还原出的文字：' + text.replace(/\s+/g, ' ').slice(0, 60));
+  const leaked = ['Markdown', '预览', '排版', '语法速查', '撤销', '导出 PDF'].filter((w) => text.indexOf(w) >= 0);
+  check('PDF 里没有夹带界面元素（切换条 / 工具栏 / 状态栏）',
+    leaked.length === 0, leaked.length ? '混进了：' + leaked.join('、') : '干净（注意别用「表单」这类词做关键词——示例简历里有「轻量表单引擎」）');
+}
 
 console.log('\n结果');
 console.log('  通过 ' + pass + ' 项，失败 ' + failures.length + ' 项');

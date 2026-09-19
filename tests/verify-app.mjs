@@ -352,8 +352,13 @@ async function testSubpathDeploy() {
 section('手机 / 窄屏');
 {
   const css = fs.readFileSync(path.join(ROOT, 'assets', 'app.css'), 'utf8');
-  check('有窄屏媒体查询，且写在基础规则之后（同优先级靠后者生效）',
-    /@media \(max-width: 900px\)/.test(css) && css.lastIndexOf('@media (max-width: 900px)') > css.indexOf('.form-view {'));
+  check('窄屏媒体查询限定 screen（打印页盒约 794px 会命中裸 max-width，界面元素会进 PDF）',
+    /@media screen and \(max-width: 900px\)/.test(css) && /@media screen and \(max-width: 560px\)/.test(css));
+  check('窄屏规则写在基础规则之后（同优先级靠后者生效）',
+    css.lastIndexOf('@media screen and (max-width: 900px)') > css.indexOf('.form-view {'));
+  check('打印规则用 !important 关掉界面元素，且显式隐藏编辑面板',
+    /\.pane\.editor-pane \{ display: none !important; \}/.test(css) &&
+    /#mobileView,/.test(css) && /\.form-view,/.test(css));
   check('窄屏：编辑 / 预览 切换（一次只显示一个面板）',
     /id="mobileView"/.test(index) && /#mobileView\s*\{/.test(css) &&
     /\.app\.mobile-preview \.editor-pane/.test(css) && /\.app\.mobile-edit \.preview-pane/.test(css));

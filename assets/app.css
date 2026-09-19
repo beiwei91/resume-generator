@@ -522,25 +522,32 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 
 @media print {
   html, body { height: auto; overflow: visible; background: #fff; }
-  .appbar, .statusbar, .editor-pane, .splitter,
-  .preview-pane .pane-head, .settings-panel, .modal, .toast { display: none !important; }
-  .workspace { display: block; }
-  .pane, .preview-pane { display: block; background: #fff; }
-  .preview-scroll { display: block; overflow: visible; padding: 0; }
+  /* 打印时页盒约 794px 宽，会同时命中「窄屏」媒体查询，
+     所以这里必须把界面元素全部按 !important 关掉 */
+  .appbar, .appbar-actions, .statusbar, .mobile-view, #mobileView, .splitter,
+  .editor-pane, .form-view, .preview-pane .pane-head, .settings-panel, .modal, .toast,
+  .page-guide { display: none !important; }
+  .app { display: block !important; height: auto !important; overflow: visible !important; }
+  .workspace { display: block !important; height: auto !important; min-height: 0 !important; }
+  /* 注意：编辑面板同时带 .pane 类，这里必须用两个类压过下面的 .pane{display:block} */
+  .pane.editor-pane { display: none !important; }
+  .pane, .preview-pane { display: block !important; height: auto !important; background: #fff; }
+  .preview-scroll { display: block !important; overflow: visible !important; padding: 0 !important; }
   .sheet-wrap {
     zoom: 1 !important;
     display: block;
     filter: none !important;
     position: static;
   }
-  .page-guide { display: none !important; }
 }
 
 /* ============================================================ 窄屏 / 手机 */
-/* 注意：这些规则必须放在文件最后 —— 它们的优先级和基础规则相同，
-   靠后者生效；写在前面会被后面的基础规则盖掉（踩过一次）。 */
+/* 注意两点（都踩过坑）：
+   1) 必须用 screen and (max-width) —— 打印时的页盒宽度约 794px，裸的 max-width
+      会把这些规则带进打印结果（PDF 里冒出「编辑 / 预览」切换条）；
+   2) 必须放在文件最后 —— 同优先级靠后者生效，写在前面会被基础规则盖掉。 */
 
-@media (max-width: 900px) {
+@media screen and (max-width: 900px) {
   html { -webkit-text-size-adjust: 100%; }
   body { overflow: hidden; }
   .app { height: 100vh; height: 100dvh; }
@@ -609,7 +616,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   .statusbar .tip { display: none; }
 }
 
-@media (max-width: 560px) {
+@media screen and (max-width: 560px) {
   .swatches { display: none; }        /* 小屏用取色器代替色板 */
   #tplSelect { max-width: 118px; }
   #statusStats { display: none; }
