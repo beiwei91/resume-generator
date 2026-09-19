@@ -289,6 +289,116 @@
 .resume-sheet.tpl-compact .r-entry { margin-bottom: 7px; }
 .resume-sheet.tpl-compact .r-list { margin-top: 2px; }
 
+/* ---------------------------------------------------------------- 模板四：时间轴 */
+
+.resume-sheet.tpl-timeline .r-header {
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--r-line);
+}
+.resume-sheet.tpl-timeline .r-name { font-size: 1.9em; }
+.resume-sheet.tpl-timeline .r-section { margin-top: 14px; }
+.resume-sheet.tpl-timeline .r-section-title {
+  border: 0;
+  padding: 0 0 2px;
+  font-size: 1em;
+  color: var(--r-accent);
+  letter-spacing: .16em;
+}
+.resume-sheet.tpl-timeline .r-entry {
+  position: relative;
+  margin-left: 1.2mm;
+  padding-left: 5.5mm;
+  border-left: 1.5px solid color-mix(in srgb, var(--r-accent) 30%, #fff);
+}
+.resume-sheet.tpl-timeline .r-entry::before {
+  content: "";
+  position: absolute;
+  left: -4.2px;
+  top: .5em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--r-accent);
+}
+.resume-sheet.tpl-timeline .r-subhead { color: var(--r-accent); }
+
+/* ---------------------------------------------------------------- 模板五：极简 */
+
+.resume-sheet.tpl-minimal .r-header {
+  padding-bottom: 11px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.resume-sheet.tpl-minimal .r-name { font-weight: 600; letter-spacing: .03em; }
+.resume-sheet.tpl-minimal .r-subtitle { color: #6b7280; font-weight: 500; letter-spacing: .04em; }
+.resume-sheet.tpl-minimal .r-section { margin-top: 19px; }
+.resume-sheet.tpl-minimal .r-section-title {
+  border: 0;
+  padding: 0 0 2px;
+  font-size: .92em;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+.resume-sheet.tpl-minimal .r-entry-title { font-weight: 600; }
+.resume-sheet.tpl-minimal .r-entry-meta { color: #9ca3af; }
+.resume-sheet.tpl-minimal .r-entry-role { color: #6b7280; font-weight: 500; }
+.resume-sheet.tpl-minimal .r-list { padding-left: 1.05em; }
+.resume-sheet.tpl-minimal .r-list li::marker { color: #cbd5e1; }
+.resume-sheet.tpl-minimal .r-quote {
+  border-left: 0;
+  background: transparent;
+  padding: 0;
+  color: #4b5563;
+}
+
+/* ---------------------------------------------------------------- 模板六：色块 */
+
+.resume-sheet.tpl-banner .r-header {
+  padding: 9px 12px;
+  border-left: 5px solid var(--r-accent);
+  background: color-mix(in srgb, var(--r-accent) 7%, #fff);
+}
+.resume-sheet.tpl-banner .r-name { font-size: 1.85em; }
+.resume-sheet.tpl-banner .r-section { margin-top: 15px; }
+.resume-sheet.tpl-banner .r-section-title {
+  display: block;
+  border: 0;
+  padding: 3px 10px 4px;
+  border-radius: 2px;
+  background: var(--r-accent);
+  color: #fff;
+  font-size: 1em;
+  letter-spacing: .14em;
+}
+.resume-sheet.tpl-banner .r-entry-role { color: #4b5563; }
+
+/* ---------------------------------------------------------------- 模板七：侧栏标题 */
+
+.resume-sheet.tpl-sidebar .r-header {
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--r-accent);
+}
+.resume-sheet.tpl-sidebar .r-section {
+  position: relative;
+  padding-left: 21mm;
+  min-height: 1.5em;
+  margin-top: 14px;
+}
+.resume-sheet.tpl-sidebar .r-section-title {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 19mm;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: .96em;
+  letter-spacing: .06em;
+  color: var(--r-accent);
+  text-align: left;
+}
+
 /* ---------------------------------------------------------------- 证件照布局 */
 /* 放在三套模板之后：有照片时抬头改成「文字 + 照片」两列，
    照片与文字块垂直居中，避免姓名被挤在变窄的居中列里、照片下方留一块空白 */

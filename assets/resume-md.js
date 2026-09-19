@@ -30,7 +30,7 @@
     photoAlign: 'right',
     photoShape: 'rounded'
   };
-  var TEMPLATES = ['classic', 'modern', 'compact'];
+  var TEMPLATES = ['classic', 'modern', 'compact', 'timeline', 'minimal', 'banner', 'sidebar'];
   var FONTS = ['sans', 'serif'];
   var PHOTO_ALIGNS = ['right', 'left'];
   var PHOTO_SHAPES = ['rounded', 'circle', 'square'];

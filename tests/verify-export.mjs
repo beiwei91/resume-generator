@@ -326,12 +326,21 @@ fs.rmSync(photoShot, { force: true });
 chrome(['--screenshot=' + photoShot, '--window-size=794,1123', '--force-device-scale-factor=2', pathToFileURL(photoPreview).href]);
 check('证件照排版预览图生成', fs.existsSync(photoShot), path.relative(ROOT, photoShot));
 
-console.log('\n模板与界面');
-[['classic', '#2563eb'], ['modern', '#0f766e'], ['compact', '#b91c1c']].forEach(([tpl, accent]) => {
-  const pdf = renderPdf('tpl-' + tpl, sample, { template: tpl, accent });
-  const st = pdf ? pageMeta(pdf) : null;
-  check('模板 ' + tpl + ' 可导出单页', !!pdf && st.pages === 1, st ? st.pages + ' 页' : '失败');
-});
+console.log('\n模板（逐套导出 PDF）');
+{
+  const accents = ['#2563eb', '#0f766e', '#b91c1c', '#7c3aed', '#111827', '#c2410c', '#0369a1'];
+  const summary = [];
+  const bad = [];
+  MD.TEMPLATES.forEach((tpl, i) => {
+    const pdf = renderPdf('tpl-' + tpl, sample, { template: tpl, accent: accents[i % accents.length] });
+    const st = pdf ? pageMeta(pdf) : null;
+    const ok = !!pdf && st && st.pages >= 1 && st.pages <= 2 &&
+      Math.abs(st.box.w - A4.w) < 2 && Math.abs(st.box.h - A4.h) < 2;
+    summary.push(tpl + ':' + (st ? st.pages + '页' : '失败'));
+    if (!ok) bad.push(tpl + (st ? '(' + st.pages + '页)' : '(失败)'));
+  });
+  check(MD.TEMPLATES.length + ' 套模板都能导出标准 A4', bad.length === 0, summary.join('  '));
+}
 
 const longDoc = sample + '\n\n' + Array.from({ length: 30 }, (_, i) => '- 追加条目 ' + (i + 1) + '：用于验证多页分页行为。').join('\n');
 const longPdf = renderPdf('multi-page', longDoc, {});

@@ -108,6 +108,21 @@ check('有照片时写出 photo 相关配置行，没有照片时一行都不写
     return MD.serializeFrontMatter({}).indexOf(k) < 0;
   }));
 
+section('模板');
+check('内置 ' + MD.TEMPLATES.length + ' 套模板', MD.TEMPLATES.length === 7, MD.TEMPLATES.join(' / '));
+check('每套模板都能渲染并带上对应的 class',
+  MD.TEMPLATES.every(function (t) {
+    var r = MD.renderResume(MD.upsertFrontMatter(sample, { template: t }));
+    return r.sheetClasses.indexOf('tpl-' + t) >= 0 && r.html.indexOf('r-section') >= 0;
+  }));
+check('非法模板名回退到 classic', MD.normalizeSettings({ template: '不存在' }).template === 'classic');
+check('模板与其它样式可自由组合',
+  (function () {
+    var r = MD.renderResume(MD.upsertFrontMatter(sample, { template: 'sidebar', font: 'serif', accent: '#b91c1c', fontSize: '15px' }));
+    return r.sheetClasses.indexOf('tpl-sidebar') >= 0 && r.sheetClasses.indexOf('font-serif') >= 0 &&
+      /--r-accent: #b91c1c/.test(r.style) && /--r-font-size: 15px/.test(r.style);
+  })());
+
 section('结果');
 console.log('\n  通过 ' + pass + ' 项，失败 ' + failures.length + ' 项');
 if (failures.length) {

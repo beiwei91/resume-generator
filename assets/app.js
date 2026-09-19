@@ -282,10 +282,19 @@
   /* ------------------------------------------------------------ 排版控件 ↔ 文首配置 */
 
   function buildStaticOptions() {
+    var TEMPLATE_LABELS = {
+      classic: '经典（居中抬头）',
+      modern: '现代（色块标题）',
+      compact: '紧凑（单行抬头）',
+      timeline: '时间轴（左侧连线）',
+      minimal: '极简（无框线）',
+      banner: '色块（整条标题栏）',
+      sidebar: '侧栏标题（左侧留白栏）'
+    };
     MD.TEMPLATES.forEach(function (t) {
       var o = document.createElement('option');
       o.value = t;
-      o.textContent = { classic: '经典（居中抬头）', modern: '现代（色块标题）', compact: '紧凑（单行抬头）' }[t] || t;
+      o.textContent = TEMPLATE_LABELS[t] || t;
       $('tplSelect').appendChild(o);
     });
     MD.MARGIN_PRESETS.forEach(function (p) {
