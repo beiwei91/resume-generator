@@ -130,7 +130,7 @@
   };
 
   var prefs = Object.assign(
-    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form' },
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit' },
     readJSON(LS.prefs, {})
   );
 
@@ -763,6 +763,27 @@
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 窄屏：编辑 / 预览 切换 */
+
+  function applyMobileView() {
+    var isPreview = prefs.mobileView === 'preview';
+    var app = $('app');
+    app.classList.toggle('mobile-preview', isPreview);
+    app.classList.toggle('mobile-edit', !isPreview);
+    var btns = $('mobileView').querySelectorAll('.mv-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('is-active', btns[i].dataset.view === prefs.mobileView);
+    }
+    // 预览面板刚从 display:none 显示出来时宽度才有效，需要重新算「适应宽度」
+    if (isPreview) window.requestAnimationFrame(function () { applyZoom(); });
+  }
+
+  function setMobileView(view) {
+    prefs.mobileView = view === 'preview' ? 'preview' : 'edit';
+    savePrefs();
+    applyMobileView();
+  }
+
   /* ------------------------------------------------------------ 提示与弹窗 */
 
   function toast(message, timeout) {
@@ -940,6 +961,23 @@
     });
     $('btnUndo').addEventListener('click', undoLast);
 
+    // 窄屏：编辑 / 预览 切换；「更多」把工具栏展开成第二行
+    $('mobileView').addEventListener('click', function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest('.mv-btn') : null;
+      if (btn) setMobileView(btn.dataset.view);
+    });
+    $('btnTools').addEventListener('click', function () {
+      var bar = document.querySelector('.appbar');
+      var open = bar.classList.toggle('tools-open');
+      this.textContent = open ? '收起 ⌃' : '更多 ⋯';
+    });
+    $('appbarMain').addEventListener('click', function (ev) {
+      if (ev.target && ev.target.tagName === 'BUTTON') {
+        document.querySelector('.appbar').classList.remove('tools-open');
+        $('btnTools').textContent = '更多 ⋯';
+      }
+    });
+
     // 表单模式下焦点不在编辑器里，快捷键在这里兜底（编辑器内的由上面的 handler 处理）
     document.addEventListener('keydown', function (ev) {
       var mod = ev.ctrlKey || ev.metaKey;
@@ -1032,6 +1070,7 @@
     applyZoom();
     if (window.ResumeFormView) formCtl = window.ResumeFormView.mount(formView, formApi());
     setEditorMode(prefs.mode);
+    applyMobileView();
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
     // 应用快捷方式：index.html?action=new 直接新建一份空白简历

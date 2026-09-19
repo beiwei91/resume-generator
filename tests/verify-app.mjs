@@ -349,6 +349,22 @@ async function testSubpathDeploy() {
   }
 }
 
+section('手机 / 窄屏');
+{
+  const css = fs.readFileSync(path.join(ROOT, 'assets', 'app.css'), 'utf8');
+  check('有窄屏媒体查询，且写在基础规则之后（同优先级靠后者生效）',
+    /@media \(max-width: 900px\)/.test(css) && css.lastIndexOf('@media (max-width: 900px)') > css.indexOf('.form-view {'));
+  check('窄屏：编辑 / 预览 切换（一次只显示一个面板）',
+    /id="mobileView"/.test(index) && /#mobileView\s*\{/.test(css) &&
+    /\.app\.mobile-preview \.editor-pane/.test(css) && /\.app\.mobile-edit \.preview-pane/.test(css));
+  check('窄屏：顶栏换成「更多 ⋯」折叠次要按钮',
+    /id="btnTools"/.test(index) && /\.appbar\.tools-open \.appbar-main/.test(css));
+  check('窄屏：输入框字号 16px（防 iOS 聚焦自动放大）+ 纸张自适应宽度',
+    /font-size: 16px/.test(css) && /\.preview-scroll \{ padding: 10px 8px 36px; \}/.test(css));
+  check('app.js 会按偏好应用窄屏视图并重算缩放',
+    /function applyMobileView/.test(appJs) && /mobileView/.test(appJs) && /requestAnimationFrame\(function \(\) \{ applyZoom\(\); \}\)/.test(appJs));
+}
+
 await testSubpathDeploy();
 
 /* ================================================================== 结果 */

@@ -23,7 +23,7 @@
       </span>
     </div>
 
-    <div class="appbar-main">
+    <div class="appbar-main" id="appbarMain">
       <input id="docName" class="doc-name" type="text" value="我的简历" spellcheck="false"
              title="文档名（同时作为导出 PDF 的文件名）">
       <select id="docList" class="btn-select" title="打开浏览器中已保存的简历"></select>
@@ -36,11 +36,21 @@
       <button id="btnSaveDisk" class="btn" type="button">保存到磁盘</button>
       <span class="bar-sep"></span>
       <button id="btnHelp" class="btn" type="button">语法速查</button>
+    </div>
+
+    <div class="appbar-actions">
+      <button id="btnTools" class="btn" type="button" title="新建 / 另存为 / 导入导出等">更多 ⋯</button>
       <button id="btnPdf" class="btn btn-primary" type="button">导出 PDF</button>
-      <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown" hidden>
-      <input id="photoInput" type="file" accept="image/*" hidden>
     </div>
   </header>
+
+  <div class="mobile-view" id="mobileView">
+    <button class="mv-btn is-active" type="button" data-view="edit">✎ 编辑</button>
+    <button class="mv-btn" type="button" data-view="preview">👁 预览</button>
+  </div>
+
+  <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown" hidden>
+  <input id="photoInput" type="file" accept="image/*" hidden>
 
   <div class="workspace" id="workspace">
 

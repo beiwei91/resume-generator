@@ -422,6 +422,10 @@ body { overflow: hidden; }
   min-width: 0;
 }
 
+.appbar-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+#btnTools { display: none; }        /* 只在窄屏出现 */
+#mobileView { display: none; }
+
 .bar-sep { width: 1px; height: 20px; background: #e2e6ee; margin: 0 4px; }
 
 .doc-name {
@@ -701,6 +705,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   font: inherit;
   font-size: 13px;
   line-height: 1;
+  white-space: nowrap;
   color: #5b6579;
   background: #fff;
   border: 1px solid #dfe4ec;
@@ -895,14 +900,88 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   .page-guide { display: none !important; }
 }
 
-/* 窄屏堆叠 */
+/* ============================================================ 窄屏 / 手机 */
+/* 注意：这些规则必须放在文件最后 —— 它们的优先级和基础规则相同，
+   靠后者生效；写在前面会被后面的基础规则盖掉（踩过一次）。 */
 
 @media (max-width: 900px) {
-  body { overflow: auto; }
-  .workspace { grid-template-columns: minmax(0, 1fr); }
-  .editor-pane { min-height: 45vh; border-bottom: 1px solid #e6eaf1; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { overflow: hidden; }
+  .app { height: 100vh; height: 100dvh; }
+
+  /* 顶栏：只留品牌 + 「更多」+ 导出 PDF，其余折进第二行 */
+  .appbar { flex-wrap: nowrap; gap: 8px; padding: 6px 10px; align-items: center; }
+  .brand-text i { display: none; }
+  .brand .logo { width: 26px; height: 26px; font-size: 13px; }
+  .doc-name { width: 118px; padding: 6px 8px; }
+  #btnTools { display: inline-flex; }
+  .appbar-main {
+    display: none;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #eef1f6;
+  }
+  .appbar.tools-open .appbar-main { display: flex; }
+
+  /* 编辑 / 预览 切换：窄屏一次只显示一个面板 */
+  #mobileView {
+    display: flex;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #fff;
+    border-bottom: 1px solid #dfe4ec;
+  }
+  .mv-btn {
+    flex: 1;
+    font: inherit;
+    font-size: 13.5px;
+    padding: 7px 0;
+    border: 1px solid #d3d9e3;
+    border-radius: 8px;
+    background: #fff;
+    color: #4b5563;
+    cursor: pointer;
+  }
+  .mv-btn.is-active { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600; }
+
+  .workspace { display: block; height: 100%; min-height: 0; }
+  .pane { height: 100%; }
   .splitter { display: none; }
-  .preview-scroll { justify-content: flex-start; }
+  .app.mobile-preview .editor-pane { display: none; }
+  .app.mobile-edit .preview-pane { display: none; }
+
+  /* 表单：一行一个字段；输入字号 16px 防 iOS 聚焦时自动放大 */
+  .pane-head { min-height: 36px; padding: 5px 8px; gap: 6px; }
+  .form-view { padding: 8px 8px 36px; }
+  .frow { gap: 7px; }
+  .frow > .fld { flex: 1 1 100%; }
+  /* 联系方式那种「输入框 + ×」的行要待在同一行 */
+  .frow-tight > .fld { flex: 1 1 auto; }
+  .fld-input, #editor, textarea.fld-input { font-size: 16px; }
+  .ibtn { width: 30px; height: 30px; font-size: 14px; }
+  .fbtn { padding: 7px 12px; }
+  .ftable td:last-child, .ftable th:last-child { width: 34px; }
+  .fcard-title-input { flex: 0 1 150px; }
+  .fcard-head { gap: 4px; }
+
+  /* 预览：纸张自适应宽度 */
+  .preview-scroll { padding: 10px 8px 36px; }
+
+  .statusbar { padding: 5px 10px; gap: 6px; }
+  .statusbar .tip { display: none; }
+}
+
+@media (max-width: 560px) {
+  .swatches { display: none; }        /* 小屏用取色器代替色板 */
+  #tplSelect { max-width: 118px; }
+  #statusStats { display: none; }
+
+  /* 卡片头：标题独占一行，操作按钮换到第二行，免得互相挤压 */
+  .fcard-head { flex-wrap: wrap; row-gap: 4px; }
+  .fcard-title-input { flex: 1 1 100%; order: -1; padding-left: 0; }
+  .fcard-flex { display: none; }
 }
 </style>
 <meta name="application-name" content="简历生成器">
@@ -922,7 +1001,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       </span>
     </div>
 
-    <div class="appbar-main">
+    <div class="appbar-main" id="appbarMain">
       <input id="docName" class="doc-name" type="text" value="我的简历" spellcheck="false"
              title="文档名（同时作为导出 PDF 的文件名）">
       <select id="docList" class="btn-select" title="打开浏览器中已保存的简历"></select>
@@ -935,11 +1014,21 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       <button id="btnSaveDisk" class="btn" type="button">保存到磁盘</button>
       <span class="bar-sep"></span>
       <button id="btnHelp" class="btn" type="button">语法速查</button>
+    </div>
+
+    <div class="appbar-actions">
+      <button id="btnTools" class="btn" type="button" title="新建 / 另存为 / 导入导出等">更多 ⋯</button>
       <button id="btnPdf" class="btn btn-primary" type="button">导出 PDF</button>
-      <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown" hidden>
-      <input id="photoInput" type="file" accept="image/*" hidden>
     </div>
   </header>
+
+  <div class="mobile-view" id="mobileView">
+    <button class="mv-btn is-active" type="button" data-view="edit">✎ 编辑</button>
+    <button class="mv-btn" type="button" data-view="preview">👁 预览</button>
+  </div>
+
+  <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown" hidden>
+  <input id="photoInput" type="file" accept="image/*" hidden>
 
   <div class="workspace" id="workspace">
 
@@ -2848,7 +2937,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   };
 
   var prefs = Object.assign(
-    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form' },
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit' },
     readJSON(LS.prefs, {})
   );
 
@@ -3481,6 +3570,27 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 窄屏：编辑 / 预览 切换 */
+
+  function applyMobileView() {
+    var isPreview = prefs.mobileView === 'preview';
+    var app = $('app');
+    app.classList.toggle('mobile-preview', isPreview);
+    app.classList.toggle('mobile-edit', !isPreview);
+    var btns = $('mobileView').querySelectorAll('.mv-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('is-active', btns[i].dataset.view === prefs.mobileView);
+    }
+    // 预览面板刚从 display:none 显示出来时宽度才有效，需要重新算「适应宽度」
+    if (isPreview) window.requestAnimationFrame(function () { applyZoom(); });
+  }
+
+  function setMobileView(view) {
+    prefs.mobileView = view === 'preview' ? 'preview' : 'edit';
+    savePrefs();
+    applyMobileView();
+  }
+
   /* ------------------------------------------------------------ 提示与弹窗 */
 
   function toast(message, timeout) {
@@ -3658,6 +3768,23 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     });
     $('btnUndo').addEventListener('click', undoLast);
 
+    // 窄屏：编辑 / 预览 切换；「更多」把工具栏展开成第二行
+    $('mobileView').addEventListener('click', function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest('.mv-btn') : null;
+      if (btn) setMobileView(btn.dataset.view);
+    });
+    $('btnTools').addEventListener('click', function () {
+      var bar = document.querySelector('.appbar');
+      var open = bar.classList.toggle('tools-open');
+      this.textContent = open ? '收起 ⌃' : '更多 ⋯';
+    });
+    $('appbarMain').addEventListener('click', function (ev) {
+      if (ev.target && ev.target.tagName === 'BUTTON') {
+        document.querySelector('.appbar').classList.remove('tools-open');
+        $('btnTools').textContent = '更多 ⋯';
+      }
+    });
+
     // 表单模式下焦点不在编辑器里，快捷键在这里兜底（编辑器内的由上面的 handler 处理）
     document.addEventListener('keydown', function (ev) {
       var mod = ev.ctrlKey || ev.metaKey;
@@ -3750,6 +3877,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     applyZoom();
     if (window.ResumeFormView) formCtl = window.ResumeFormView.mount(formView, formApi());
     setEditorMode(prefs.mode);
+    applyMobileView();
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
     // 应用快捷方式：index.html?action=new 直接新建一份空白简历
