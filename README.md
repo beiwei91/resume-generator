@@ -3,6 +3,8 @@
 填表或写 Markdown 都能做简历，实时看 A4 排版，一键导出 PDF。**零依赖、纯本地**：不用装、不联网、不上传，一份 `.md` 就是你的简历。
 
 > 在线版（GitHub Pages）：<https://beiwei91.github.io/resume-generator/> —— 手机、别人的电脑打开就能用；数据仍然只存在你自己的浏览器里。
+>
+> 觉得好用的话，欢迎到 [GitHub 仓库](https://github.com/beiwei91/resume-generator) 点个 ⭐ **Star**；遇到问题或想要新模板、新功能，也欢迎提 [Issue](https://github.com/beiwei91/resume-generator/issues)。谢谢喵 🐾
 
 ![工作台界面](界面预览.png)
 

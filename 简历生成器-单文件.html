@@ -574,6 +574,19 @@ body { overflow: hidden; }
 
 .doc-name + .btn-select { max-width: 150px; }
 
+/* GitHub 入口：放在工具区里，不抢「导出 PDF」的位置 */
+.gh-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: #26303f;
+}
+.gh-link .star { color: #d99a00; font-size: 13px; line-height: 1; }
+.gh-link:hover { border-color: #eac263; background: #fffaef; }
+.gh-note a { color: #2563eb; }
+.gh-note .star { color: #d99a00; }
+
 /* ------------------------------------------------------------ 工作区 */
 
 .workspace {
@@ -1131,6 +1144,9 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       <button id="btnSaveDisk" class="btn" type="button">保存到磁盘</button>
       <span class="bar-sep"></span>
       <button id="btnHelp" class="btn" type="button">语法速查</button>
+      <a class="btn gh-link" id="ghLink" href="https://github.com/beiwei91/resume-generator"
+         target="_blank" rel="noreferrer"
+         title="本项目开源在 GitHub —— 欢迎点个 Star ⭐，有问题或想要新功能也可以提 Issue（谢谢喵 🐾）"><span class="star">★</span> GitHub</a>
     </div>
 
     <div class="appbar-actions">
@@ -1278,6 +1294,11 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     </div>
     <div class="modal-body">
       <p class="help-note">默认的「<b>表单</b>」页签可以直接填表，不需要写任何 Markdown；下面这些是切到「Markdown」页签时用的写法（两种模式编辑的是同一份文件，随时可切）。</p>
+      <p class="help-note gh-note">这个项目开源在
+        <a href="https://github.com/beiwei91/resume-generator" target="_blank" rel="noreferrer">GitHub</a>
+        —— 觉得好用的话，欢迎点个 <b>Star</b> <span class="star">★</span>；遇到问题、或者想要新模板新功能，也欢迎提
+        <a href="https://github.com/beiwei91/resume-generator/issues" target="_blank" rel="noreferrer">Issue</a>。
+        谢谢喵 🐾</p>
       <table class="help-table">
         <thead><tr><th>写法</th><th>效果</th></tr></thead>
         <tbody>

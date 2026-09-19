@@ -100,6 +100,19 @@ body { overflow: hidden; }
 
 .doc-name + .btn-select { max-width: 150px; }
 
+/* GitHub 入口：放在工具区里，不抢「导出 PDF」的位置 */
+.gh-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: #26303f;
+}
+.gh-link .star { color: #d99a00; font-size: 13px; line-height: 1; }
+.gh-link:hover { border-color: #eac263; background: #fffaef; }
+.gh-note a { color: #2563eb; }
+.gh-note .star { color: #d99a00; }
+
 /* ------------------------------------------------------------ 工作区 */
 
 .workspace {

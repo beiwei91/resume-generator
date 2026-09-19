@@ -374,6 +374,22 @@ await testSubpathDeploy();
 
 /* ================================================================== 结果 */
 
+section('GitHub 入口');
+{
+  const css = fs.readFileSync(path.join(ROOT, 'assets', 'app.css'), 'utf8');
+  const repo = 'https://github.com/beiwei91/resume-generator';
+  check('顶栏有 GitHub 入口且指向本仓库', new RegExp('id="ghLink"[^>]*' + repo).test(index.replace(/\s+/g, ' ')) ||
+    (/id="ghLink"/.test(index) && index.indexOf(repo) >= 0));
+  const linkTag = (/<a[^>]*id="ghLink"[^>]*>/.exec(index) || [''])[0].replace(/\s+/g, ' ');
+  check('外链开了新窗口且带 rel=noreferrer', /target="_blank"/.test(linkTag) && /rel="noreferrer"/.test(linkTag), linkTag.slice(0, 80));
+  check('语法速查里有 Star / Issue 邀请（含喵）',
+    /issues/.test(index) && /Star/.test(index) && /谢谢喵/.test(index));
+  check('入口有独立样式（星标为金色，悬停有反馈）',
+    /\.gh-link\s*\{/.test(css) && /\.gh-link \.star/.test(css) && /\.gh-link:hover/.test(css));
+  check('打印时不会印出来（跟随顶栏一起隐藏）',
+    /@media print \{[\s\S]*?\.appbar,[\s\S]*?display: none !important;/.test(css));
+}
+
 console.log('\n结果');
 console.log('  通过 ' + pass + ' 项，失败 ' + failures.length + ' 项');
 if (failures.length) {
