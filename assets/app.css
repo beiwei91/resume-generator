@@ -133,6 +133,40 @@ body { overflow: hidden; }
 .gh-note a { color: #2563eb; }
 .gh-note .star { color: #d99300; font-size: 13px; }
 
+/* 顶部一条可关闭的求 star 横幅 */
+.gh-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 14px;
+  background: linear-gradient(90deg, #fff8e6, #fffdf5 60%, #fdf6ff);
+  border-bottom: 1px solid #f0e0b8;
+  color: #7a5a12;
+  font-size: 12.5px;
+}
+.gh-banner[hidden] { display: none; }   /* 关掉之后真的不再出现 */
+.gh-banner-text { flex: 1; min-width: 0; line-height: 1.5; }
+.gh-banner a { color: #b06f00; font-weight: 600; text-decoration: none; border-bottom: 1px dashed #e0b95f; }
+.gh-banner a:hover { color: #8a5600; border-bottom-style: solid; }
+.gh-banner .star { color: #d99300; font-size: 13px; }
+.gh-banner b { color: #8a5600; }
+.gh-banner-close {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 12px;
+  color: #a98a4a;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0;
+}
+.gh-banner-close:hover { color: #7a5a12; background: #fff3d6; border-color: #edd9a6; }
+
 /* ------------------------------------------------------------ 工作区 */
 
 .workspace {
@@ -557,7 +591,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   html, body { height: auto; overflow: visible; background: #fff; }
   /* 打印时页盒约 794px 宽，会同时命中「窄屏」媒体查询，
      所以这里必须把界面元素全部按 !important 关掉 */
-  .appbar, .appbar-actions, .statusbar, .mobile-view, #mobileView, .splitter,
+  .appbar, .appbar-actions, .statusbar, .mobile-view, #mobileView, .splitter, .gh-banner,
   .editor-pane, .form-view, .preview-pane .pane-head, .settings-panel, .modal, .toast,
   .page-guide { display: none !important; }
   .app { display: block !important; height: auto !important; overflow: visible !important; }
@@ -647,6 +681,9 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 
   .statusbar { padding: 5px 10px; gap: 6px; }
   .statusbar .tip { display: none; }
+  /* 手机上一行放不下：只留「求 star」那半句 */
+  .gh-banner { font-size: 12px; padding: 5px 8px 5px 10px; }
+  .gh-banner-more { display: none; }
 }
 
 @media screen and (max-width: 560px) {

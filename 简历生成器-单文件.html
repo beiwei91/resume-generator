@@ -607,6 +607,40 @@ body { overflow: hidden; }
 .gh-note a { color: #2563eb; }
 .gh-note .star { color: #d99300; font-size: 13px; }
 
+/* 顶部一条可关闭的求 star 横幅 */
+.gh-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 14px;
+  background: linear-gradient(90deg, #fff8e6, #fffdf5 60%, #fdf6ff);
+  border-bottom: 1px solid #f0e0b8;
+  color: #7a5a12;
+  font-size: 12.5px;
+}
+.gh-banner[hidden] { display: none; }   /* 关掉之后真的不再出现 */
+.gh-banner-text { flex: 1; min-width: 0; line-height: 1.5; }
+.gh-banner a { color: #b06f00; font-weight: 600; text-decoration: none; border-bottom: 1px dashed #e0b95f; }
+.gh-banner a:hover { color: #8a5600; border-bottom-style: solid; }
+.gh-banner .star { color: #d99300; font-size: 13px; }
+.gh-banner b { color: #8a5600; }
+.gh-banner-close {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 12px;
+  color: #a98a4a;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0;
+}
+.gh-banner-close:hover { color: #7a5a12; background: #fff3d6; border-color: #edd9a6; }
+
 /* ------------------------------------------------------------ 工作区 */
 
 .workspace {
@@ -1031,7 +1065,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   html, body { height: auto; overflow: visible; background: #fff; }
   /* 打印时页盒约 794px 宽，会同时命中「窄屏」媒体查询，
      所以这里必须把界面元素全部按 !important 关掉 */
-  .appbar, .appbar-actions, .statusbar, .mobile-view, #mobileView, .splitter,
+  .appbar, .appbar-actions, .statusbar, .mobile-view, #mobileView, .splitter, .gh-banner,
   .editor-pane, .form-view, .preview-pane .pane-head, .settings-panel, .modal, .toast,
   .page-guide { display: none !important; }
   .app { display: block !important; height: auto !important; overflow: visible !important; }
@@ -1121,6 +1155,9 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 
   .statusbar { padding: 5px 10px; gap: 6px; }
   .statusbar .tip { display: none; }
+  /* 手机上一行放不下：只留「求 star」那半句 */
+  .gh-banner { font-size: 12px; padding: 5px 8px 5px 10px; }
+  .gh-banner-more { display: none; }
 }
 
 @media screen and (max-width: 560px) {
@@ -1174,6 +1211,18 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       <button id="btnPdf" class="btn btn-primary" type="button">导出 PDF</button>
     </div>
   </header>
+
+  <div class="gh-banner" id="ghBanner">
+    <span class="gh-banner-text">
+      <span class="star">★</span> 这个项目开源在
+      <a href="https://github.com/beiwei91/resume-generator" target="_blank" rel="noreferrer">GitHub</a>
+      —— 觉得好用的话，欢迎点个 <b>Star</b>
+      <span class="gh-banner-more">；想加新模板、新功能或遇到问题，也欢迎提
+        <a href="https://github.com/beiwei91/resume-generator/issues" target="_blank" rel="noreferrer">Issue</a></span>
+      。谢谢喵 🐾
+    </span>
+    <button class="gh-banner-close" id="ghBannerClose" type="button" title="关闭后不再显示">✕</button>
+  </div>
 
   <div class="mobile-view" id="mobileView">
     <button class="mv-btn is-active" type="button" data-view="edit">✎ 编辑</button>
@@ -3117,7 +3166,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   };
 
   var prefs = Object.assign(
-    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit' },
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit', hideStarBanner: false },
     readJSON(LS.prefs, {})
   );
 
@@ -3759,6 +3808,13 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 顶部求 star 横幅 */
+
+  function applyStarBanner() {
+    var b = $('ghBanner');
+    if (b) b.hidden = !!prefs.hideStarBanner;
+  }
+
   /* ------------------------------------------------------------ 窄屏：编辑 / 预览 切换 */
 
   function applyMobileView() {
@@ -3957,6 +4013,16 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     });
     $('btnUndo').addEventListener('click', undoLast);
 
+    var bannerClose = $('ghBannerClose');
+    if (bannerClose) {
+      bannerClose.addEventListener('click', function () {
+        prefs.hideStarBanner = true;
+        savePrefs();
+        applyStarBanner();
+        toast('已关闭这个提示，谢谢支持 🐾');
+      });
+    }
+
     // 窄屏：编辑 / 预览 切换；「更多」把工具栏展开成第二行
     $('mobileView').addEventListener('click', function (ev) {
       var btn = ev.target && ev.target.closest ? ev.target.closest('.mv-btn') : null;
@@ -4067,6 +4133,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     if (window.ResumeFormView) formCtl = window.ResumeFormView.mount(formView, formApi());
     setEditorMode(prefs.mode);
     applyMobileView();
+    applyStarBanner();
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
     // 应用快捷方式：index.html?action=new 直接新建一份空白简历

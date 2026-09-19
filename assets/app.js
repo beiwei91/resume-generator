@@ -130,7 +130,7 @@
   };
 
   var prefs = Object.assign(
-    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit' },
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit', hideStarBanner: false },
     readJSON(LS.prefs, {})
   );
 
@@ -772,6 +772,13 @@
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 顶部求 star 横幅 */
+
+  function applyStarBanner() {
+    var b = $('ghBanner');
+    if (b) b.hidden = !!prefs.hideStarBanner;
+  }
+
   /* ------------------------------------------------------------ 窄屏：编辑 / 预览 切换 */
 
   function applyMobileView() {
@@ -970,6 +977,16 @@
     });
     $('btnUndo').addEventListener('click', undoLast);
 
+    var bannerClose = $('ghBannerClose');
+    if (bannerClose) {
+      bannerClose.addEventListener('click', function () {
+        prefs.hideStarBanner = true;
+        savePrefs();
+        applyStarBanner();
+        toast('已关闭这个提示，谢谢支持 🐾');
+      });
+    }
+
     // 窄屏：编辑 / 预览 切换；「更多」把工具栏展开成第二行
     $('mobileView').addEventListener('click', function (ev) {
       var btn = ev.target && ev.target.closest ? ev.target.closest('.mv-btn') : null;
@@ -1080,6 +1097,7 @@
     if (window.ResumeFormView) formCtl = window.ResumeFormView.mount(formView, formApi());
     setEditorMode(prefs.mode);
     applyMobileView();
+    applyStarBanner();
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
     // 应用快捷方式：index.html?action=new 直接新建一份空白简历

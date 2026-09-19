@@ -387,7 +387,10 @@ console.log('\n应用界面打印（界面元素不能跟正文一起导出）')
   check('应用页面能被打印成 PDF', okFile && meta && meta.pages >= 1, meta ? meta.pages + ' 页' : '打印失败');
   check('PDF 里有简历正文', /张三/.test(text),
     '还原出的文字：' + text.replace(/\s+/g, ' ').slice(0, 60));
-  const leaked = ['Markdown', '预览', '排版', '语法速查', '撤销', '导出 PDF'].filter((w) => text.indexOf(w) >= 0);
+  // 关键词要挑「示例简历里绝不会出现」的：曾经用「表单」撞上「轻量表单引擎」、
+  // 用「Star」撞上「GitHub 1.2k Star」，都会误报
+  const leaked = ['Markdown', '预览', '排版', '语法速查', '撤销', '导出 PDF', '觉得好用', '谢谢喵']
+    .filter((w) => text.indexOf(w) >= 0);
   check('PDF 里没有夹带界面元素（切换条 / 工具栏 / 状态栏）',
     leaked.length === 0, leaked.length ? '混进了：' + leaked.join('、') : '干净（注意别用「表单」这类词做关键词——示例简历里有「轻量表单引擎」）');
 }

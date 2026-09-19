@@ -390,6 +390,17 @@ section('GitHub 入口');
     /@media \(prefers-reduced-motion: no-preference\)[\s\S]{0,200}ghTwinkle/.test(css));
   check('打印时不会印出来（跟随顶栏一起隐藏）',
     /@media print \{[\s\S]*?\.appbar,[\s\S]*?display: none !important;/.test(css));
+
+  // 那句邀请从弹窗里挪到界面上的可关闭横幅
+  check('顶部有求 star 横幅（含 Star / Issue 两个链接与关闭按钮）',
+    /id="ghBanner"/.test(index) && /id="ghBannerClose"/.test(index) &&
+    /class="gh-banner-more"/.test(index) && (index.match(/github\.com\/beiwei91\/resume-generator/g) || []).length >= 3);
+  check('横幅样式齐备，且 [hidden] 真的能关掉（免得被 display:flex 盖过）',
+    /\.gh-banner\s*\{/.test(css) && /\.gh-banner\[hidden\] \{ display: none; \}/.test(css));
+  check('横幅在打印时也隐藏', /\.splitter, \.gh-banner,/.test(css) || /\.gh-banner,/.test(css));
+  check('窄屏只留「求 star」半句（Issue 那半句收起）', /\.gh-banner-more \{ display: none; \}/.test(css));
+  check('关闭后记住不再显示（写进偏好）',
+    /hideStarBanner/.test(appJs) && /applyStarBanner/.test(appJs));
 }
 
 console.log('\n结果');
