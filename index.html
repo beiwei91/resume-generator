@@ -46,8 +46,13 @@
 
     <section class="pane editor-pane">
       <div class="pane-head">
-        <span class="pane-title">Markdown 源文件</span>
-        <div class="tools">
+        <span class="pane-title">编辑</span>
+        <div class="mode-tabs" id="modeTabs">
+          <button class="mode-tab is-active" type="button" data-mode="form">表单</button>
+          <button class="mode-tab" type="button" data-mode="markdown">Markdown</button>
+        </div>
+        <button id="btnUndo" class="tool" type="button" title="撤销上一步操作 (Ctrl+Z)">撤销</button>
+        <div class="tools" id="mdTools" hidden>
           <button class="tool tool-bold" type="button" data-act="bold" title="加粗 (Ctrl+B)">B</button>
           <button class="tool tool-italic" type="button" data-act="italic" title="斜体">I</button>
           <button class="tool" type="button" data-act="code" title="行内代码">&lt;/&gt;</button>
@@ -63,7 +68,8 @@
           <button class="tool" type="button" id="btnPhoto" title="插入 / 更换证件照（会自动压缩成内嵌图片，跟着 .md 文件走，导出 PDF 不会丢图）">证件照</button>
         </div>
       </div>
-      <textarea id="editor" spellcheck="false" autocomplete="off"
+      <div class="form-view" id="formView"></div>
+      <textarea id="editor" spellcheck="false" autocomplete="off" hidden
         placeholder="# 姓名&#10;职位 | 手机 | 邮箱&#10;&#10;## 工作经历&#10;### 公司 · 职位 | 2021.06 – 至今&#10;- 做了什么，成果如何"></textarea>
     </section>
 
@@ -166,6 +172,7 @@
       <button class="btn" id="btnHelpClose" type="button">关闭</button>
     </div>
     <div class="modal-body">
+      <p class="help-note">默认的「<b>表单</b>」页签可以直接填表，不需要写任何 Markdown；下面这些是切到「Markdown」页签时用的写法（两种模式编辑的是同一份文件，随时可切）。</p>
       <table class="help-table">
         <thead><tr><th>写法</th><th>效果</th></tr></thead>
         <tbody>
@@ -192,6 +199,8 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="assets/resume-md.js"></script>
+<script src="assets/resume-form.js"></script>
+<script src="assets/form-view.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

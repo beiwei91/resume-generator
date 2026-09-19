@@ -1,10 +1,10 @@
 {
   "name": "resume-generator",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "Markdown 驱动的简历生成器：实时 A4 预览 + 导出 PDF（零依赖，可双击即用）",
+  "description": "简历生成器：表单 / Markdown 双模式编辑，实时 A4 预览 + 导出 PDF（零依赖，双击即用）",
   "scripts": {
-    "test": "node tests/smoke.mjs",
+    "test": "node tests/smoke.mjs && node tests/form.mjs",
     "verify": "node tests/verify-export.mjs",
     "verify:app": "node tests/verify-app.mjs",
     "pdf": "node export-pdf.mjs resume.sample.md -o 简历.pdf",

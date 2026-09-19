@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 简历生成器 · 单文件便携版（构建于 2026-09-18）
+<!-- 简历生成器 · 单文件便携版（构建于 2026-09-19）
      直接双击用浏览器打开即可：写 Markdown、实时预览 A4、导出 PDF。
      没有外部依赖，可以拷到任何地方离线使用。
      由 build-single.mjs 生成，请勿手工编辑；改源码后重新运行该脚本。 -->
@@ -495,6 +495,7 @@ body { overflow: hidden; }
   white-space: nowrap;
 }
 .tools { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-left: auto; }
+.tools[hidden] { display: none; }   /* 表单模式下藏起 Markdown 插入工具条 */
 .tool { padding: 4px 8px; font-size: 12.5px; }
 .tool-bold { font-weight: 700; }
 .tool-italic { font-style: italic; font-family: Georgia, serif; }
@@ -558,6 +559,171 @@ body { overflow: hidden; }
   outline: none;
 }
 #editor::placeholder { color: #a9b3c4; }
+
+/* 表单模式：模块卡片 + 字段 */
+
+.mode-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: #eef1f6;
+  border-radius: 7px;
+}
+.mode-tab {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 3px 11px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #5b6579;
+  cursor: pointer;
+}
+.mode-tab.is-active {
+  background: #fff;
+  color: #1f2937;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .1);
+}
+#btnUndo[hidden] { display: none; }
+#btnUndo:disabled { opacity: .45; cursor: default; }
+
+.form-view {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 14px 48px;
+  background: #f6f8fb;
+}
+.form-view[hidden] { display: none; }
+
+.fcard {
+  background: #fff;
+  border: 1px solid #e3e8f0;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.fcard-add { border-style: dashed; background: #fbfcfe; }
+.fcard-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  background: #f8fafc;
+  border-bottom: 1px solid #edf1f7;
+}
+.fcard-title { font-size: 12.5px; font-weight: 700; color: #3d4757; letter-spacing: .04em; }
+.fcard-title-input {
+  flex: 0 1 210px;
+  min-width: 90px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1f2937;
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+}
+.fcard-title-input:hover { border-color: #dfe4ec; background: #fff; }
+.fcard-title-input:focus { border-color: #93c5fd; background: #fff; outline: 2px solid #bfdbfe; }
+.fcard-kind { font-size: 11px; color: #98a2b3; white-space: nowrap; }
+.fcard-flex { flex: 1; }
+.fcard-body {
+  padding: 10px 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.frow { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.frow-tight { gap: 5px; align-items: center; }
+.frow-sub { padding-left: 16px; border-left: 2px solid #eef2f7; }
+
+/* 注意：flex-basis 只在横向行里当宽度用；直接放在纵向卡片里会让字段变高 */
+.fld { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 0 0 auto; }
+.frow > .fld { flex: 1 1 170px; }
+.fld-wide, .frow > .fld-wide { flex: 1 1 100%; }
+.fld-label { font-size: 11.5px; color: #7c8698; }
+.fld-input {
+  font: inherit;
+  font-size: 13px;
+  color: #1f2937;
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #d3d9e3;
+  border-radius: 6px;
+  background: #fff;
+}
+textarea.fld-input { resize: vertical; line-height: 1.6; }
+.fld-input:focus { border-color: #93c5fd; outline: 2px solid #bfdbfe; }
+
+.fgroup { display: flex; flex-direction: column; gap: 5px; }
+.fgroup-title { font-size: 11.5px; color: #7c8698; }
+.fhint { font-size: 11.5px; color: #98a2b3; }
+
+.fbtn {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 5px 10px;
+  border: 1px dashed #c7d0de;
+  border-radius: 6px;
+  background: #fff;
+  color: #2563eb;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.fbtn:hover { background: #f4f7fb; border-color: #93c5fd; }
+.fbtn-primary { border-style: solid; background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600; }
+.fbtn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+.fbtn-danger { color: #b91c1c; border-color: #eccfcf; }
+.fbtn-danger:hover { background: #fef6f6; border-color: #e9a8a8; }
+.fbtn-mini { font-size: 11.5px; padding: 3px 8px; }
+
+.fentry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e8edf4;
+  border-radius: 8px;
+  background: #fcfdff;
+}
+.fentry-head { display: flex; align-items: center; gap: 5px; }
+.fentry-index { font-size: 11.5px; font-weight: 600; color: #7c8698; }
+.fentry-body { display: flex; flex-direction: column; gap: 9px; }
+
+.ibtn {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  color: #5b6579;
+  background: #fff;
+  border: 1px solid #dfe4ec;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+.ibtn:hover:not(:disabled) { background: #f4f7fb; border-color: #b9c3d3; }
+.ibtn:disabled { opacity: .35; cursor: default; }
+.ibtn-text { width: auto; padding: 0 7px; font-size: 12px; }
+.ibtn-toggle { font-size: 11px; }
+.ibtn-danger:hover:not(:disabled) { color: #b91c1c; border-color: #eccfcf; background: #fef6f6; }
+
+.ftable-wrap { display: flex; flex-direction: column; gap: 6px; }
+.ftable { border-collapse: collapse; width: 100%; }
+.ftable th, .ftable td { padding: 2px 3px; vertical-align: middle; }
+.ftable th .fld-input { font-weight: 600; background: #f8fafc; }
+.ftable td:last-child, .ftable th:last-child { width: 32px; }
+.ftable td .ibtn { margin-left: 2px; }
+
+/* 「定位」时预览里闪一下目标章节（仅屏幕，不打印） */
+.r-section.is-target { outline: 2px solid rgba(37, 99, 235, .4); outline-offset: 4px; border-radius: 3px; }
 
 .splitter {
   cursor: col-resize;
@@ -779,8 +945,13 @@ body { overflow: hidden; }
 
     <section class="pane editor-pane">
       <div class="pane-head">
-        <span class="pane-title">Markdown 源文件</span>
-        <div class="tools">
+        <span class="pane-title">编辑</span>
+        <div class="mode-tabs" id="modeTabs">
+          <button class="mode-tab is-active" type="button" data-mode="form">表单</button>
+          <button class="mode-tab" type="button" data-mode="markdown">Markdown</button>
+        </div>
+        <button id="btnUndo" class="tool" type="button" title="撤销上一步操作 (Ctrl+Z)">撤销</button>
+        <div class="tools" id="mdTools" hidden>
           <button class="tool tool-bold" type="button" data-act="bold" title="加粗 (Ctrl+B)">B</button>
           <button class="tool tool-italic" type="button" data-act="italic" title="斜体">I</button>
           <button class="tool" type="button" data-act="code" title="行内代码">&lt;/&gt;</button>
@@ -796,7 +967,8 @@ body { overflow: hidden; }
           <button class="tool" type="button" id="btnPhoto" title="插入 / 更换证件照（会自动压缩成内嵌图片，跟着 .md 文件走，导出 PDF 不会丢图）">证件照</button>
         </div>
       </div>
-      <textarea id="editor" spellcheck="false" autocomplete="off"
+      <div class="form-view" id="formView"></div>
+      <textarea id="editor" spellcheck="false" autocomplete="off" hidden
         placeholder="# 姓名&#10;职位 | 手机 | 邮箱&#10;&#10;## 工作经历&#10;### 公司 · 职位 | 2021.06 – 至今&#10;- 做了什么，成果如何"></textarea>
     </section>
 
@@ -1555,6 +1727,993 @@ body { overflow: hidden; }
 });
 </script>
 <script>
+/* ==== assets/resume-form.js ==== */
+/*!
+ * resume-form.js —— 表单模式的「纯逻辑层」：把 Markdown 拆成模块，并按块改写
+ *
+ * 这里只有字符串与行号运算，不碰 DOM，因此可以在 Node 里直接单测。
+ * 设计要点：每次编辑只重写「那一块」对应的行，其余内容（包括文首配置块、手工排版）
+ * 一个字节都不动 —— 表单模式和 Markdown 模式因此可以安全地随时互换。
+ *
+ * 约定（与 resume-md.js 的解析规则一致）：
+ *   # 姓名                     抬头（第一个 # 标题）
+ *   （紧跟姓名的行）             职位 | 联系方式…
+ *   ## 章节                    章节
+ *   ### 主标题 · 职位 | 时间     条目
+ *   （条目下第一段）            副信息
+ *   - 要点 /   - 子要点          要点（两个空格缩进为二级）
+ *   | a | b |                  表格
+ *   > 引用                     引用块（个人简介常用）
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./resume-md.js'));
+  else root.ResumeForm = factory(root.ResumeMD);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (MD) {
+  'use strict';
+
+  var HEAD_RE = /^(#{1,6})\s+(.*?)\s*#*$/;
+  var LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+  var SECTION_TEMPLATES = [
+    { title: '工作经历', kind: 'entries' },
+    { title: '项目经历', kind: 'entries' },
+    { title: '实习经历', kind: 'entries' },
+    { title: '教育背景', kind: 'entries' },
+    { title: '技能清单', kind: 'list' },
+    { title: '证书与荣誉', kind: 'list' },
+    { title: '自我评价', kind: 'quote' },
+    { title: '其他信息', kind: 'list' }
+  ];
+
+  function isTableSeparator(line) {
+    if (!line) return false;
+    var t = line.trim();
+    if (t.charAt(0) !== '|' || t.indexOf('-') < 0) return false;
+    return /^\|?[\s:|-]+\|?$/.test(t);
+  }
+
+  function splitRow(line) {
+    return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
+  }
+
+  /* ------------------------------------------------------------------ 解析 */
+
+  /** 把 Markdown 拆成「文首配置块 + 抬头 + 章节列表」，并保留每块的行号信息 */
+  function walk(md) {
+    var src = String(md == null ? '' : md).replace(/\r\n?/g, '\n');
+    var fm = MD.splitFrontMatter(src);
+    var prefix = src.slice(0, src.length - fm.body.length);   // 含收尾换行；无配置块时为 ''
+    var prefixLines = prefix ? prefix.split('\n').length - 1 : 0;
+    var lines = fm.body.split('\n');
+
+    var header = { nameIdx: -1, name: '', info: { subtitle: '', contacts: [] }, infoIdx: [], start: 0 };
+    var sections = [];
+    var i;
+
+    // 抬头：第一个 # 标题 + 其后直到首个 ## 的正文行
+    var firstSectionIdx = -1;
+    for (i = 0; i < lines.length; i++) {
+      if (/^##\s/.test(lines[i])) { firstSectionIdx = i; break; }
+    }
+    var headerEnd = firstSectionIdx < 0 ? lines.length : firstSectionIdx;
+
+    for (i = 0; i < headerEnd; i++) {
+      var hm = HEAD_RE.exec(lines[i].trim());
+      if (hm && hm[1].length === 1) {
+        header.nameIdx = i;
+        header.name = hm[2].trim();
+        break;
+      }
+    }
+
+    if (header.nameIdx >= 0) {
+      var segs = [];
+      for (i = header.nameIdx + 1; i < headerEnd; i++) {
+        if (!lines[i].trim()) continue;
+        if (HEAD_RE.test(lines[i].trim())) continue;
+        header.infoIdx.push(i);
+        segs = segs.concat(lines[i].split('|').map(function (s) { return s.trim(); }).filter(Boolean));
+      }
+      if (segs.length) {
+        header.info.subtitle = segs[0];
+        header.info.contacts = segs.slice(1);
+      }
+    }
+
+    // 章节
+    for (i = 0; i < lines.length; i++) {
+      if (!/^##\s/.test(lines[i])) continue;
+      var sm = HEAD_RE.exec(lines[i].trim());
+      var start = i;
+      var end = lines.length;
+      for (var j = i + 1; j < lines.length; j++) {
+        if (/^##\s/.test(lines[j])) { end = j; break; }
+      }
+      sections.push(buildSection(lines, start, end, sm ? sm[2].trim() : ''));
+      i = end - 1;
+    }
+
+    return { prefix: prefix, prefixLines: prefixLines, lines: lines, header: header, sections: sections };
+  }
+
+  function buildSection(lines, start, end, title) {
+    var sec = { titleIdx: start, title: title, start: start, end: end, kind: 'empty', entries: [], items: [], table: null, text: '', quote: false };
+
+    // 条目（### 开头）
+    var headIdxs = [];
+    for (var i = start + 1; i < end; i++) {
+      var hm = HEAD_RE.exec(lines[i].trim());
+      if (hm && hm[1].length === 3) headIdxs.push(i);
+    }
+    if (headIdxs.length) {
+      sec.kind = 'entries';
+      for (var k = 0; k < headIdxs.length; k++) {
+        var eStart = headIdxs[k];
+        var eEnd = k + 1 < headIdxs.length ? headIdxs[k + 1] : end;
+        sec.entries.push(buildEntry(lines, eStart, eEnd));
+      }
+      return sec;
+    }
+
+    // 表格
+    var tableIdx = -1;
+    for (var t = start + 1; t < end - 1; t++) {
+      if (lines[t].trim().charAt(0) === '|' && isTableSeparator(lines[t + 1])) { tableIdx = t; break; }
+    }
+    if (tableIdx >= 0) {
+      sec.kind = 'table';
+      var rows = [splitRow(lines[tableIdx])];
+      var r = tableIdx + 2;
+      while (r < end && lines[r].trim().charAt(0) === '|') { rows.push(splitRow(lines[r])); r++; }
+      sec.table = { headIdx: tableIdx, rows: rows, separator: lines[tableIdx + 1], endIdx: r };
+      return sec;
+    }
+
+    // 要点列表
+    var items = collectBullets(lines, start + 1, end);
+    if (items.length) {
+      sec.kind = 'list';
+      sec.items = items;
+      return sec;
+    }
+
+    // 段落 / 引用
+    var texts = [];
+    var quote = false;
+    for (var p = start + 1; p < end; p++) {
+      if (!lines[p].trim()) continue;
+      if (/^>\s?/.test(lines[p].trim())) { quote = true; texts.push(lines[p].trim().replace(/^>\s?/, '')); }
+      else texts.push(lines[p].trim());
+    }
+    if (texts.length) {
+      sec.kind = quote ? 'quote' : 'paragraph';
+      sec.quote = quote;
+      sec.text = texts.join('\n');
+    }
+    return sec;
+  }
+
+  function buildEntry(lines, start, end) {
+    var raw = HEAD_RE.exec(lines[start].trim())[2].trim();
+    var meta = '';
+    var pipe = raw.indexOf('|');
+    if (pipe >= 0) { meta = raw.slice(pipe + 1).trim(); raw = raw.slice(0, pipe).trim(); }
+    var title = raw;
+    var role = '';
+    var dot = /\s*[·•‧・]\s*/.exec(raw);
+    if (dot) {
+      title = raw.slice(0, dot.index).trim();
+      role = raw.slice(dot.index + dot[0].length).trim();
+    }
+
+    var entry = { headIdx: start, start: start, end: end, title: title, role: role, meta: meta, sub: '', subIdx: -1, bullets: [] };
+    // 副信息：条目下、第一个要点之前的那一段
+    for (var i = start + 1; i < end; i++) {
+      var line = lines[i];
+      if (!line.trim()) continue;
+      if (LIST_RE.test(line)) break;
+      if (HEAD_RE.test(line.trim())) break;
+      entry.subIdx = i;
+      entry.sub = line.trim().replace(/^\*\*(.+)\*\*$/, '$1');
+      break;
+    }
+    entry.bullets = collectBullets(lines, start + 1, end);
+    return entry;
+  }
+
+  function collectBullets(lines, from, to) {
+    var out = [];
+    for (var i = from; i < to; i++) {
+      var m = LIST_RE.exec(lines[i]);
+      if (!m) continue;
+      if (HEAD_RE.test(lines[i].trim())) continue;
+      out.push({ idx: i, indent: m[1].replace(/\t/g, '  ').length, text: m[3].trim() });
+    }
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ 拼装 */
+
+  function headText(level, text) {
+    return new Array(level + 1).join('#') + ' ' + String(text == null ? '' : text).trim();
+  }
+
+  function entryHeadText(entry) {
+    var raw = String(entry.title == null ? '' : entry.title).trim();
+    if (String(entry.role || '').trim()) raw += ' · ' + String(entry.role).trim();
+    if (String(entry.meta || '').trim()) raw += ' | ' + String(entry.meta).trim();
+    return '### ' + raw;
+  }
+
+  /** 从某一行开始，往后吃掉属于同一块的续行（更深的列表项、缩进的续行） */
+  function blockRange(lines, idx, limit) {
+    var m = LIST_RE.exec(lines[idx]);
+    if (!m) return [idx, idx + 1];
+    var indent = m[1].replace(/\t/g, '  ').length;
+    var end = idx + 1;
+    while (end < limit) {
+      var line = lines[end];
+      if (!line.trim()) break;
+      var nm = LIST_RE.exec(line);
+      if (nm) {
+        if (nm[1].replace(/\t/g, '  ').length <= indent) break;
+      } else if (!/^\s/.test(line)) {
+        break;
+      }
+      end++;
+    }
+    return [idx, end];
+  }
+
+  /** 去掉块尾的空行（块首不动），用于交换两块时保持空行分隔 */
+  function trimEnd(lines, start, end) {
+    var e = end;
+    while (e > start + 1 && !lines[e - 1].trim()) e--;
+    return e;
+  }
+
+  /** 交换两个前后相邻的块（A 在前、B 在后），中间的空行原样保留 */
+  function swapBlocks(lines, aStart, aEnd, bStart, bEnd) {
+    return lines.slice(0, aStart)
+      .concat(lines.slice(bStart, bEnd), lines.slice(aEnd, bStart), lines.slice(aStart, aEnd), lines.slice(bEnd));
+  }
+
+  /* ------------------------------------------------------------------ 改写操作 */
+
+  function withBody(md, fn) {
+    var w = walk(md);
+    var out = fn(w.lines.slice(), w);
+    if (!out) return md;
+    return w.prefix + out.join('\n');
+  }
+
+  function sec(w, i) { return w.sections[i] || null; }
+
+  var ops = {
+    walk: walk,
+
+    setHeaderName: function (md, name) {
+      return withBody(md, function (lines, w) {
+        if (w.header.nameIdx < 0) return null;
+        lines[w.header.nameIdx] = headText(1, name) || '# ';
+        return lines;
+      });
+    },
+
+    /** 职位 + 联系方式合并写在姓名下一行（与解析约定一致） */
+    setHeaderInfo: function (md, info) {
+      return withBody(md, function (lines, w) {
+        if (w.header.nameIdx < 0) return null;
+        var segs = [];
+        if (String(info.subtitle || '').trim()) segs.push(String(info.subtitle).trim());
+        (info.contacts || []).forEach(function (c) { if (String(c || '').trim()) segs.push(String(c).trim()); });
+
+        var startDel = w.header.nameIdx + 1;
+        var endDel = Math.max.apply(null, w.header.infoIdx.concat([startDel]));
+        if (w.header.infoIdx.length) endDel = w.header.infoIdx[w.header.infoIdx.length - 1] + 1;
+        else endDel = startDel;
+
+        var block = segs.length ? ['', segs.join(' | ')] : [];
+        // 保证姓名与下一段之间恰好一个空行
+        var head = lines.slice(0, startDel);
+        while (head.length && !head[head.length - 1].trim()) head.pop();
+        var rest = lines.slice(endDel);
+        while (rest.length && !rest[0].trim()) rest.shift();
+        return head.concat(block, [''], rest);
+      });
+    },
+
+    setSectionTitle: function (md, si, title) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        lines[s.titleIdx] = headText(2, title);
+        return lines;
+      });
+    },
+
+    /** 新增章节：kind = entries | list | quote | paragraph */
+    addSection: function (md, title, kind) {
+      return withBody(md, function (lines) {
+        while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+        var block = ['', '', headText(2, title || '新章节'), ''];
+        if (kind === 'entries') block = block.concat(['### 公司名称 · 职位 | 2021.06 – 至今', '', '- 做了什么，结果如何（用数字量化）', '']);
+        else if (kind === 'list') block = block.concat(['- 要点内容', '']);
+        else if (kind === 'quote') block = block.concat(['> 一句话介绍你的核心竞争力与代表成果', '']);
+        else block = block.concat(['在这里写正文', '']);
+        return lines.concat(block, ['']);
+      });
+    },
+
+    removeSection: function (md, si) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        var start = s.start;
+        var end = s.end;
+        while (start > 0 && !lines[start - 1].trim()) start--;
+        while (end < lines.length && !lines[end].trim()) end++;
+        var out = lines.slice(0, start).concat(lines.slice(end));
+        while (out.length > 1 && !out[out.length - 1].trim() && !out[out.length - 2].trim()) out.pop();
+        return out;
+      });
+    },
+
+    moveSection: function (md, si, dir) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        var other = si + dir;
+        var a = w.sections[Math.min(si, other)];
+        var b = w.sections[Math.max(si, other)];
+        if (!a || !b) return null;
+        return swapBlocks(lines, a.start, trimEnd(lines, a.start, a.end), b.start, trimEnd(lines, b.start, b.end));
+      });
+    },
+
+    addEntry: function (md, si, afterEntry) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        var block = [headText(3, '公司名称 · 职位 | 2021.06 – 至今'), '', '- 做了什么，结果如何（用数字量化）', ''];
+        var at;
+        if (afterEntry == null || !s.entries[afterEntry]) {
+          at = s.kind === 'entries' && s.entries.length ? s.entries[s.entries.length - 1].end : s.start + 1;
+        } else {
+          at = s.entries[afterEntry].end;
+        }
+        while (at < lines.length && !lines[at].trim()) at++;
+        var insert = block.slice();
+        if (at > 0 && lines[at - 1].trim()) insert = [''].concat(insert);
+        return lines.slice(0, at).concat(insert, lines.slice(at));
+      });
+    },
+
+    removeEntry: function (md, si, ei) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s || !s.entries[ei]) return null;
+        var e = s.entries[ei];
+        var start = e.start;
+        var end = e.end;
+        while (end > start && !lines[end - 1].trim()) end--;
+        if (end === start) end = start + 1;
+        if (start > 0 && !lines[start - 1].trim()) start--;
+        return lines.slice(0, start).concat(lines.slice(end));
+      });
+    },
+
+    moveEntry: function (md, si, ei, dir) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s || !s.entries[ei]) return null;
+        var other = ei + dir;
+        var a = s.entries[Math.min(ei, other)];
+        var b = s.entries[Math.max(ei, other)];
+        if (!a || !b) return null;
+        return swapBlocks(lines, a.start, trimEnd(lines, a.start, a.end), b.start, trimEnd(lines, b.start, b.end));
+      });
+    },
+
+    setEntryHead: function (md, si, ei, patch) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s || !s.entries[ei]) return null;
+        var e = s.entries[ei];
+        var next = { title: patch.title !== undefined ? patch.title : e.title, role: patch.role !== undefined ? patch.role : e.role, meta: patch.meta !== undefined ? patch.meta : e.meta };
+        lines[e.headIdx] = entryHeadText(next);
+        return lines;
+      });
+    },
+
+    setEntrySub: function (md, si, ei, text) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s || !s.entries[ei]) return null;
+        var e = s.entries[ei];
+        var value = String(text == null ? '' : text).trim();
+        if (e.subIdx >= 0) {
+          if (!value) {
+            var out = lines.slice(0, e.subIdx).concat(lines.slice(e.subIdx + 1));
+            return out;
+          }
+          lines[e.subIdx] = value;
+          return lines;
+        }
+        if (!value) return null;
+        var at = e.headIdx + 1;
+        if (lines[at] && lines[at].trim()) return lines.slice(0, at).concat(['', value], lines.slice(at));
+        if (!lines[at]) return lines.slice(0, at).concat([value, ''], lines.slice(at + 1));
+        return lines.slice(0, at).concat([value], lines.slice(at));
+      });
+    },
+
+    setBullet: function (md, si, ei, bi, text) {
+      return withBody(md, function (lines, w) {
+        var b = bulletAt(w, si, ei, bi);
+        if (!b) return null;
+        var indent = new Array(b.indent + 1).join(' ');
+        lines[b.idx] = indent + '- ' + String(text == null ? '' : text).trim();
+        return lines;
+      });
+    },
+
+    addBullet: function (md, si, ei, afterBi) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        var list = ei == null ? s.items : (s.entries[ei] ? s.entries[ei].bullets : null);
+        if (!list) return null;
+        var indent = 0;
+        var at;
+        if (afterBi != null && list[afterBi]) {
+          indent = list[afterBi].indent;
+          at = blockRange(lines, list[afterBi].idx, s.end)[1];
+        } else if (list.length) {
+          indent = list[list.length - 1].indent;
+          at = blockRange(lines, list[list.length - 1].idx, s.end)[1];
+        } else {
+          at = (ei != null && s.entries[ei] && s.entries[ei].subIdx >= 0) ? s.entries[ei].subIdx + 1
+            : (ei != null && s.entries[ei] ? s.entries[ei].headIdx + 1 : s.start + 1);
+          if (lines[at] && !lines[at].trim()) at++;
+        }
+        while (at < lines.length && !lines[at].trim()) at++;
+        var line = new Array(indent + 1).join(' ') + '- ';
+        return lines.slice(0, at).concat([line], lines.slice(at));
+      });
+    },
+
+    removeBullet: function (md, si, ei, bi) {
+      return withBody(md, function (lines, w) {
+        var b = bulletAt(w, si, ei, bi);
+        if (!b) return null;
+        var range = blockRange(lines, b.idx, lines.length);
+        return lines.slice(0, range[0]).concat(lines.slice(range[1]));
+      });
+    },
+
+    moveBullet: function (md, si, ei, bi, dir) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        var list = ei == null ? s.items : (s.entries[ei] ? s.entries[ei].bullets : null);
+        if (!list) return null;
+        var other = bi + dir;
+        var a = list[Math.min(bi, other)];
+        var b = list[Math.max(bi, other)];
+        if (!a || !b) return null;
+        var aR = blockRange(lines, a.idx, s.end);
+        var bR = blockRange(lines, b.idx, s.end);
+        return swapBlocks(lines, aR[0], aR[1], bR[0], bR[1]);
+      });
+    },
+
+    /** 段落 / 引用整块替换（引用会保留 > 前缀） */
+    setSectionText: function (md, si, text) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        var value = String(text == null ? '' : text);
+        var block = value.split('\n').map(function (l) {
+          return s.quote ? ('> ' + l).replace(/\s+$/, '') : l;
+        });
+        if (s.quote) {
+          while (block.length && !block[block.length - 1].replace(/^>\s?/, '').trim()) block.pop();
+        }
+        var head = lines.slice(0, s.start + 1);
+        var tail = lines.slice(s.end);
+        while (tail.length && !tail[0].trim()) tail.shift();
+        return head.concat([''], block, [''], tail);
+      });
+    },
+
+    setTableCell: function (md, si, ri, ci, value) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s || !s.table) return null;
+        var t = s.table;
+        var lineIdx = t.headIdx + (ri === 0 ? 0 : ri + 1);
+        if (lineIdx >= lines.length) return null;
+        var row = splitRow(lines[lineIdx]);
+        while (row.length <= ci) row.push('');
+        row[ci] = String(value == null ? '' : value).trim();
+        lines[lineIdx] = '| ' + row.join(' | ') + ' |';
+        return lines;
+      });
+    },
+
+    addTableRow: function (md, si) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s || !s.table) return null;
+        var cols = s.table.rows[0].length;
+        var row = [];
+        for (var i = 0; i < cols; i++) row.push('');
+        return lines.slice(0, s.table.endIdx).concat(['| ' + row.join(' | ') + ' |'], lines.slice(s.table.endIdx));
+      });
+    },
+
+    removeTableRow: function (md, si, ri) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s || !s.table || ri === 0) return null;
+        if (!s.table.rows[ri]) return null;
+        var lineIdx = s.table.headIdx + ri + 1;
+        return lines.slice(0, lineIdx).concat(lines.slice(lineIdx + 1));
+      });
+    }
+  };
+
+  function bulletAt(w, si, ei, bi) {
+    var s = sec(w, si);
+    if (!s) return null;
+    var list = ei == null ? s.items : (s.entries[ei] ? s.entries[ei].bullets : null);
+    return list && list[bi] ? list[bi] : null;
+  }
+
+  return {
+    walk: walk,
+    SECTION_TEMPLATES: SECTION_TEMPLATES,
+    setHeaderName: ops.setHeaderName,
+    setHeaderInfo: ops.setHeaderInfo,
+    setSectionTitle: ops.setSectionTitle,
+    addSection: ops.addSection,
+    removeSection: ops.removeSection,
+    moveSection: ops.moveSection,
+    addEntry: ops.addEntry,
+    removeEntry: ops.removeEntry,
+    moveEntry: ops.moveEntry,
+    setEntryHead: ops.setEntryHead,
+    setEntrySub: ops.setEntrySub,
+    setBullet: ops.setBullet,
+    addBullet: ops.addBullet,
+    removeBullet: ops.removeBullet,
+    moveBullet: ops.moveBullet,
+    setSectionText: ops.setSectionText,
+    setTableCell: ops.setTableCell,
+    addTableRow: ops.addTableRow,
+    removeTableRow: ops.removeTableRow
+  };
+});
+</script>
+<script>
+/* ==== assets/form-view.js ==== */
+/*!
+ * form-view.js —— 表单模式的界面层：把模块模型渲染成可折叠、可增删排序的表单
+ *
+ * 只做三件事：读模型 → 画表单 → 调 ResumeForm 的改写操作。
+ * 文本输入不重画表单（避免丢焦点），只有结构变化（增删/移动）才整体重绘。
+ */
+(function (root) {
+  'use strict';
+
+  var Form = root.ResumeForm;
+  var MD = root.ResumeMD;
+  if (!Form || !MD) return;
+
+  var KIND_LABEL = { entries: '经历条目', list: '要点列表', quote: '引用段落', paragraph: '正文段落', table: '表格', empty: '空章节' };
+  var collapsed = Object.create(null);   // 按章节标题记住折叠状态
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function field(label, value, opts) {
+    opts = opts || {};
+    var wrap = el('label', 'fld' + (opts.wide ? ' fld-wide' : ''));
+    if (label) wrap.appendChild(el('span', 'fld-label', label));
+    var input = document.createElement(opts.area ? 'textarea' : 'input');
+    input.className = 'fld-input';
+    if (opts.area) input.rows = opts.rows || 3;
+    else input.type = 'text';
+    input.value = value == null ? '' : value;
+    if (opts.placeholder) input.placeholder = opts.placeholder;
+    if (opts.path) input.setAttribute('data-path', opts.path);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  function iconBtn(text, title, cls) {
+    var b = el('button', 'ibtn' + (cls ? ' ' + cls : ''), text);
+    b.type = 'button';
+    b.title = title;
+    return b;
+  }
+
+  function mount(container, api) {
+    var sel = function (q) { return container.querySelector(q); };
+
+    function apply(md, structural, focusPath) {
+      api.apply(md, structural, focusPath);
+    }
+
+    function render(focusPath) {
+      var md = api.getMd();
+      var model = Form.walk(md);
+      container.innerHTML = '';
+      container.appendChild(renderBasic(model));
+      model.sections.forEach(function (sec, si) { container.appendChild(renderSection(sec, si, model.sections.length)); });
+      container.appendChild(renderAddSection());
+      if (focusPath) {
+        var target = sel('[data-path="' + focusPath + '"]');
+        if (target) { target.focus(); if (target.select) target.select(); }
+      }
+    }
+
+    /* ---------------------------------------------------------- 基本信息 */
+
+    function renderBasic(model) {
+      var card = el('div', 'fcard');
+      var head = el('div', 'fcard-head');
+      head.appendChild(el('span', 'fcard-title', '基本信息'));
+      card.appendChild(head);
+
+      var body = el('div', 'fcard-body');
+      body.appendChild(field('姓名', model.header.name, { path: 'name', placeholder: '张三' }));
+
+      var row = el('div', 'frow');
+      row.appendChild(field('职位 / 求职意向', model.header.info.subtitle, { path: 'subtitle', placeholder: '前端工程师' }));
+      body.appendChild(row);
+
+      var contacts = el('div', 'fgroup');
+      contacts.appendChild(el('div', 'fgroup-title', '联系方式（电话 / 邮箱 / 链接 / 城市，邮箱和网址会自动变可点链接）'));
+      var list = model.header.info.contacts.slice();
+      list.forEach(function (c, i) {
+        var line = el('div', 'frow frow-tight');
+        line.appendChild(field('', c, { path: 'contact:' + i, placeholder: '138-0000-0000' }));
+        var del = iconBtn('×', '删除这条联系方式', 'ibtn-danger');
+        del.addEventListener('click', function () {
+          var next = list.slice();
+          next.splice(i, 1);
+          apply(Form.setHeaderInfo(api.getMd(), { subtitle: model.header.info.subtitle, contacts: next }), true);
+        });
+        line.appendChild(del);
+        contacts.appendChild(line);
+      });
+      var addContact = el('button', 'fbtn', '+ 添加联系方式');
+      addContact.type = 'button';
+      addContact.addEventListener('click', function () {
+        var next = list.concat(['']);
+        apply(Form.setHeaderInfo(api.getMd(), { subtitle: model.header.info.subtitle, contacts: next }), true,
+          'contact:' + (next.length - 1));
+      });
+      contacts.appendChild(addContact);
+      body.appendChild(contacts);
+
+      // 证件照：这里只放入口，宽度 / 位置 / 形状仍由右上「排版」面板统管
+      var photo = el('div', 'fgroup');
+      photo.appendChild(el('div', 'fgroup-title', '证件照'));
+      var prow = el('div', 'frow frow-tight');
+      var pick = el('button', 'fbtn', api.hasPhoto() ? '更换证件照' : '选择证件照…');
+      pick.type = 'button';
+      pick.addEventListener('click', function () { api.pickPhoto(); });
+      prow.appendChild(pick);
+      if (api.hasPhoto()) {
+        var rm = el('button', 'fbtn fbtn-danger', '移除证件照');
+        rm.type = 'button';
+        rm.addEventListener('click', function () { api.removePhoto(); });
+        prow.appendChild(rm);
+        prow.appendChild(el('span', 'fhint', '宽度 / 位置 / 形状在右上角「排版」里调'));
+      } else {
+        prow.appendChild(el('span', 'fhint', '会自动压缩成内嵌图片，跟着 .md 文件走'));
+      }
+      photo.appendChild(prow);
+      body.appendChild(photo);
+
+      card.appendChild(body);
+      return card;
+    }
+
+    /* ---------------------------------------------------------- 章节 */
+
+    function renderSection(sec, si, total) {
+      var card = el('div', 'fcard');
+      var head = el('div', 'fcard-head');
+      var isCollapsed = !!collapsed[sec.title];
+
+      var toggle = iconBtn(isCollapsed ? '▸' : '▾', isCollapsed ? '展开' : '折叠', 'ibtn-toggle');
+      toggle.addEventListener('click', function () {
+        collapsed[sec.title] = !collapsed[sec.title];
+        render();
+      });
+      head.appendChild(toggle);
+
+      var titleInput = document.createElement('input');
+      titleInput.className = 'fcard-title-input';
+      titleInput.type = 'text';
+      titleInput.value = sec.title;
+      titleInput.setAttribute('data-path', 'sec:' + si + ':title');
+      titleInput.placeholder = '章节标题';
+      head.appendChild(titleInput);
+
+      head.appendChild(el('span', 'fcard-kind', KIND_LABEL[sec.kind] || sec.kind));
+      head.appendChild(el('span', 'fcard-flex'));
+
+      var locate = iconBtn('定位', '在右侧预览里定位到这个章节', 'ibtn-text');
+      locate.addEventListener('click', function () { api.locate(si); });
+      head.appendChild(locate);
+
+      var up = iconBtn('↑', '上移章节');
+      up.disabled = si === 0;
+      up.addEventListener('click', function () { apply(Form.moveSection(api.getMd(), si, -1), true); });
+      head.appendChild(up);
+
+      var down = iconBtn('↓', '下移章节');
+      down.disabled = si === total - 1;
+      down.addEventListener('click', function () { apply(Form.moveSection(api.getMd(), si, 1), true); });
+      head.appendChild(down);
+
+      var del = iconBtn('×', '删除整个章节', 'ibtn-danger');
+      del.addEventListener('click', function () {
+        if (!root.confirm('删除章节「' + (sec.title || '(无标题)') + '」及其全部内容？')) return;
+        apply(Form.removeSection(api.getMd(), si), true);
+      });
+      head.appendChild(del);
+
+      card.appendChild(head);
+      if (isCollapsed) return card;
+
+      var body = el('div', 'fcard-body');
+      if (sec.kind === 'entries') {
+        sec.entries.forEach(function (entry, ei) { body.appendChild(renderEntry(sec, si, entry, ei)); });
+        var addEntry = el('button', 'fbtn', '+ 添加经历 / 项目条目');
+        addEntry.type = 'button';
+        addEntry.addEventListener('click', function () {
+          apply(Form.addEntry(api.getMd(), si, sec.entries.length - 1), true, 'sec:' + si + ':entry:' + sec.entries.length + ':title');
+        });
+        body.appendChild(addEntry);
+      } else if (sec.kind === 'list' || sec.kind === 'empty') {
+        renderBullets(body, sec, si, null, sec.items);
+        if (sec.kind === 'empty') {
+          var hint = el('div', 'fhint', '这个章节还没有内容。');
+          body.appendChild(hint);
+          var mkEntry = el('button', 'fbtn', '+ 改成「经历条目」型');
+          mkEntry.type = 'button';
+          mkEntry.addEventListener('click', function () {
+            apply(Form.addEntry(api.getMd(), si, null), true, 'sec:' + si + ':entry:0:title');
+          });
+          body.appendChild(mkEntry);
+        }
+      } else if (sec.kind === 'table') {
+        body.appendChild(renderTable(sec, si));
+      } else {
+        var area = field('', sec.text, { area: true, rows: Math.min(8, Math.max(2, sec.text.split('\n').length + 1)), path: 'sec:' + si + ':text', wide: true });
+        body.appendChild(area);
+      }
+
+      card.appendChild(body);
+      return card;
+    }
+
+    function renderEntry(sec, si, entry, ei) {
+      var box = el('div', 'fentry');
+      var head = el('div', 'fentry-head');
+      head.appendChild(el('span', 'fentry-index', '条目 ' + (ei + 1)));
+      head.appendChild(el('span', 'fcard-flex'));
+
+      var up = iconBtn('↑', '上移条目');
+      up.disabled = ei === 0;
+      up.addEventListener('click', function () { apply(Form.moveEntry(api.getMd(), si, ei, -1), true); });
+      head.appendChild(up);
+
+      var down = iconBtn('↓', '下移条目');
+      down.disabled = ei === sec.entries.length - 1;
+      down.addEventListener('click', function () { apply(Form.moveEntry(api.getMd(), si, ei, 1), true); });
+      head.appendChild(down);
+
+      var del = iconBtn('×', '删除这条', 'ibtn-danger');
+      del.addEventListener('click', function () {
+        if (!root.confirm('删除「' + (entry.title || '这条经历') + '」？')) return;
+        apply(Form.removeEntry(api.getMd(), si, ei), true);
+      });
+      head.appendChild(del);
+      box.appendChild(head);
+
+      var body = el('div', 'fentry-body');
+      var r1 = el('div', 'frow');
+      r1.appendChild(field('主标题（公司 / 学校 / 项目）', entry.title, { path: 'sec:' + si + ':entry:' + ei + ':title', placeholder: '某某科技有限公司' }));
+      r1.appendChild(field('职位 / 专业', entry.role, { path: 'sec:' + si + ':entry:' + ei + ':role', placeholder: '高级前端工程师' }));
+      body.appendChild(r1);
+
+      var r2 = el('div', 'frow');
+      r2.appendChild(field('时间 / 地点（右对齐显示）', entry.meta, { path: 'sec:' + si + ':entry:' + ei + ':meta', placeholder: '2021.06 – 至今' }));
+      r2.appendChild(field('副信息（团队 / 城市，灰色小字）', entry.sub, { path: 'sec:' + si + ':entry:' + ei + ':sub', placeholder: '上海 · 电商中台组' }));
+      body.appendChild(r2);
+
+      renderBullets(body, sec, si, ei, entry.bullets);
+      box.appendChild(body);
+      return box;
+    }
+
+    function renderBullets(body, sec, si, ei, bullets) {
+      var group = el('div', 'fgroup');
+      group.appendChild(el('div', 'fgroup-title', '要点（建议写成「做了什么 + 结果如何」，带数字最有说服力）'));
+      bullets.forEach(function (b, bi) {
+        var line = el('div', 'frow frow-tight' + (b.indent ? ' frow-sub' : ''));
+        line.appendChild(field('', b.text, {
+          path: 'sec:' + si + ':entry:' + (ei == null ? 'x' : ei) + ':bullet:' + bi,
+          placeholder: '负责……，性能提升 40%'
+        }));
+        var up = iconBtn('↑', '上移');
+        up.disabled = bi === 0;
+        up.addEventListener('click', function () { apply(Form.moveBullet(api.getMd(), si, ei, bi, -1), true); });
+        line.appendChild(up);
+        var down = iconBtn('↓', '下移');
+        down.disabled = bi === bullets.length - 1;
+        down.addEventListener('click', function () { apply(Form.moveBullet(api.getMd(), si, ei, bi, 1), true); });
+        line.appendChild(down);
+        var del = iconBtn('×', '删除这条要点', 'ibtn-danger');
+        del.addEventListener('click', function () { apply(Form.removeBullet(api.getMd(), si, ei, bi), true); });
+        line.appendChild(del);
+        group.appendChild(line);
+      });
+
+      var add = el('button', 'fbtn', '+ 添加要点');
+      add.type = 'button';
+      add.addEventListener('click', function () {
+        apply(Form.addBullet(api.getMd(), si, ei, bullets.length - 1), true,
+          'sec:' + si + ':entry:' + (ei == null ? 'x' : ei) + ':bullet:' + bullets.length);
+      });
+      group.appendChild(add);
+
+      if (ei != null && bullets.length) {
+        var indentLast = bullets[bullets.length - 1];
+        if (indentLast.indent === 0) {
+          var sub = el('button', 'fbtn fbtn-mini', '+ 给上一条加子要点');
+          sub.type = 'button';
+          sub.title = '行首缩进两个空格的二级要点';
+          sub.addEventListener('click', function () {
+            var md = Form.addBullet(api.getMd(), si, ei, bullets.length - 1);
+            // 把刚插入的那条改成二级缩进
+            var w = Form.walk(md);
+            var list = w.sections[si].entries[ei].bullets;
+            var last = list[list.length - 1];
+            md = Form.setBullet(md, si, ei, list.length - 1, last.text || '子要点');
+            var lines = md.split('\n');
+            lines[last.idx] = '  ' + lines[last.idx].replace(/^\s*/, '');
+            md = lines.join('\n');
+            apply(md, true, 'sec:' + si + ':entry:' + ei + ':bullet:' + (list.length - 1));
+          });
+          group.appendChild(sub);
+        }
+      }
+      body.appendChild(group);
+    }
+
+    function renderTable(sec, si) {
+      var wrap = el('div', 'ftable-wrap');
+      var table = el('table', 'ftable');
+      var cols = sec.table.rows[0].length;
+      sec.table.rows.forEach(function (row, ri) {
+        var tr = el('tr');
+        for (var ci = 0; ci < cols; ci++) {
+          var cell = el(ri === 0 ? 'th' : 'td');
+          var input = document.createElement('input');
+          input.className = 'fld-input';
+          input.type = 'text';
+          input.value = row[ci] == null ? '' : row[ci];
+          input.setAttribute('data-path', 'sec:' + si + ':cell:' + ri + ':' + ci);
+          cell.appendChild(input);
+          if (ri > 0 && ci === cols - 1) {
+            var del = iconBtn('×', '删除这一行', 'ibtn-danger');
+            del.addEventListener('click', function () { apply(Form.removeTableRow(api.getMd(), si, ri), true); });
+            cell.appendChild(del);
+          }
+          tr.appendChild(cell);
+        }
+        table.appendChild(tr);
+      });
+      wrap.appendChild(table);
+      var add = el('button', 'fbtn', '+ 添加一行');
+      add.type = 'button';
+      add.addEventListener('click', function () { apply(Form.addTableRow(api.getMd(), si), true); });
+      wrap.appendChild(add);
+      return wrap;
+    }
+
+    function renderAddSection() {
+      var card = el('div', 'fcard fcard-add');
+      var body = el('div', 'fcard-body frow');
+
+      var select = document.createElement('select');
+      select.className = 'fld-input';
+      Form.SECTION_TEMPLATES.forEach(function (tpl) {
+        var o = document.createElement('option');
+        o.value = tpl.kind + '|' + tpl.title;
+        o.textContent = tpl.title + '（' + (KIND_LABEL[tpl.kind] || tpl.kind) + '）';
+        select.appendChild(o);
+      });
+      var blank = document.createElement('option');
+      blank.value = 'paragraph|新章节';
+      blank.textContent = '空白章节（自己写正文）';
+      select.appendChild(blank);
+      body.appendChild(select);
+
+      var add = el('button', 'fbtn fbtn-primary', '+ 添加章节');
+      add.type = 'button';
+      add.addEventListener('click', function () {
+        var parts = String(select.value).split('|');
+        var md = Form.addSection(api.getMd(), parts[1], parts[0]);
+        var idx = Form.walk(md).sections.length - 1;
+        apply(md, true, 'sec:' + idx + ':title');
+      });
+      body.appendChild(add);
+
+      card.appendChild(body);
+      return card;
+    }
+
+    /* ---------------------------------------------------------- 事件绑定 */
+
+    container.addEventListener('input', function (ev) {
+      var input = ev.target;
+      if (!input || !input.getAttribute) return;
+      var path = input.getAttribute('data-path');
+      if (!path) return;
+      var md = api.getMd();
+      var value = input.value;
+      var parts = path.split(':');
+      var next = null;
+
+      if (path === 'name') next = Form.setHeaderName(md, value);
+      else if (path === 'subtitle' || parts[0] === 'contact') {
+        var model = Form.walk(md);
+        var contacts = model.header.info.contacts.slice();
+        var subtitle = model.header.info.subtitle;
+        if (path === 'subtitle') subtitle = value;
+        else contacts[Number(parts[1])] = value;
+        next = Form.setHeaderInfo(md, { subtitle: subtitle, contacts: contacts });
+      } else if (parts[0] === 'sec') {
+        var si = Number(parts[1]);
+        if (parts[2] === 'title') next = Form.setSectionTitle(md, si, value);
+        else if (parts[2] === 'text') next = Form.setSectionText(md, si, value);
+        else if (parts[2] === 'entry') {
+          var ei = Number(parts[3]);
+          if (parts[4] === 'title' || parts[4] === 'role' || parts[4] === 'meta') {
+            var patch = {};
+            patch[parts[4]] = value;
+            next = Form.setEntryHead(md, si, ei, patch);
+          } else if (parts[4] === 'sub') next = Form.setEntrySub(md, si, ei, value);
+          else if (parts[4] === 'bullet') next = Form.setBullet(md, si, ei, Number(parts[5]), value);
+        } else if (parts[2] === 'bullet') {
+          next = Form.setBullet(md, si, null, Number(parts[3]), value);
+        } else if (parts[2] === 'cell') {
+          next = Form.setTableCell(md, si, Number(parts[3]), Number(parts[4]), value);
+        }
+      }
+      if (next && next !== md) apply(next, false);
+    });
+
+    render();
+    return { render: render };
+  }
+
+  root.ResumeFormView = { mount: mount };
+})(window);
+</script>
+<script>
 /* ==== assets/app.js ==== */
 /*!
  * app.js —— 简历生成器工作台逻辑
@@ -1688,7 +2847,7 @@ body { overflow: hidden; }
   };
 
   var prefs = Object.assign(
-    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false },
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form' },
     readJSON(LS.prefs, {})
   );
 
@@ -1701,6 +2860,8 @@ body { overflow: hidden; }
 
   var $ = function (id) { return document.getElementById(id); };
   var editor = $('editor');
+  var formView = $('formView');
+  var formCtl = null;          // 表单视图控制器（init 时挂载）
   var sheet = $('sheet');
   var sheetWrap = $('sheetWrap');
   var previewScroll = $('previewScroll');
@@ -1999,6 +3160,8 @@ body { overflow: hidden; }
     $('statusSaved').classList.add('saved');
     $('statusSaved').textContent = '已打开';
     render();
+    resetDocHistory();
+    refreshForm();
     toast('已打开《' + name + '》');
   }
 
@@ -2010,6 +3173,8 @@ body { overflow: hidden; }
     setMarkdown(NEW_DOC, false);
     saveCurrent(true);
     render();
+    resetDocHistory();
+    refreshForm();
     toast('已新建空白简历');
   }
 
@@ -2046,6 +3211,8 @@ body { overflow: hidden; }
     saveCurrent(true);
     refreshDocList();
     render();
+    resetDocHistory();
+    refreshForm();
     toast('已删除');
   }
 
@@ -2097,9 +3264,11 @@ body { overflow: hidden; }
       state.name = file.name.replace(/\.(md|markdown|txt)$/i, '') || '导入的简历';
       state.fileHandle = null;
       $('docName').value = state.name;
-      setMarkdown(text, false);
+      setMarkdown(String(text).replace(/\r\n?/g, '\n'), false);
       saveCurrent(true);
       render();
+      resetDocHistory();
+      refreshForm();
       toast('已导入 ' + file.name);
     }).catch(function () { toast('读取文件失败'); });
   }
@@ -2199,6 +3368,7 @@ body { overflow: hidden; }
 
         var dataUri = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
         patchSettings({ photo: dataUri, photoSize: state.settings.photoSize || '26mm' });
+        refreshForm();
         toast('已插入证件照：' + w + '×' + h + '，约 ' + Math.round(dataUri.length / 1024) +
           ' KB，已内嵌进 .md（可在「排版」里调宽度或移除）', 4200);
       };
@@ -2219,7 +3389,95 @@ body { overflow: hidden; }
     var body = idx < 0 ? '' : next.slice(idx);
     head = head.replace(/^[ \t]*!\[[^\]]*\]\([^)\r\n]+\)[ \t]*\r?\n/m, '');
     setMarkdown(head + body, true);
+    refreshForm();
     toast('已移除证件照');
+  }
+
+  /* ------------------------------------------------------------ 表单模式 / 撤销 / 定位 */
+
+  var undoStack = [];
+  var lastUndoAt = 0;
+
+  function updateUndoBtn() {
+    var b = $('btnUndo');
+    if (b) b.disabled = undoStack.length === 0;
+  }
+
+  /** structural=true 时一定记一步；连续打字的修改合并成一步，免得撤销要按几十次 */
+  function pushUndo(structural) {
+    var now = Date.now();
+    if (!structural && undoStack.length && now - lastUndoAt < 1500) { lastUndoAt = now; return; }
+    undoStack.push(state.markdown);
+    if (undoStack.length > 80) undoStack.shift();
+    lastUndoAt = now;
+    updateUndoBtn();
+  }
+
+  function resetDocHistory() {
+    undoStack.length = 0;
+    updateUndoBtn();
+  }
+
+  function undoLast() {
+    if (!undoStack.length) { toast('没有可撤销的操作'); return; }
+    setMarkdown(undoStack.pop(), true);
+    refreshForm();
+    updateUndoBtn();
+    toast('已撤销');
+  }
+
+  function refreshForm(focusPath) {
+    if (formCtl) formCtl.render(focusPath);
+  }
+
+  function hasPhoto() {
+    return !!(state.settings.photo || (state.header && state.header.photo));
+  }
+
+  /** 表单视图需要的回调：读写文档、证件照入口、在预览里定位 */
+  function formApi() {
+    return {
+      getMd: function () { return state.markdown; },
+      apply: function (md, structural, focusPath) {
+        if (md == null || md === state.markdown) return;
+        pushUndo(!!structural);
+        setMarkdown(md, true);
+        if (structural) refreshForm(focusPath);
+      },
+      hasPhoto: hasPhoto,
+      pickPhoto: function () { $('photoInput').click(); },
+      removePhoto: removePhoto,
+      locate: locateSection
+    };
+  }
+
+  /** 把预览滚动到第 i 个章节，并闪一下高亮 */
+  function locateSection(i) {
+    var nodes = sheet.querySelectorAll('.r-section');
+    var node = nodes[i];
+    if (!node) { toast('预览里没有对应的章节内容'); return; }
+    var wrapRect = sheetWrap.getBoundingClientRect();
+    var nodeRect = node.getBoundingClientRect();
+    previewScroll.scrollTop += (nodeRect.top - wrapRect.top) - 24;
+    node.classList.add('is-target');
+    window.setTimeout(function () { node.classList.remove('is-target'); }, 1200);
+  }
+
+  function setEditorMode(mode) {
+    prefs.mode = mode === 'markdown' ? 'markdown' : 'form';
+    savePrefs();
+    var isForm = prefs.mode === 'form';
+    var tabs = $('modeTabs').querySelectorAll('.mode-tab');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('is-active', tabs[i].dataset.mode === prefs.mode);
+    }
+    formView.hidden = !isForm;
+    editor.hidden = isForm;
+    $('mdTools').hidden = isForm;
+    $('btnUndo').hidden = !isForm;
+    updateUndoBtn();
+    if (isForm) refreshForm();
+    else editor.focus();
   }
 
   /* ------------------------------------------------------------ 提示与弹窗 */
@@ -2392,6 +3650,30 @@ body { overflow: hidden; }
       this.textContent = panel.hidden ? '排版 ▾' : '排版 ▴';
     });
 
+    // 表单 / Markdown 页签
+    $('modeTabs').addEventListener('click', function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest('.mode-tab') : null;
+      if (btn) setEditorMode(btn.dataset.mode);
+    });
+    $('btnUndo').addEventListener('click', undoLast);
+
+    // 表单模式下焦点不在编辑器里，快捷键在这里兜底（编辑器内的由上面的 handler 处理）
+    document.addEventListener('keydown', function (ev) {
+      var mod = ev.ctrlKey || ev.metaKey;
+      if (!mod || ev.target === editor) return;
+      var key = String(ev.key || '').toLowerCase();
+      if (key === 's') {
+        ev.preventDefault();
+        if (state.fileHandle) saveToDisk(); else saveCurrent();
+      } else if (key === 'p') {
+        ev.preventDefault();
+        exportPdf();
+      } else if (key === 'z' && prefs.mode === 'form') {
+        ev.preventDefault();
+        undoLast();
+      }
+    });
+
     // 拖动分隔条
     splitter.addEventListener('mousedown', function (ev) {
       ev.preventDefault();
@@ -2465,6 +3747,8 @@ body { overflow: hidden; }
     render();
     refreshDocList();
     applyZoom();
+    if (window.ResumeFormView) formCtl = window.ResumeFormView.mount(formView, formApi());
+    setEditorMode(prefs.mode);
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
     // 应用快捷方式：index.html?action=new 直接新建一份空白简历

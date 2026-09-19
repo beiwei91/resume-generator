@@ -130,7 +130,7 @@
   };
 
   var prefs = Object.assign(
-    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false },
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form' },
     readJSON(LS.prefs, {})
   );
 
@@ -143,6 +143,8 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var editor = $('editor');
+  var formView = $('formView');
+  var formCtl = null;          // 表单视图控制器（init 时挂载）
   var sheet = $('sheet');
   var sheetWrap = $('sheetWrap');
   var previewScroll = $('previewScroll');
@@ -441,6 +443,8 @@
     $('statusSaved').classList.add('saved');
     $('statusSaved').textContent = '已打开';
     render();
+    resetDocHistory();
+    refreshForm();
     toast('已打开《' + name + '》');
   }
 
@@ -452,6 +456,8 @@
     setMarkdown(NEW_DOC, false);
     saveCurrent(true);
     render();
+    resetDocHistory();
+    refreshForm();
     toast('已新建空白简历');
   }
 
@@ -488,6 +494,8 @@
     saveCurrent(true);
     refreshDocList();
     render();
+    resetDocHistory();
+    refreshForm();
     toast('已删除');
   }
 
@@ -539,9 +547,11 @@
       state.name = file.name.replace(/\.(md|markdown|txt)$/i, '') || '导入的简历';
       state.fileHandle = null;
       $('docName').value = state.name;
-      setMarkdown(text, false);
+      setMarkdown(String(text).replace(/\r\n?/g, '\n'), false);
       saveCurrent(true);
       render();
+      resetDocHistory();
+      refreshForm();
       toast('已导入 ' + file.name);
     }).catch(function () { toast('读取文件失败'); });
   }
@@ -641,6 +651,7 @@
 
         var dataUri = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
         patchSettings({ photo: dataUri, photoSize: state.settings.photoSize || '26mm' });
+        refreshForm();
         toast('已插入证件照：' + w + '×' + h + '，约 ' + Math.round(dataUri.length / 1024) +
           ' KB，已内嵌进 .md（可在「排版」里调宽度或移除）', 4200);
       };
@@ -661,7 +672,95 @@
     var body = idx < 0 ? '' : next.slice(idx);
     head = head.replace(/^[ \t]*!\[[^\]]*\]\([^)\r\n]+\)[ \t]*\r?\n/m, '');
     setMarkdown(head + body, true);
+    refreshForm();
     toast('已移除证件照');
+  }
+
+  /* ------------------------------------------------------------ 表单模式 / 撤销 / 定位 */
+
+  var undoStack = [];
+  var lastUndoAt = 0;
+
+  function updateUndoBtn() {
+    var b = $('btnUndo');
+    if (b) b.disabled = undoStack.length === 0;
+  }
+
+  /** structural=true 时一定记一步；连续打字的修改合并成一步，免得撤销要按几十次 */
+  function pushUndo(structural) {
+    var now = Date.now();
+    if (!structural && undoStack.length && now - lastUndoAt < 1500) { lastUndoAt = now; return; }
+    undoStack.push(state.markdown);
+    if (undoStack.length > 80) undoStack.shift();
+    lastUndoAt = now;
+    updateUndoBtn();
+  }
+
+  function resetDocHistory() {
+    undoStack.length = 0;
+    updateUndoBtn();
+  }
+
+  function undoLast() {
+    if (!undoStack.length) { toast('没有可撤销的操作'); return; }
+    setMarkdown(undoStack.pop(), true);
+    refreshForm();
+    updateUndoBtn();
+    toast('已撤销');
+  }
+
+  function refreshForm(focusPath) {
+    if (formCtl) formCtl.render(focusPath);
+  }
+
+  function hasPhoto() {
+    return !!(state.settings.photo || (state.header && state.header.photo));
+  }
+
+  /** 表单视图需要的回调：读写文档、证件照入口、在预览里定位 */
+  function formApi() {
+    return {
+      getMd: function () { return state.markdown; },
+      apply: function (md, structural, focusPath) {
+        if (md == null || md === state.markdown) return;
+        pushUndo(!!structural);
+        setMarkdown(md, true);
+        if (structural) refreshForm(focusPath);
+      },
+      hasPhoto: hasPhoto,
+      pickPhoto: function () { $('photoInput').click(); },
+      removePhoto: removePhoto,
+      locate: locateSection
+    };
+  }
+
+  /** 把预览滚动到第 i 个章节，并闪一下高亮 */
+  function locateSection(i) {
+    var nodes = sheet.querySelectorAll('.r-section');
+    var node = nodes[i];
+    if (!node) { toast('预览里没有对应的章节内容'); return; }
+    var wrapRect = sheetWrap.getBoundingClientRect();
+    var nodeRect = node.getBoundingClientRect();
+    previewScroll.scrollTop += (nodeRect.top - wrapRect.top) - 24;
+    node.classList.add('is-target');
+    window.setTimeout(function () { node.classList.remove('is-target'); }, 1200);
+  }
+
+  function setEditorMode(mode) {
+    prefs.mode = mode === 'markdown' ? 'markdown' : 'form';
+    savePrefs();
+    var isForm = prefs.mode === 'form';
+    var tabs = $('modeTabs').querySelectorAll('.mode-tab');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('is-active', tabs[i].dataset.mode === prefs.mode);
+    }
+    formView.hidden = !isForm;
+    editor.hidden = isForm;
+    $('mdTools').hidden = isForm;
+    $('btnUndo').hidden = !isForm;
+    updateUndoBtn();
+    if (isForm) refreshForm();
+    else editor.focus();
   }
 
   /* ------------------------------------------------------------ 提示与弹窗 */
@@ -834,6 +933,30 @@
       this.textContent = panel.hidden ? '排版 ▾' : '排版 ▴';
     });
 
+    // 表单 / Markdown 页签
+    $('modeTabs').addEventListener('click', function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest('.mode-tab') : null;
+      if (btn) setEditorMode(btn.dataset.mode);
+    });
+    $('btnUndo').addEventListener('click', undoLast);
+
+    // 表单模式下焦点不在编辑器里，快捷键在这里兜底（编辑器内的由上面的 handler 处理）
+    document.addEventListener('keydown', function (ev) {
+      var mod = ev.ctrlKey || ev.metaKey;
+      if (!mod || ev.target === editor) return;
+      var key = String(ev.key || '').toLowerCase();
+      if (key === 's') {
+        ev.preventDefault();
+        if (state.fileHandle) saveToDisk(); else saveCurrent();
+      } else if (key === 'p') {
+        ev.preventDefault();
+        exportPdf();
+      } else if (key === 'z' && prefs.mode === 'form') {
+        ev.preventDefault();
+        undoLast();
+      }
+    });
+
     // 拖动分隔条
     splitter.addEventListener('mousedown', function (ev) {
       ev.preventDefault();
@@ -907,6 +1030,8 @@
     render();
     refreshDocList();
     applyZoom();
+    if (window.ResumeFormView) formCtl = window.ResumeFormView.mount(formView, formApi());
+    setEditorMode(prefs.mode);
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
     // 应用快捷方式：index.html?action=new 直接新建一份空白简历

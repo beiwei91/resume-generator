@@ -204,6 +204,45 @@ check('语法速查里写了证件照用法',
   /photo:/.test(index) && /photoSize/.test(index) && /photoShape/.test(index));
 check('示例证件照素材存在', fs.existsSync(path.join(ROOT, 'assets', 'sample-photo.png')));
 
+/* ================================================================== 6. 表单模式 */
+
+section('表单模式');
+check('index.html 引入了表单逻辑与视图',
+  /assets\/resume-form\.js/.test(index) && /assets\/form-view\.js/.test(index));
+check('有「表单 / Markdown」页签与表单容器',
+  /id="modeTabs"/.test(index) && /data-mode="form"/.test(index) && /id="formView"/.test(index));
+check('撤销按钮与「Markdown 模式才有」的插入工具条',
+  /id="btnUndo"/.test(index) && /id="mdTools" hidden/.test(index));
+
+if (fs.existsSync(single)) {
+  const dom = dumpDom(pathToFileURL(single).href);
+  const paths = [
+    'data-path="name"',
+    'data-path="subtitle"',
+    'data-path="contact:0"',
+    'data-path="sec:0:title"',
+    'data-path="sec:0:text"',
+    'data-path="sec:1:title"',
+    'data-path="sec:1:entry:0:title"',
+    'data-path="sec:1:entry:0:role"',
+    'data-path="sec:1:entry:0:meta"',
+    'data-path="sec:1:entry:0:sub"',
+    'data-path="sec:1:entry:0:bullet:0"',
+    'data-path="sec:3:cell:1:1"'
+  ];
+  const missing = paths.filter((p) => dom.indexOf(p) < 0);
+  check('表单按模块渲染出全部字段', missing.length === 0,
+    missing.length ? '缺少 ' + missing.join(', ') : paths.length + ' 个字段都在');
+  check('章节卡片带标题输入 / 定位 / 添加章节',
+    /fcard-title-input/.test(dom) && /定位/.test(dom) && /添加章节/.test(dom));
+  check('默认表单模式：Markdown 文本框处于隐藏状态', /id="editor"[^>]*hidden/.test(dom));
+
+  const formShot = path.join(BUILD, 'form-view.png');
+  fs.rmSync(formShot, { force: true });
+  chrome(['--screenshot=' + formShot, '--window-size=1400,1000', pathToFileURL(single).href]);
+  check('表单模式截图生成', fs.existsSync(formShot), path.relative(ROOT, formShot));
+}
+
 /* ================================================================== 结果 */
 
 console.log('\n结果');
