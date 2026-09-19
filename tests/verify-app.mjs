@@ -384,8 +384,10 @@ section('GitHub 入口');
   check('外链开了新窗口且带 rel=noreferrer', /target="_blank"/.test(linkTag) && /rel="noreferrer"/.test(linkTag), linkTag.slice(0, 80));
   check('语法速查里有 Star / Issue 邀请（含喵）',
     /issues/.test(index) && /Star/.test(index) && /谢谢喵/.test(index));
-  check('入口有独立样式（星标为金色，悬停有反馈）',
-    /\.gh-link\s*\{/.test(css) && /\.gh-link \.star/.test(css) && /\.gh-link:hover/.test(css));
+  check('入口有独立样式（金色胶囊 + 星标呼吸动画，且尊重减少动态效果）',
+    /\.gh-link\s*\{/.test(css) && /\.gh-link \.star/.test(css) && /\.gh-link:hover/.test(css) &&
+    /linear-gradient\(180deg, #fff5da/.test(css) &&
+    /@media \(prefers-reduced-motion: no-preference\)[\s\S]{0,200}ghTwinkle/.test(css));
   check('打印时不会印出来（跟随顶栏一起隐藏）',
     /@media print \{[\s\S]*?\.appbar,[\s\S]*?display: none !important;/.test(css));
 }

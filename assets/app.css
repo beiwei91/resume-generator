@@ -100,18 +100,38 @@ body { overflow: hidden; }
 
 .doc-name + .btn-select { max-width: 150px; }
 
-/* GitHub 入口：放在工具区里，不抢「导出 PDF」的位置 */
+/* GitHub 入口：金色胶囊，比旁边的工具按钮显眼一点，但不抢「导出 PDF」的位置 */
 .gh-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   text-decoration: none;
-  color: #26303f;
+  font-weight: 600;
+  color: #7a4b00;
+  background: linear-gradient(180deg, #fff5da, #ffe4a8);
+  border: 1px solid #e6bc55;
+  box-shadow: 0 1px 2px rgba(170, 120, 0, .18);
 }
-.gh-link .star { color: #d99a00; font-size: 13px; line-height: 1; }
-.gh-link:hover { border-color: #eac263; background: #fffaef; }
+.gh-link .star { color: #d99300; font-size: 14px; }
+.gh-link:hover {
+  color: #6b4000;
+  background: linear-gradient(180deg, #ffefc4, #ffd98a);
+  border-color: #d8a63a;
+  box-shadow: 0 2px 7px rgba(170, 120, 0, .3);
+}
+/* 星标轻轻呼吸一下；系统开了「减少动态效果」就不动 */
+@media (prefers-reduced-motion: no-preference) {
+  .gh-link .star {
+    display: inline-block;
+    animation: ghTwinkle 2.6s ease-in-out infinite;
+  }
+}
+@keyframes ghTwinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.22) rotate(-8deg); opacity: .8; }
+}
 .gh-note a { color: #2563eb; }
-.gh-note .star { color: #d99a00; }
+.gh-note .star { color: #d99300; font-size: 13px; }
 
 /* ------------------------------------------------------------ 工作区 */
 
