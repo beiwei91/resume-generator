@@ -4,9 +4,20 @@
 
 - 双击根目录的 `启动简历生成器.vbs` → 用应用窗口直接打开本地 HTML（无后台进程、不需要 Node）
 - 或者直接双击 `简历生成器-单文件.html` / `index.html`
+- 或者用在线版 <https://beiwei91.github.io/resume-generator/>（走 HTTPS，更不需要本地服务）
 
 它们只服务一个场景：**把应用安装成 PWA**（桌面图标、独立窗口、离线缓存）。
-Service Worker 只能在 `localhost` / HTTPS 下注册，所以那时需要一个本地 HTTP 服务。
+Service Worker 只能在 `localhost` / HTTPS 下注册，所以那时需要一个安全上下文。
+
+## 若用在线版（GitHub Pages，推荐）
+
+HTTPS 已经满足条件，**完全不需要 server.js**，只差两样东西：
+
+1. 把 `manifest.webmanifest`、`sw.js` 放回上一级（项目根）目录；
+2. 在 `index.html` 的 `</head>` 前加回 `<link rel="manifest" href="manifest.webmanifest">`，
+   并在 `</body>` 前加回 Service Worker 注册（见下方「想恢复的话」第 3 步的代码块）。
+
+推送后刷新在线页面，Chrome / Edge 地址栏右侧就会出现「安装」图标；装好后有桌面图标、独立窗口，断网也能打开。
 
 ## 里面有什么
 

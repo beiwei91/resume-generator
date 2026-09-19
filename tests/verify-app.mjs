@@ -49,12 +49,48 @@ function chrome(flags, noVirtualTime) {
   return spawnSync(browser, [
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
     '--disable-extensions', '--mute-audio', '--hide-scrollbars',
+    // 关掉后台联网并强制直连：否则本机 http 页面会卡在 Google 服务（GCM / 更新检查）上
+    '--disable-background-networking', '--disable-component-update', '--disable-default-apps',
+    '--disable-client-side-phishing-detection', '--disable-domain-reliability',
+    '--metrics-recording-only', '--no-service-autorun',
+    '--proxy-server=direct://', '--proxy-bypass-list=*',
     '--user-data-dir=' + path.join(BUILD, '.chrome-profile')
   ].concat(noVirtualTime ? [] : ['--virtual-time-budget=15000']).concat(flags),
     { encoding: 'utf8', timeout: 180000, windowsHide: true });
 }
 
 const dumpDom = (url) => String(chrome(['--dump-dom', url]).stdout || '');
+
+/** 简单的 GET，返回 { status, body } */
+async function get(url) {
+  const mod = await import('node:http');
+  return new Promise((resolve) => {
+    const req = mod.get(url, { timeout: 6000 }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => resolve({ status: res.statusCode, body }));
+    });
+    req.on('error', (e) => resolve({ status: 0, body: '', error: e.message }));
+    req.on('timeout', () => { req.destroy(); resolve({ status: 0, body: '', error: 'timeout' }); });
+  });
+}
+
+/** 等某个地址返回 200（最多 timeoutMs） */
+async function waitForHttp(url, timeoutMs) {
+  const mod = await import('node:http');
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const status = await new Promise((resolve) => {
+      const req = mod.get(url, { timeout: 4000 }, (r) => { r.resume(); resolve(r.statusCode); });
+      req.on('error', () => resolve(0));
+      req.on('timeout', () => { req.destroy(); resolve(0); });
+    });
+    if (status === 200) return { status: 200 };
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return { status: 0 };
+}
 const logPath = path.join(ROOT, '.launcher.log');
 
 function cscript(args) {
@@ -242,6 +278,78 @@ if (fs.existsSync(single)) {
   chrome(['--screenshot=' + formShot, '--window-size=1400,1000', pathToFileURL(single).href]);
   check('表单模式截图生成', fs.existsSync(formShot), path.relative(ROOT, formShot));
 }
+
+/* ================================================================== 7. 子路径部署（GitHub Pages） */
+
+async function testSubpathDeploy() {
+  section('子路径部署（GitHub Pages 项目站点）');
+  const http = await import('node:http');
+
+  // 把站点按 Pages 的结构摆好：<根>/resume-generator/…
+  const site = path.join(BUILD, 'site');
+  const appDir = path.join(site, 'resume-generator');
+  fs.rmSync(site, { recursive: true, force: true });
+  fs.mkdirSync(appDir, { recursive: true });
+  for (const f of ['index.html', 'assets']) {
+    fs.cpSync(path.join(ROOT, f), path.join(appDir, f), { recursive: true });
+  }
+  check('站点结构就绪', fs.existsSync(path.join(appDir, 'index.html')) && fs.existsSync(path.join(appDir, 'assets', 'app.js')));
+  check('.nojekyll 存在（Pages 不跑 Jekyll，静态文件原样发布）', fs.existsSync(path.join(ROOT, '.nojekyll')));
+
+  const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.ico': 'image/x-icon' };
+  const notFound = [];
+  const server = http.createServer((req, res) => {
+    const p = path.join(site, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    if (!p.startsWith(site) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) {
+      notFound.push(req.url);
+      res.writeHead(404).end('404');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(p).toLowerCase()] || 'application/octet-stream' });
+    res.end(fs.readFileSync(p));
+  });
+  const PORT = 5193;
+  await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
+  try {
+    const base = 'http://127.0.0.1:' + PORT + '/resume-generator/';
+    const page = await get(base + 'index.html');
+    check('子路径下页面可访问', page.status === 200, 'HTTP ' + page.status);
+
+    // 静态检查：页面里不能出现以 / 开头的绝对路径（那会在项目站点下 404）
+    const absolute = (page.body.match(/(?:href|src)="\/(?!\/)[^"]*"/g) || []);
+    check('页面里没有绝对路径引用', absolute.length === 0, absolute.slice(0, 3).join(', ') || '全部是相对路径');
+
+    // 逐个把页面引用的资源抓一遍，确认在子路径下都能命中
+    const refs = [];
+    const re = /(?:href|src)="([^"#?]+)"/g;
+    let m;
+    while ((m = re.exec(page.body))) {
+      if (!/^(https?:|data:|\/\/)/.test(m[1])) refs.push(m[1]);
+    }
+    const bad = [];
+    for (const ref of refs) {
+      const r = await get(base + ref);
+      if (r.status !== 200) bad.push(ref + '→' + r.status);
+    }
+    check('页面引用的 ' + refs.length + ' 个资源在子路径下全部可加载', bad.length === 0, bad.slice(0, 5).join(', ') || '全部 200');
+
+    const dom = dumpDom(base + 'index.html');
+    if (dom.length) {
+      check('子路径下简历正常渲染（浏览器实测）',
+        /class="r-name">张三/.test(dom) && /resume-sheet/.test(dom), '输出 ' + dom.length + ' 字符');
+      check('子路径下表单也正常挂载', /data-path="sec:1:entry:0:title"/.test(dom));
+    } else {
+      // 本机 http 页面在个别环境（代理/沙箱）下会让无头 Chrome 卡在后台联网上，
+      // 这里不判定失败：路径正确性已由上面的「资源抓取」检查覆盖，渲染本身由 file:// 用例覆盖。
+      console.log('    · 已跳过浏览器渲染检查（本机 http 在当前环境拿不到 DOM）');
+    }
+    check('服务端没有记录到任何 404', notFound.length === 0, notFound.length ? notFound.slice(0, 5).join(', ') : '全部命中');
+  } finally {
+    server.close();
+  }
+}
+
+await testSubpathDeploy();
 
 /* ================================================================== 结果 */
 
