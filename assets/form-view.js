@@ -21,6 +21,13 @@
     return n;
   }
 
+  /** 给输入框挂上路径，并记住「这个值已经写进文档了」——用于重绘前的快速差量提交 */
+  function withPath(input, path, value) {
+    input.setAttribute('data-path', path);
+    input.__mdValue = value == null ? '' : String(value);
+    return input;
+  }
+
   function field(label, value, opts) {
     opts = opts || {};
     var wrap = el('label', 'fld' + (opts.wide ? ' fld-wide' : ''));
@@ -31,7 +38,7 @@
     else input.type = 'text';
     input.value = value == null ? '' : value;
     if (opts.placeholder) input.placeholder = opts.placeholder;
-    if (opts.path) input.setAttribute('data-path', opts.path);
+    if (opts.path) withPath(input, opts.path, input.value);
     wrap.appendChild(input);
     return wrap;
   }
@@ -48,6 +55,72 @@
 
     function apply(md, structural, focusPath) {
       api.apply(md, structural, focusPath);
+    }
+
+    /** 一个输入框的值 → 写进文档（只处理稳定路径；contact-new 是临时空位，在输入监听里单独处理） */
+    function applyPath(md, path, value) {
+      var parts = path.split(':');
+      if (path === 'name') return Form.setHeaderName(md, value);
+      if (path === 'subtitle' || parts[0] === 'contact') {
+        var h = Form.walk(md).header.info;
+        var contacts = h.contacts.slice();
+        var subtitle = h.subtitle;
+        if (path === 'subtitle') subtitle = value;
+        else contacts[Number(parts[1])] = value;
+        return Form.setHeaderInfo(md, { subtitle: subtitle, contacts: contacts });
+      }
+      if (parts[0] !== 'sec') return null;
+      var si = Number(parts[1]);
+      if (parts[2] === 'title') return Form.setSectionTitle(md, si, value);
+      if (parts[2] === 'text') return Form.setSectionText(md, si, value);
+      if (parts[2] === 'bullet') return Form.setBullet(md, si, null, Number(parts[3]), value);
+      if (parts[2] === 'cell') return Form.setTableCell(md, si, Number(parts[3]), Number(parts[4]), value);
+      if (parts[2] === 'entry') {
+        var ei = Number(parts[3]);
+        if (parts[4] === 'sub') return Form.setEntrySub(md, si, ei, value);
+        if (parts[4] === 'bullet') return Form.setBullet(md, si, ei, Number(parts[5]), value);
+        var patch = {};
+        patch[parts[4]] = value;
+        return Form.setEntryHead(md, si, ei, patch);
+      }
+      return null;
+    }
+
+    /** 给输入框挂上路径，并记住「这个值已经写进文档了」——用于重绘前的快速差量提交 */
+    function withPath(input, path, value) {
+      input.setAttribute('data-path', path);
+      input.__mdValue = value == null ? '' : String(value);
+      return input;
+    }
+
+    /**
+     * 重绘前把界面上「改过但还没写进文档」的输入提交进文档。
+     * 表单里的文本编辑是不重绘的（为了不打断打字），所以文档里可能有「界面已改、文档还没写」的
+     * 内容 —— 一旦结构性操作触发重绘，这些内容就会被冲掉。这里统一兜一层。
+     * 用 __mdValue 做差量判断：正常情况一个字段都不用处理，大文档也不会卡。
+     */
+    function commitInputs() {
+      var before = api.getMd();
+      var md = before;
+      var fields = container.querySelectorAll('[data-path]');
+      for (var i = 0; i < fields.length; i++) {
+        var el0 = fields[i];
+        var path = el0.getAttribute('data-path');
+        if (!path || path === 'contact-new') continue;
+        if (el0.__mdValue === undefined || el0.value === el0.__mdValue) continue;
+        var next = applyPath(md, path, el0.value);
+        if (next && next !== md) { md = next; el0.__mdValue = el0.value; }
+      }
+      return md === before ? null : md;
+    }
+
+    /** 结构性操作统一入口：先提交界面输入 → 再执行操作 → 最后重绘（focusPath 可以是函数，按新文档算） */
+    function structural(fn, focusPath) {
+      var merged = commitInputs();
+      var base = merged || api.getMd();
+      var next = fn(base);
+      if (next == null || next === base) { render(); return; }
+      api.apply(next, true, typeof focusPath === 'function' ? focusPath(next) : focusPath);
     }
 
     function render(focusPath) {
@@ -86,11 +159,13 @@
         line.appendChild(field('', c, { path: 'contact:' + i, placeholder: '138-0000-0000' }));
         var del = iconBtn('×', '删除这条联系方式', 'ibtn-danger');
         del.addEventListener('click', function () {
-          // 读「此刻」的文档，别用渲染时的旧快照 —— 否则会把刚输入还没重绘的内容覆盖掉
-          var cur = Form.walk(api.getMd());
-          var next = cur.header.info.contacts.slice();
-          next.splice(i, 1);
-          apply(Form.setHeaderInfo(api.getMd(), { subtitle: cur.header.info.subtitle, contacts: next }), true);
+          structural(function (md) {
+            // 读「此刻」的文档，别用渲染时的旧快照 —— 否则会把刚输入还没重绘的内容覆盖掉
+            var cur = Form.walk(md).header.info;
+            var next = cur.contacts.slice();
+            next.splice(i, 1);
+            return Form.setHeaderInfo(md, { subtitle: cur.subtitle, contacts: next });
+          });
         });
         line.appendChild(del);
         contacts.appendChild(line);
@@ -157,7 +232,7 @@
       titleInput.className = 'fcard-title-input';
       titleInput.type = 'text';
       titleInput.value = sec.title;
-      titleInput.setAttribute('data-path', 'sec:' + si + ':title');
+      withPath(titleInput, 'sec:' + si + ':title', sec.title);
       titleInput.placeholder = '章节标题';
       head.appendChild(titleInput);
 
@@ -170,18 +245,18 @@
 
       var up = iconBtn('↑', '上移章节');
       up.disabled = si === 0;
-      up.addEventListener('click', function () { apply(Form.moveSection(api.getMd(), si, -1), true); });
+      up.addEventListener('click', function () { structural(function (md) { return Form.moveSection(md, si, -1); }); });
       head.appendChild(up);
 
       var down = iconBtn('↓', '下移章节');
       down.disabled = si === total - 1;
-      down.addEventListener('click', function () { apply(Form.moveSection(api.getMd(), si, 1), true); });
+      down.addEventListener('click', function () { structural(function (md) { return Form.moveSection(md, si, 1); }); });
       head.appendChild(down);
 
       var del = iconBtn('×', '删除整个章节', 'ibtn-danger');
       del.addEventListener('click', function () {
         if (!root.confirm('删除章节「' + (sec.title || '(无标题)') + '」及其全部内容？')) return;
-        apply(Form.removeSection(api.getMd(), si), true);
+        structural(function (md) { return Form.removeSection(md, si); });
       });
       head.appendChild(del);
 
@@ -193,8 +268,11 @@
         sec.entries.forEach(function (entry, ei) { body.appendChild(renderEntry(sec, si, entry, ei)); });
         var addEntry = el('button', 'fbtn', '+ 添加经历 / 项目条目');
         addEntry.type = 'button';
+        addEntry.setAttribute('data-act', 'add-entry');
         addEntry.addEventListener('click', function () {
-          apply(Form.addEntry(api.getMd(), si, sec.entries.length - 1), true, 'sec:' + si + ':entry:' + sec.entries.length + ':title');
+          structural(function (md) {
+            return Form.addEntry(md, si, Form.walk(md).sections[si].entries.length - 1);
+          }, 'sec:' + si + ':entry:' + (sec.entries.length) + ':title');
         });
         body.appendChild(addEntry);
       } else if (sec.kind === 'list' || sec.kind === 'empty') {
@@ -204,8 +282,9 @@
           body.appendChild(hint);
           var mkEntry = el('button', 'fbtn', '+ 改成「经历条目」型');
           mkEntry.type = 'button';
+          mkEntry.setAttribute('data-act', 'make-entries');
           mkEntry.addEventListener('click', function () {
-            apply(Form.addEntry(api.getMd(), si, null), true, 'sec:' + si + ':entry:0:title');
+            structural(function (md) { return Form.addEntry(md, si, null); }, 'sec:' + si + ':entry:0:title');
           });
           body.appendChild(mkEntry);
         }
@@ -228,18 +307,18 @@
 
       var up = iconBtn('↑', '上移条目');
       up.disabled = ei === 0;
-      up.addEventListener('click', function () { apply(Form.moveEntry(api.getMd(), si, ei, -1), true); });
+      up.addEventListener('click', function () { structural(function (md) { return Form.moveEntry(md, si, ei, -1); }); });
       head.appendChild(up);
 
       var down = iconBtn('↓', '下移条目');
       down.disabled = ei === sec.entries.length - 1;
-      down.addEventListener('click', function () { apply(Form.moveEntry(api.getMd(), si, ei, 1), true); });
+      down.addEventListener('click', function () { structural(function (md) { return Form.moveEntry(md, si, ei, 1); }); });
       head.appendChild(down);
 
       var del = iconBtn('×', '删除这条', 'ibtn-danger');
       del.addEventListener('click', function () {
         if (!root.confirm('删除「' + (entry.title || '这条经历') + '」？')) return;
-        apply(Form.removeEntry(api.getMd(), si, ei), true);
+        structural(function (md) { return Form.removeEntry(md, si, ei); });
       });
       head.appendChild(del);
       box.appendChild(head);
@@ -271,26 +350,27 @@
         }));
         var up = iconBtn('↑', '上移');
         up.disabled = bi === 0;
-        up.addEventListener('click', function () { apply(Form.moveBullet(api.getMd(), si, ei, bi, -1), true); });
+        up.addEventListener('click', function () { structural(function (md) { return Form.moveBullet(md, si, ei, bi, -1); }); });
         line.appendChild(up);
         var down = iconBtn('↓', '下移');
         down.disabled = bi === bullets.length - 1;
-        down.addEventListener('click', function () { apply(Form.moveBullet(api.getMd(), si, ei, bi, 1), true); });
+        down.addEventListener('click', function () { structural(function (md) { return Form.moveBullet(md, si, ei, bi, 1); }); });
         line.appendChild(down);
         var del = iconBtn('×', '删除这条要点', 'ibtn-danger');
-        del.addEventListener('click', function () { apply(Form.removeBullet(api.getMd(), si, ei, bi), true); });
+        del.addEventListener('click', function () { structural(function (md) { return Form.removeBullet(md, si, ei, bi); }); });
         line.appendChild(del);
         group.appendChild(line);
       });
 
       var add = el('button', 'fbtn', '+ 添加要点');
       add.type = 'button';
+      add.setAttribute('data-act', 'add-bullet');
       add.addEventListener('click', function () {
         // 加在「最外层最后一条」之后：即使末尾是子要点，新增的也是同级要点
         var baseIndent = bullets.length ? Math.min.apply(null, bullets.map(function (b) { return b.indent; })) : 0;
         var lastOuter = -1;
         bullets.forEach(function (b, i) { if (b.indent === baseIndent) lastOuter = i; });
-        apply(Form.addBullet(api.getMd(), si, ei, lastOuter >= 0 ? lastOuter : null), true,
+        structural(function (md) { return Form.addBullet(md, si, ei, lastOuter >= 0 ? lastOuter : null); },
           'sec:' + si + ':entry:' + (ei == null ? 'x' : ei) + ':bullet:' + bullets.length);
       });
       group.appendChild(add);
@@ -298,12 +378,13 @@
       if (ei != null && bullets.length) {
         var sub = el('button', 'fbtn fbtn-mini', '+ 给最后一条加子要点');
         sub.type = 'button';
+        sub.setAttribute('data-act', 'add-sub');
         sub.title = '行首缩进两个空格的二级要点';
         sub.addEventListener('click', function () {
-          var md = Form.addSubBullet(api.getMd(), si, ei, bullets.length - 1);
-          if (md === api.getMd()) return;
-          var list2 = Form.walk(md).sections[si].entries[ei].bullets;
-          apply(md, true, 'sec:' + si + ':entry:' + ei + ':bullet:' + (list2.length - 1));
+          structural(function (md) { return Form.addSubBullet(md, si, ei, bullets.length - 1); }, function (md) {
+            var list2 = Form.walk(md).sections[si].entries[ei].bullets;
+            return 'sec:' + si + ':entry:' + ei + ':bullet:' + (list2.length - 1);
+          });
         });
         group.appendChild(sub);
       }
@@ -322,11 +403,11 @@
           input.className = 'fld-input';
           input.type = 'text';
           input.value = row[ci] == null ? '' : row[ci];
-          input.setAttribute('data-path', 'sec:' + si + ':cell:' + ri + ':' + ci);
+          withPath(input, 'sec:' + si + ':cell:' + ri + ':' + ci, input.value);
           cell.appendChild(input);
           if (ri > 0 && ci === cols - 1) {
             var del = iconBtn('×', '删除这一行', 'ibtn-danger');
-            del.addEventListener('click', function () { apply(Form.removeTableRow(api.getMd(), si, ri), true); });
+            del.addEventListener('click', function () { structural(function (md) { return Form.removeTableRow(md, si, ri); }); });
             cell.appendChild(del);
           }
           tr.appendChild(cell);
@@ -336,7 +417,8 @@
       wrap.appendChild(table);
       var add = el('button', 'fbtn', '+ 添加一行');
       add.type = 'button';
-      add.addEventListener('click', function () { apply(Form.addTableRow(api.getMd(), si), true); });
+      add.setAttribute('data-act', 'add-row');
+      add.addEventListener('click', function () { structural(function (md) { return Form.addTableRow(md, si); }); });
       wrap.appendChild(add);
       return wrap;
     }
@@ -361,11 +443,12 @@
 
       var add = el('button', 'fbtn fbtn-primary', '+ 添加章节');
       add.type = 'button';
+      add.setAttribute('data-act', 'add-section');
       add.addEventListener('click', function () {
         var parts = String(select.value).split('|');
-        var md = Form.addSection(api.getMd(), parts[1], parts[0]);
-        var idx = Form.walk(md).sections.length - 1;
-        apply(md, true, 'sec:' + idx + ':title');
+        structural(function (md) { return Form.addSection(md, parts[1], parts[0]); }, function (md) {
+          return 'sec:' + (Form.walk(md).sections.length - 1) + ':title';
+        });
       });
       body.appendChild(add);
 
@@ -381,47 +464,26 @@
       var path = input.getAttribute('data-path');
       if (!path) return;
       var md = api.getMd();
-      var value = input.value;
-      var parts = path.split(':');
-      var next = null;
 
-      if (path === 'name') next = Form.setHeaderName(md, value);
-      else if (path === 'contact-new') {
-        // 「+ 添加联系方式」产生的空位：第一次输入时才追加进文档，之后转为普通位置编辑
-        var curH = Form.walk(md);
-        var newIdx = curH.header.info.contacts.length;
-        next = Form.setHeaderInfo(md, {
-          subtitle: curH.header.info.subtitle,
-          contacts: curH.header.info.contacts.concat([value])
-        });
-        if (next !== md && input.setAttribute) input.setAttribute('data-path', 'contact:' + newIdx);
-      } else if (path === 'subtitle' || parts[0] === 'contact') {
-        var model = Form.walk(md);
-        var contacts = model.header.info.contacts.slice();
-        var subtitle = model.header.info.subtitle;
-        if (path === 'subtitle') subtitle = value;
-        else contacts[Number(parts[1])] = value;
-        next = Form.setHeaderInfo(md, { subtitle: subtitle, contacts: contacts });
-      } else if (parts[0] === 'sec') {
-        var si = Number(parts[1]);
-        if (parts[2] === 'title') next = Form.setSectionTitle(md, si, value);
-        else if (parts[2] === 'text') next = Form.setSectionText(md, si, value);
-        else if (parts[2] === 'entry') {
-          var ei = Number(parts[3]);
-          if (parts[4] === 'title' || parts[4] === 'role' || parts[4] === 'meta') {
-            var patch = {};
-            patch[parts[4]] = value;
-            next = Form.setEntryHead(md, si, ei, patch);
-          } else if (parts[4] === 'sub') next = Form.setEntrySub(md, si, ei, value);
-          else if (parts[4] === 'bullet') next = Form.setBullet(md, si, ei, Number(parts[5]), value);
-        } else if (parts[2] === 'bullet') {
-          next = Form.setBullet(md, si, null, Number(parts[3]), value);
-        } else if (parts[2] === 'cell') {
-          next = Form.setTableCell(md, si, Number(parts[3]), Number(parts[4]), value);
+      // 「+ 添加联系方式」产生的空位：第一次输入时才追加进文档，之后转为普通位置编辑
+      if (path === 'contact-new') {
+        if (!String(input.value || '').trim()) return;
+        var h = Form.walk(md).header.info;
+        var idx = h.contacts.length;
+        var added = Form.setHeaderInfo(md, { subtitle: h.subtitle, contacts: h.contacts.concat([input.value]) });
+        if (added && added !== md) {
+          input.setAttribute('data-path', 'contact:' + idx);
+          input.__mdValue = input.value;
+          apply(added, false);
         }
+        return;
       }
-      if (next && next !== md) apply(next, false);
-      else if (!next) {
+
+      var next = applyPath(md, path, input.value);
+      if (next && next !== md) {
+        input.__mdValue = input.value;
+        apply(next, false);
+      } else if (!next) {
         // 操作没生效（理论上不该发生）：重绘一次，让输入框回到文档里的真实值，
         // 免得出现「框里有字、文档里没有」的静默不一致
         render();

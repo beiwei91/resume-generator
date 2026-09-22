@@ -423,6 +423,10 @@ async function testInteractions() {
     'function probe() { var n = q(".r-name"); return { name: n ? n.textContent : "", sections: doc.querySelectorAll(".r-section").length, field: (q("[data-path=\\"name\\"]") || {}).value || "" }; }',
     'function header() { var s = q("[data-path=\\"subtitle\\"]"); var cs = Array.prototype.map.call(doc.querySelectorAll("[data-path^=\\"contact:\\"]"), function (i) { return i.value; }); return { sub: s ? s.value : "", contacts: cs, preview: doc.querySelectorAll(".r-contacts li").length }; }',
     'function setVal(sel, v) { var el0 = q(sel); el0.value = v; fire(el0, "input"); return el0; }',
+    'function findPath(suffix) { var els = doc.querySelectorAll("[data-path]"); for (var i = 0; i < els.length; i++) { var p = els[i].getAttribute("data-path"); if (p.length >= suffix.length && p.slice(-suffix.length) === suffix) return p; } return null; }',
+    'function setSuffix(suffix, v, noFire) { var p = findPath(suffix); if (!p) return false; var e = doc.querySelector("[data-path=\\"" + p + "\\"]"); e.value = v; if (!noFire) fire(e, "input"); return true; }',
+    'function hasAll(vals) { var t = q("#editor").value; return vals.filter(function (v) { return t.indexOf(v) < 0; }).length === 0; }',
+    'function clickAct(act) { var b = q("[data-act=\\"" + act + "\\"]"); if (!b) return false; b.click(); return true; }',
     'window.onerror = function (msg) { say("ERROR|" + msg); };',
     'window.addEventListener("load", function () {',
     '  (async function () {',
@@ -463,7 +467,15 @@ async function testInteractions() {
     '      if (emptySlot) fire(emptySlot, "blur"); await wait(200);',
     '      var E2 = header();',
     '      var slotGone = !q("[data-path=\\"contact-new\\"]");',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone }));',
+    '      setSuffix(":entry:0:title", "F1"); setSuffix(":entry:0:role", "F2"); setSuffix(":entry:0:bullet:0", "F3");',
+    '      await wait(250);',
+    '      var F0 = hasAll(["F1", "F2", "F3"]);',
+    '      clickAct("add-bullet"); await wait(350);',
+    '      var F1 = hasAll(["F1", "F2", "F3"]);',
+    '      setSuffix(":entry:0:role", "G1", true);',            // 故意不派发 input
+    '      clickAct("add-sub"); await wait(350);',
+    '      var G1 = hasAll(["F1", "G1"]);',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1 }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -508,6 +520,10 @@ async function testInteractions() {
   check('空着的空位失焦后自动收掉，文档不变',
     res.slotGone === true && res.E2.sub === 'DDD-sub' && res.E2.contacts.length === res.E1.contacts.length,
     JSON.stringify(res.E2));
+  check('条目各字段输入后，点「+ 添加要点」不会清空该模块',
+    res.F0 === true && res.F1 === true, 'F0=' + res.F0 + ' F1=' + res.F1);
+  check('界面已改但还没写进文档时，结构性操作也会先提交（兜底）',
+    res.G1 === true, 'G1=' + res.G1);
 }
 
 await testInteractions();
