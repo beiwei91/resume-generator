@@ -21,7 +21,9 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (MD) {
   'use strict';
 
-  var HEAD_RE = /^(#{1,6})\s+(.*?)\s*#*$/;
+  // 允许「空标题」：`#`、`# `、`##` 都算标题（内容是空字符串）。
+  // 否则把姓名清空后那一行会退化成普通文字，抬头整段就塌了。
+  var HEAD_RE = /^(#{1,6})(?:\s+(.*?))?\s*#*$/;
   var LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
   var SECTION_TEMPLATES = [
     { title: '工作经历', kind: 'entries' },
@@ -70,7 +72,7 @@
       var hm = HEAD_RE.exec(lines[i].trim());
       if (hm && hm[1].length === 1) {
         header.nameIdx = i;
-        header.name = hm[2].trim();
+        header.name = (hm[2] || '').trim();
         break;
       }
     }
@@ -101,7 +103,7 @@
       for (var j = i + 1; j < lines.length; j++) {
         if (/^##\s/.test(lines[j])) { end = j; break; }
       }
-      sections.push(buildSection(lines, start, end, sm ? sm[2].trim() : ''));
+      sections.push(buildSection(lines, start, end, sm ? (sm[2] || '').trim() : ''));
       i = end - 1;
     }
 
@@ -166,7 +168,7 @@
   }
 
   function buildEntry(lines, start, end) {
-    var raw = HEAD_RE.exec(lines[start].trim())[2].trim();
+    var raw = (HEAD_RE.exec(lines[start].trim())[2] || '').trim();
     var meta = '';
     var pipe = raw.indexOf('|');
     if (pipe >= 0) { meta = raw.slice(pipe + 1).trim(); raw = raw.slice(0, pipe).trim(); }
@@ -261,21 +263,27 @@
 
   function sec(w, i) { return w.sections[i] || null; }
 
+  /** 文档里没有 `#` 姓名行时补一行空标题 —— 否则抬头相关的编辑会「静默不生效」 */
+  function ensureHeader(lines) {
+    return ['# ', ''].concat(lines);
+  }
+
   var ops = {
     walk: walk,
 
     setHeaderName: function (md, name) {
       return withBody(md, function (lines, w) {
-        if (w.header.nameIdx < 0) return null;
-        lines[w.header.nameIdx] = headText(1, name) || '# ';
-        return lines;
+        // 没有姓名行时：只有真写了名字才补一行，避免「写回空值」也去改文档
+        if (w.header.nameIdx < 0 && !String(name == null ? '' : name).trim()) return null;
+        var out = w.header.nameIdx < 0 ? ensureHeader(lines) : lines.slice();
+        out[w.header.nameIdx < 0 ? 0 : w.header.nameIdx] = headText(1, name) || '# ';
+        return out;
       });
     },
 
     /** 职位 + 联系方式合并写在姓名下一行（与解析约定一致） */
     setHeaderInfo: function (md, info) {
       return withBody(md, function (lines, w) {
-        if (w.header.nameIdx < 0) return null;
         var segs = [];
         if (String(info.subtitle || '').trim()) segs.push(String(info.subtitle).trim());
         (info.contacts || []).forEach(function (c) { if (String(c || '').trim()) segs.push(String(c).trim()); });
@@ -284,6 +292,10 @@
         if (!segs.length && !w.header.infoIdx.length) return null;
 
         var out = lines.slice();
+        var nameIdx = w.header.nameIdx;
+        var photoIdx = w.header.photoIdx;
+        if (nameIdx < 0) { out = ensureHeader(out); nameIdx = 0; photoIdx = -1; }
+
         var idx = w.header.infoIdx.slice();
         var text = segs.join(' | ');
 
@@ -295,7 +307,7 @@
         }
 
         // 原本没有抬头行 —— 插到证件照行之后（没有照片就紧跟姓名）
-        var at = (w.header.photoIdx >= 0 ? w.header.photoIdx : w.header.nameIdx) + 1;
+        var at = (photoIdx >= 0 ? photoIdx : nameIdx) + 1;
         var block = [];
         if (out[at - 1] && out[at - 1].trim()) block.push('');
         block.push(text);

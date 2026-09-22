@@ -409,6 +409,53 @@ section('表单：子要点（二级缩进）');
   check('空要点列表时不会瞎插', Form.addSubBullet('## A\n\n- 只有一条\n', 0, null, 0).indexOf('    - ') < 0);
 }
 
+section('抬头：姓名清空 / 缺失 / 重填（用户实测踩到的坑）');
+{
+  const sample = fs.readFileSync(path.join(ROOT, 'resume.sample.md'), 'utf8');
+
+  // 1) 清空姓名：那一行变成 `# `，trim 后是裸 `#`，必须仍然是「标题」而不是正文
+  const cleared = Form.setHeaderName(sample, '');
+  const wCleared = Form.walk(cleared);
+  check('清空姓名后仍识别为抬头（不是普通文字）',
+    wCleared.header.nameIdx >= 0 && wCleared.header.name === '',
+    'nameIdx=' + wCleared.header.nameIdx + ' 行=' + JSON.stringify(wCleared.lines[wCleared.header.nameIdx]));
+  const htmlCleared = MD.renderResume(cleared).html;
+  check('清空姓名后预览里不会冒出裸 # 号',
+    htmlCleared.indexOf('>#<') < 0 && !/<\/p>#/.test(htmlCleared) && htmlCleared.indexOf('#') < 0);
+  check('清空姓名不影响下面的章节与联系方式',
+    wCleared.sections.length === Form.walk(sample).sections.length &&
+    wCleared.header.info.subtitle === Form.walk(sample).header.info.subtitle);
+
+  // 2) 清空后再输入新名字（用户遇到的那一步）
+  const retyped = Form.setHeaderName(cleared, 'gcy');
+  const wRetyped = Form.walk(retyped);
+  check('清空后重新输入姓名能写进文档', wRetyped.header.name === 'gcy', wRetyped.header.name);
+  check('重新输入后预览里抬头正常显示姓名', /class="r-name">gcy</.test(MD.renderResume(retyped).html));
+
+  // 3) 写成裸 `#`（没空格）也要当标题
+  const bare = '#\n前端工程师 | 138 | me@a.com\n\n## A\n\n- x\n';
+  const wBare = Form.walk(bare);
+  check('裸 # 也识别为标题', wBare.header.nameIdx === 0 && wBare.header.name === '');
+  check('裸 # 时抬头信息照样解析', wBare.header.info.subtitle === '前端工程师', JSON.stringify(wBare.header.info));
+  const htmlBare = MD.renderResume(bare).html;
+  check('裸 # 渲染后仍是抬头块（空姓名不输出 h1，但职位/联系方式在）',
+    htmlBare.indexOf('class="r-header"') > 0 && htmlBare.indexOf('class="r-subtitle"') > 0 &&
+    htmlBare.indexOf('class="r-section"') > 0 && htmlBare.indexOf('>#<') < 0);
+  check('名称为空时渲染端不输出空 h1', MD.renderResume(bare).html.indexOf('class="r-name"') < 0);
+
+  // 4) 完全没有姓名行时，姓名 / 职位输入要能自愈（补一行空标题），而不是静默失效
+  const noHeader = '## A\n\n- x\n';
+  const healed = Form.setHeaderName(noHeader, 'gcy');
+  check('没有姓名行时输入姓名会自动补出标题',
+    Form.walk(healed).header.name === 'gcy', JSON.stringify(healed.split('\n').slice(0, 4)));
+  const healedInfo = Form.setHeaderInfo(noHeader, { subtitle: '前端工程师', contacts: ['138'] });
+  check('没有姓名行时输入职位也能写进去',
+    Form.walk(healedInfo).header.info.subtitle === '前端工程师' &&
+    /前端工程师/.test(MD.renderResume(healedInfo).html));
+  check('补标题后原有章节不受影响',
+    Form.walk(healed).sections[0].title === 'A' && Form.walk(healed).sections[0].items.length === 1);
+}
+
 /* ------------------------------------------------------------------ 结果 */
 
 console.log('\n结果');

@@ -400,6 +400,11 @@
         }
       }
       if (next && next !== md) apply(next, false);
+      else if (!next) {
+        // 操作没生效（理论上不该发生）：重绘一次，让输入框回到文档里的真实值，
+        // 免得出现「框里有字、文档里没有」的静默不一致
+        render();
+      }
     });
 
     render();

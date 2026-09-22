@@ -334,11 +334,11 @@
       if (/^-{3,}$/.test(t) || /^\\(?:pagebreak|newpage)$/i.test(t)) { push({ type: 'pagebreak' }); continue; }
       if (/^([*_])\1{2,}$/.test(t)) { push({ type: 'hr' }); continue; }
 
-      // 标题
-      var hm = /^(#{1,6})\s+(.*?)\s*#*$/.exec(t);
+      // 标题（允许空标题：`#` / `# ` / `##` —— 姓名被清空时不能退化成正文）
+      var hm = /^(#{1,6})(?:\s+(.*?))?\s*#*$/.exec(t);
       if (hm) {
         var level = hm[1].length;
-        var txt = hm[2].trim();
+        var txt = (hm[2] || '').trim();
         if (level === 1) {
           doc.header = { name: txt, subtitle: '', contacts: [] };
           cur.section = null; cur.entry = null;
