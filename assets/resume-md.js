@@ -247,7 +247,9 @@
 
   /* ------------------------------------------------------------------ 块级解析 */
 
-  var LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+  // 允许「空列表项」：`-`、`- `、`1.` 都算列表项（内容是空字符串），
+  // 这样刚点「+ 添加要点」还没输入时也有一个空位可写
+  var LIST_RE = /^(\s*)([-*+]|\d+[.)])(?:\s+(.*))?$/;
 
   function splitRow(line) {
     return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
@@ -392,7 +394,7 @@
           items.push({
             indent: m2[1].replace(/\t/g, '  ').length,
             ordered: /\d/.test(m2[2]),
-            text: m2[3].trim()
+            text: (m2[3] || '').trim()
           });
           i++;
         }
@@ -423,10 +425,14 @@
   /* ------------------------------------------------------------------ 渲染 */
 
   function renderList(list) {
-    var ordered = list.ordered && list.items.every(function (i) { return /^\d/.test(i.text) || true; });
+    // 空的要点（刚点「+ 添加要点」还没输入）不渲染，免得纸上多出光秃秃的圆点
+    var visible = list.items.filter(function (i) {
+      return (i.text && i.text.length) || (i.children && i.children.items.length);
+    });
+    if (!visible.length) return '';
     var tag = list.ordered ? 'ol' : 'ul';
     var html = '<' + tag + ' class="r-list">';
-    list.items.forEach(function (item) {
+    visible.forEach(function (item) {
       html += '<li>' + inline(item.text);
       if (item.children) html += renderList(item.children);
       html += '</li>';

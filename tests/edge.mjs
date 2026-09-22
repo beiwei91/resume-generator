@@ -456,6 +456,32 @@ section('抬头：姓名清空 / 缺失 / 重填（用户实测踩到的坑）')
     Form.walk(healed).sections[0].title === 'A' && Form.walk(healed).sections[0].items.length === 1);
 }
 
+section('要点列表：空要点与列表型章节（用户实测踩到的坑）');
+{
+  const doc = '## 证书奖项\n\n- 安徽省GIS大赛 二等奖\n- \n- \n\n## 下一节\n\n- x\n';
+  const w = Form.walk(doc);
+  check('空要点（`- `）也被识别为要点', w.sections[0].items.length === 3,
+    'items=' + w.sections[0].items.length);
+  check('空要点的 text 是空字符串', w.sections[0].items[1].text === '' && w.sections[0].items[2].text === '');
+
+  const edited = Form.setBullet(doc, 0, null, 1, '改成有内容');
+  check('列表型章节（ei=null）的要点可以改写', edited.indexOf('- 改成有内容') >= 0,
+    JSON.stringify(edited.split('\n').slice(2, 6)));
+  check('改写列表要点不影响其它要点与章节',
+    edited.indexOf('安徽省GIS大赛 二等奖') >= 0 && edited.indexOf('## 下一节') >= 0);
+
+  check('ei 传 NaN 时拒绝写入（不允许改错地方）',
+    Form.setBullet(doc, 0, NaN, 1, '不该写进去') === doc);
+  check('裸 `-`（没空格）也算空要点', Form.walk('## A\n\n-\n- x\n').sections[0].items.length === 2);
+
+  const html = MD.renderResume(doc).html;
+  const liCount = (html.match(/<li>/g) || []).length;
+  check('空要点不会在预览里渲染成光秃秃的圆点（证书奖项 1 条 + 下一节 1 条）',
+    liCount === 2 && html.indexOf('<li></li>') < 0, 'li 数量=' + liCount);
+  check('整节都是空要点时不渲染空列表',
+    MD.renderResume('## A\n\n- \n- \n').html.indexOf('r-list') < 0);
+}
+
 /* ------------------------------------------------------------------ 结果 */
 
 console.log('\n结果');

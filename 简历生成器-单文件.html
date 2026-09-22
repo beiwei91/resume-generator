@@ -1644,7 +1644,9 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 
   /* ------------------------------------------------------------------ 块级解析 */
 
-  var LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+  // 允许「空列表项」：`-`、`- `、`1.` 都算列表项（内容是空字符串），
+  // 这样刚点「+ 添加要点」还没输入时也有一个空位可写
+  var LIST_RE = /^(\s*)([-*+]|\d+[.)])(?:\s+(.*))?$/;
 
   function splitRow(line) {
     return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
@@ -1789,7 +1791,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
           items.push({
             indent: m2[1].replace(/\t/g, '  ').length,
             ordered: /\d/.test(m2[2]),
-            text: m2[3].trim()
+            text: (m2[3] || '').trim()
           });
           i++;
         }
@@ -1820,10 +1822,14 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   /* ------------------------------------------------------------------ 渲染 */
 
   function renderList(list) {
-    var ordered = list.ordered && list.items.every(function (i) { return /^\d/.test(i.text) || true; });
+    // 空的要点（刚点「+ 添加要点」还没输入）不渲染，免得纸上多出光秃秃的圆点
+    var visible = list.items.filter(function (i) {
+      return (i.text && i.text.length) || (i.children && i.children.items.length);
+    });
+    if (!visible.length) return '';
     var tag = list.ordered ? 'ol' : 'ul';
     var html = '<' + tag + ' class="r-list">';
-    list.items.forEach(function (item) {
+    visible.forEach(function (item) {
       html += '<li>' + inline(item.text);
       if (item.children) html += renderList(item.children);
       html += '</li>';
@@ -2048,7 +2054,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   // 允许「空标题」：`#`、`# `、`##` 都算标题（内容是空字符串）。
   // 否则把姓名清空后那一行会退化成普通文字，抬头整段就塌了。
   var HEAD_RE = /^(#{1,6})(?:\s+(.*?))?\s*#*$/;
-  var LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+  var LIST_RE = /^(\s*)([-*+]|\d+[.)])(?:\s+(.*))?$/;   // 允许空列表项（`-` / `- `）
   var SECTION_TEMPLATES = [
     { title: '工作经历', kind: 'entries' },
     { title: '项目经历', kind: 'entries' },
@@ -2225,7 +2231,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       var m = LIST_RE.exec(lines[i]);
       if (!m) continue;
       if (HEAD_RE.test(lines[i].trim())) continue;
-      out.push({ idx: i, indent: m[1].replace(/\t/g, '  ').length, text: m[3].trim() });
+      out.push({ idx: i, indent: m[1].replace(/\t/g, '  ').length, text: (m[3] || '').trim() });
     }
     return out;
   }
@@ -2601,7 +2607,10 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   function bulletAt(w, si, ei, bi) {
     var s = sec(w, si);
     if (!s) return null;
-    var list = ei == null ? s.items : (s.entries[ei] ? s.entries[ei].bullets : null);
+    // ei 必须是 null（章节自己的要点）或有效下标；NaN / 越界一律拒绝，
+    // 免得"改 A 却写到 B"这种更糟的静默错误
+    if (ei != null && (typeof ei !== 'number' || isNaN(ei) || !s.entries[ei])) return null;
+    var list = ei == null ? s.items : s.entries[ei].bullets;
     return list && list[bi] ? list[bi] : null;
   }
 
@@ -2711,9 +2720,12 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       if (parts[2] === 'bullet') return Form.setBullet(md, si, null, Number(parts[3]), value);
       if (parts[2] === 'cell') return Form.setTableCell(md, si, Number(parts[3]), Number(parts[4]), value);
       if (parts[2] === 'entry') {
-        var ei = Number(parts[3]);
-        if (parts[4] === 'sub') return Form.setEntrySub(md, si, ei, value);
+        // 「要点列表」型章节没有条目，路径里写作 entry:x —— 必须还原成 null，
+        // 否则 Number('x') = NaN，写入时会静默失败（列表要点改不动）
+        var ei = parts[3] === 'x' ? null : Number(parts[3]);
+        if (parts[4] === 'sub') return ei == null ? null : Form.setEntrySub(md, si, ei, value);
         if (parts[4] === 'bullet') return Form.setBullet(md, si, ei, Number(parts[5]), value);
+        if (ei == null) return null;
         var patch = {};
         patch[parts[4]] = value;
         return Form.setEntryHead(md, si, ei, patch);
@@ -2767,7 +2779,12 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       container.appendChild(renderAddSection());
       if (focusPath) {
         var target = sel('[data-path="' + focusPath + '"]');
-        if (target) { target.focus(); if (target.select) target.select(); }
+        if (target) {
+          target.focus();
+          if (target.select) target.select();
+          // 刚「+ 添加要点」出来的空要点：记一笔，失焦时还空着就收掉，别在 .md 里留空 `-` 行
+          if (/:bullet:\d+$/.test(focusPath) && !String(target.value || '').trim()) target.__freshBullet = true;
+        }
       }
     }
 
@@ -3125,13 +3142,26 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       }
     });
 
-    // 空着的「+ 添加联系方式」空位在失焦时收掉（blur 不冒泡，用捕获）
+    // 失焦时收掉「加出来但一直空着」的要点 / 联系方式空位（blur 不冒泡，用捕获）
     container.addEventListener('blur', function (ev) {
       var t = ev.target;
       if (!t || !t.getAttribute) return;
-      if (t.getAttribute('data-path') !== 'contact-new' || String(t.value || '').trim()) return;
-      var row = t.closest ? t.closest('.frow') : null;
-      if (row && row.parentNode) row.parentNode.removeChild(row);
+      var path = t.getAttribute('data-path') || '';
+      if (String(t.value || '').trim()) { t.__freshBullet = false; return; }
+
+      if (path === 'contact-new') {
+        var row = t.closest ? t.closest('.frow') : null;
+        if (row && row.parentNode) row.parentNode.removeChild(row);
+        return;
+      }
+      if (t.__freshBullet && /:bullet:\d+$/.test(path)) {
+        t.__freshBullet = false;
+        var parts = path.split(':');
+        var si = Number(parts[1]);
+        var ei = parts[3] === 'x' ? null : Number(parts[3]);
+        var bi = Number(parts[5]);
+        structural(function (md) { return Form.removeBullet(md, si, ei, bi); });
+      }
     }, true);
 
     render();

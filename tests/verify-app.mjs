@@ -475,7 +475,21 @@ async function testInteractions() {
     '      setSuffix(":entry:0:role", "G1", true);',            // 故意不派发 input
     '      clickAct("add-sub"); await wait(350);',
     '      var G1 = hasAll(["F1", "G1"]);',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1 }));',
+    '      var listAdds = doc.querySelectorAll("[data-act=\\"add-bullet\\"]");',
+    '      listAdds[listAdds.length - 1].click(); await wait(350);',
+    '      var fresh = doc.activeElement;',
+    '      var freshPath = fresh ? fresh.getAttribute("data-path") : "";',
+    '      if (fresh) { fresh.value = "H1-LIST"; fire(fresh, "input"); }',
+    '      await wait(250);',
+    '      var H1 = q("#editor").value.indexOf("H1-LIST") >= 0 && /:x:bullet:/.test(freshPath);',
+    '      listAdds = doc.querySelectorAll("[data-act=\\"add-bullet\\"]");',
+    '      listAdds[listAdds.length - 1].click(); await wait(350);',
+    '      var countAfterAdd = (q("#editor").value.match(/^- /gm) || []).length;',
+    '      var fresh2 = doc.activeElement;',
+    '      if (fresh2) fire(fresh2, "blur"); await wait(350);',
+    '      var countAfterBlur = (q("#editor").value.match(/^- /gm) || []).length;',
+    '      var I1 = countAfterBlur === countAfterAdd - 1;',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1 }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -524,6 +538,10 @@ async function testInteractions() {
     res.F0 === true && res.F1 === true, 'F0=' + res.F0 + ' F1=' + res.F1);
   check('界面已改但还没写进文档时，结构性操作也会先提交（兜底）',
     res.G1 === true, 'G1=' + res.G1);
+  check('「要点列表」型章节里，新加的要点能编辑进文档（本轮修复的 bug）',
+    res.H1 === true, 'H1=' + res.H1);
+  check('新加的空要点没输入就失焦时自动收掉，不在 .md 里留空行',
+    res.I1 === true, 'I1=' + res.I1);
 }
 
 await testInteractions();

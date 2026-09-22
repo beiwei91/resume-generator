@@ -76,9 +76,12 @@
       if (parts[2] === 'bullet') return Form.setBullet(md, si, null, Number(parts[3]), value);
       if (parts[2] === 'cell') return Form.setTableCell(md, si, Number(parts[3]), Number(parts[4]), value);
       if (parts[2] === 'entry') {
-        var ei = Number(parts[3]);
-        if (parts[4] === 'sub') return Form.setEntrySub(md, si, ei, value);
+        // 「要点列表」型章节没有条目，路径里写作 entry:x —— 必须还原成 null，
+        // 否则 Number('x') = NaN，写入时会静默失败（列表要点改不动）
+        var ei = parts[3] === 'x' ? null : Number(parts[3]);
+        if (parts[4] === 'sub') return ei == null ? null : Form.setEntrySub(md, si, ei, value);
         if (parts[4] === 'bullet') return Form.setBullet(md, si, ei, Number(parts[5]), value);
+        if (ei == null) return null;
         var patch = {};
         patch[parts[4]] = value;
         return Form.setEntryHead(md, si, ei, patch);
@@ -132,7 +135,12 @@
       container.appendChild(renderAddSection());
       if (focusPath) {
         var target = sel('[data-path="' + focusPath + '"]');
-        if (target) { target.focus(); if (target.select) target.select(); }
+        if (target) {
+          target.focus();
+          if (target.select) target.select();
+          // 刚「+ 添加要点」出来的空要点：记一笔，失焦时还空着就收掉，别在 .md 里留空 `-` 行
+          if (/:bullet:\d+$/.test(focusPath) && !String(target.value || '').trim()) target.__freshBullet = true;
+        }
       }
     }
 
@@ -490,13 +498,26 @@
       }
     });
 
-    // 空着的「+ 添加联系方式」空位在失焦时收掉（blur 不冒泡，用捕获）
+    // 失焦时收掉「加出来但一直空着」的要点 / 联系方式空位（blur 不冒泡，用捕获）
     container.addEventListener('blur', function (ev) {
       var t = ev.target;
       if (!t || !t.getAttribute) return;
-      if (t.getAttribute('data-path') !== 'contact-new' || String(t.value || '').trim()) return;
-      var row = t.closest ? t.closest('.frow') : null;
-      if (row && row.parentNode) row.parentNode.removeChild(row);
+      var path = t.getAttribute('data-path') || '';
+      if (String(t.value || '').trim()) { t.__freshBullet = false; return; }
+
+      if (path === 'contact-new') {
+        var row = t.closest ? t.closest('.frow') : null;
+        if (row && row.parentNode) row.parentNode.removeChild(row);
+        return;
+      }
+      if (t.__freshBullet && /:bullet:\d+$/.test(path)) {
+        t.__freshBullet = false;
+        var parts = path.split(':');
+        var si = Number(parts[1]);
+        var ei = parts[3] === 'x' ? null : Number(parts[3]);
+        var bi = Number(parts[5]);
+        structural(function (md) { return Form.removeBullet(md, si, ei, bi); });
+      }
     }, true);
 
     render();

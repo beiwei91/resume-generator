@@ -24,7 +24,7 @@
   // 允许「空标题」：`#`、`# `、`##` 都算标题（内容是空字符串）。
   // 否则把姓名清空后那一行会退化成普通文字，抬头整段就塌了。
   var HEAD_RE = /^(#{1,6})(?:\s+(.*?))?\s*#*$/;
-  var LIST_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+  var LIST_RE = /^(\s*)([-*+]|\d+[.)])(?:\s+(.*))?$/;   // 允许空列表项（`-` / `- `）
   var SECTION_TEMPLATES = [
     { title: '工作经历', kind: 'entries' },
     { title: '项目经历', kind: 'entries' },
@@ -201,7 +201,7 @@
       var m = LIST_RE.exec(lines[i]);
       if (!m) continue;
       if (HEAD_RE.test(lines[i].trim())) continue;
-      out.push({ idx: i, indent: m[1].replace(/\t/g, '  ').length, text: m[3].trim() });
+      out.push({ idx: i, indent: m[1].replace(/\t/g, '  ').length, text: (m[3] || '').trim() });
     }
     return out;
   }
@@ -577,7 +577,10 @@
   function bulletAt(w, si, ei, bi) {
     var s = sec(w, si);
     if (!s) return null;
-    var list = ei == null ? s.items : (s.entries[ei] ? s.entries[ei].bullets : null);
+    // ei 必须是 null（章节自己的要点）或有效下标；NaN / 越界一律拒绝，
+    // 免得"改 A 却写到 B"这种更糟的静默错误
+    if (ei != null && (typeof ei !== 'number' || isNaN(ei) || !s.entries[ei])) return null;
+    var list = ei == null ? s.items : s.entries[ei].bullets;
     return list && list[bi] ? list[bi] : null;
   }
 
