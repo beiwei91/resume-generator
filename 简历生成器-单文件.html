@@ -3451,6 +3451,18 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     saveTimer = window.setTimeout(function () { saveCurrent(true); }, 900);
   }
 
+  /**
+   * 立刻把待保存的改动落盘。
+   * 切换文档 / 离开页面之前必须先调用：自动保存有 900ms 防抖，若在防抖窗口内切换文档，
+   * 定时器醒来时 state.markdown 已经是「另一份文档」的内容，原来那份的最新改动就丢了
+   * —— 表现就是「改完内容点一下就变回原来的样子」。
+   */
+  function flushAutoSave() {
+    window.clearTimeout(saveTimer);
+    saveTimer = null;
+    if (state.dirty) saveCurrent(true);
+  }
+
   function loadDocs() { return readJSON(LS.docs, {}); }
   function writeDocs(docs) { writeJSON(LS.docs, docs); }
 
@@ -3469,34 +3481,47 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     if (!silent) toast('已保存到浏览器存储（文档：' + state.name + '）');
   }
 
+  var docListKey = null;   // 记住上次渲染出来的文档清单，没变就不重建
+
   function refreshDocList() {
     var docs = loadDocs();
-    var names = Object.keys(docs);
+    var names = Object.keys(docs).sort(function (a, b) { return a.localeCompare(b, 'zh-Hans-CN'); });
     var sel = $('docList');
-    sel.innerHTML = '';
-    if (!names.length) {
-      var o = document.createElement('option');
-      o.value = '';
-      o.textContent = '（暂无已保存文档）';
-      sel.appendChild(o);
-      sel.disabled = true;
-      return;
+    var key = names.join('\u0000');
+
+    if (key !== docListKey) {
+      // 清单真的变了才重建；同一份清单重建会打断手机上正在打开的系统选择器
+      docListKey = key;
+      sel.innerHTML = '';
+      if (!names.length) {
+        var o = document.createElement('option');
+        o.value = '';
+        o.textContent = '（暂无已保存文档）';
+        sel.appendChild(o);
+        sel.disabled = true;
+        return;
+      }
+      names.forEach(function (n) {
+        var opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        sel.appendChild(opt);
+      });
     }
-    sel.disabled = false;
-    names.sort(function (a, b) { return a.localeCompare(b, 'zh-Hans-CN'); });
-    names.forEach(function (n) {
-      var opt = document.createElement('option');
-      opt.value = n;
-      opt.textContent = n;
-      sel.appendChild(opt);
-    });
-    sel.value = docs[state.name] != null ? state.name : names[0];
+    sel.disabled = !names.length;
+    if (names.length) sel.value = docs[state.name] != null ? state.name : names[0];
+  }
+
+  /** 切换 / 新建 / 删除文档前，先把当前这份的改动落盘，避免防抖窗口内丢内容 */
+  function switchDocGuard() {
+    flushAutoSave();
   }
 
   function openDoc(name) {
     var docs = loadDocs();
     if (docs[name] == null) return;
     if (name === state.name) return;
+    flushAutoSave();                 // 切走之前先把这份的改动落盘
     state.name = name;
     state.fileHandle = null;
     $('docName').value = name;
@@ -3511,6 +3536,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   }
 
   function newDoc() {
+    flushAutoSave();                 // 新建之前先把当前这份落盘
     var name = '未命名简历 ' + new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     state.name = name;
     state.fileHandle = null;
@@ -3528,6 +3554,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     if (input == null) return;
     var name = input.trim();
     if (!name) return;
+    flushAutoSave();
     state.name = name;
     $('docName').value = name;
     saveCurrent();
@@ -3535,6 +3562,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
   }
 
   function deleteDoc() {
+    flushAutoSave();                 // 删除前先落盘（确认框取消时也不会白改）
     var docs = loadDocs();
     if (!docs[state.name]) {
       toast('当前文档尚未保存到浏览器');
@@ -3605,6 +3633,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 
   function importFile(file) {
     if (!file) return;
+    flushAutoSave();                 // 导入会替换当前内容，先把现有的落盘
     file.text().then(function (text) {
       state.name = file.name.replace(/\.(md|markdown|txt)$/i, '') || '导入的简历';
       state.fileHandle = null;
@@ -3962,6 +3991,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 
     $('docName').addEventListener('change', function () {
       var next = this.value.trim() || '我的简历';
+      flushAutoSave();               // 改名也算换文档，先落盘
       var docs = loadDocs();
       if (next !== state.name && docs[state.name] != null) {
         docs[next] = state.markdown;
@@ -4055,6 +4085,12 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
         document.querySelector('.appbar').classList.remove('tools-open');
         $('btnTools').textContent = '更多 ⋯';
       }
+    });
+
+    // 离开页面 / 切到后台时立刻落盘：手机浏览器可能在防抖窗口内就把页面丢弃了
+    window.addEventListener('pagehide', flushAutoSave);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') flushAutoSave();
     });
 
     // 表单模式下焦点不在编辑器里，快捷键在这里兜底（编辑器内的由上面的 handler 处理）

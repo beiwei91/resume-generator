@@ -403,6 +403,90 @@ section('GitHub 入口');
     /hideStarBanner/.test(appJs) && /applyStarBanner/.test(appJs));
 }
 
+/* ================================================================== 界面交互（真实点击 / 输入） */
+
+async function testInteractions() {
+  section('界面交互（真实点击 / 输入）');
+
+  // 用同源 iframe + 脚本派发事件来真的「点」和「输入」——这类竞态只有真交互才能发现。
+  // 驱动页保持纯 ASCII（中文串在拼装/编码环节容易出问题），文档名从界面里读出来。
+  const driver = path.join(BUILD, 'drive.html');
+  fs.writeFileSync(driver, [
+    '<!doctype html><meta charset="utf-8"><iframe id="app"></iframe><pre id="out"></pre>',
+    '<script>',
+    'var lines = [];',
+    'function say(s) { lines.push(s); document.getElementById("out").textContent = lines.join("\\n"); }',
+    'function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }',
+    'var win, doc;',
+    'function q(sel) { return doc.querySelector(sel); }',
+    'function fire(el, type) { el.dispatchEvent(new win.Event(type, { bubbles: true })); }',
+    'function probe() { var n = q(".r-name"); return { name: n ? n.textContent : "", sections: doc.querySelectorAll(".r-section").length, field: (q("[data-path=\\"name\\"]") || {}).value || "" }; }',
+    'window.onerror = function (msg) { say("ERROR|" + msg); };',
+    'window.addEventListener("load", function () {',
+    '  (async function () {',
+    '    try {',
+    '      localStorage.clear();',
+    '      localStorage.setItem("resume-gen:prefs", JSON.stringify({ zoom: "fit", guides: true, editorWidth: 460, autoSave: true, helpSeen: true, mode: "form", mobileView: "edit", hideStarBanner: true }));',
+    '      var frame = document.getElementById("app");',
+    '      async function load() { frame.src = "../index.html"; await new Promise(function (r) { frame.onload = r; }); win = frame.contentWindow; doc = win.document; await wait(1100); }',
+    '      await load();',
+    '      var A = probe();',
+    '      var firstDoc = q("#docName").value;',
+    '      var nameInput = q("[data-path=\\"name\\"]");',
+    '      nameInput.value = "AAA-name"; fire(nameInput, "input"); await wait(200);',
+    '      fire(nameInput, "blur"); fire(q(".preview-pane") || doc.body, "click"); await wait(200);',
+    '      var B = probe();',
+    '      q("#btnNew").click(); await wait(1100);',
+    '      var sel = q("#docList"); sel.value = firstDoc; fire(sel, "change"); await wait(600);',
+    '      var name2 = q("[data-path=\\"name\\"]"); name2.value = "BBB-edit"; fire(name2, "input"); await wait(120);',
+    '      var other = Array.from(q("#docList").options).map(function (o) { return o.value; }).filter(function (v) { return v !== firstDoc; })[0];',
+    '      sel.value = other; fire(sel, "change"); await wait(400);',
+    '      sel.value = firstDoc; fire(sel, "change"); await wait(400);',
+    '      var C = probe();',
+    '      q("#docList").options[0].setAttribute("data-mark", "mark");',
+    '      var sub = q("[data-path=\\"subtitle\\"]"); sub.value = "CCC-sub"; fire(sub, "input"); await wait(1400);',
+    '      var rebuilt = q("#docList").options[0].getAttribute("data-mark") !== "mark";',
+    '      await load();',
+    '      var D = probe();',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt }));',
+    '    } catch (e) { say("THROW|" + (e && e.message)); }',
+    '  })();',
+    '});',
+    '</script>'
+  ].join('\n'), 'utf8');
+
+  const profile = path.join(BUILD, '.interact-profile');
+  fs.rmSync(profile, { recursive: true, force: true });
+  const r = spawnSync(browser, [
+    '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    '--disable-extensions', '--hide-scrollbars', '--allow-file-access-from-files',
+    '--disable-background-networking', '--disable-component-update', '--proxy-server=direct://',
+    '--user-data-dir=' + profile, '--virtual-time-budget=40000',
+    '--dump-dom', pathToFileURL(driver).href
+  ], { encoding: 'utf8', timeout: 240000, windowsHide: true });
+
+  const dom = String(r.stdout || '');
+  const preRaw = (/<pre id="out">([\s\S]*?)<\/pre>/.exec(dom) || [])[1] || '';
+  const pre = preRaw.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  const json = (/JSON\|([\s\S]*)$/.exec(pre) || [])[1] || '';
+  let res = null;
+  try { res = JSON.parse(json.trim()); } catch (e) { /* 下面判定 */ }
+
+  if (!res) {
+    const err = (/ERROR\|([^\n]*)/.exec(pre) || [])[1] || (/THROW\|([^\n]*)/.exec(pre) || [])[1] || '(无错误信息)';
+    check('界面交互驱动能跑起来', false, 'pre=' + JSON.stringify(pre.slice(0, 120)) + ' 错误=' + err);
+    return;
+  }
+  check('起点是示例简历', res.A.name && res.A.sections === 6, JSON.stringify(res.A));
+  check('输入姓名后点别处不会回退', res.B.field === 'AAA-name' && res.B.name === 'AAA-name', JSON.stringify(res.B));
+  check('改完立刻切换文档再切回，改动不丢（本轮修复的 bug）',
+    res.C.field === 'BBB-edit' && res.C.name === 'BBB-edit', JSON.stringify(res.C));
+  check('保存不会重建文档下拉（手机系统选择器不会被打断）', res.rebuilt === false, '重建=' + res.rebuilt);
+  check('重新加载后改动仍在', res.D.field === 'BBB-edit' && res.D.name === 'BBB-edit', JSON.stringify(res.D));
+}
+
+await testInteractions();
+
 console.log('\n结果');
 console.log('  通过 ' + pass + ' 项，失败 ' + failures.length + ' 项');
 if (failures.length) {
