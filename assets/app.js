@@ -801,6 +801,20 @@
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 版本号 */
+
+  var APP_VERSION = (function () {
+    var m = document.querySelector('meta[name="app-version"]');
+    return m && m.content ? String(m.content) : '';
+  })();
+
+  function applyVersion() {
+    var v = $('statusVersion');
+    if (v) v.textContent = APP_VERSION ? 'v' + APP_VERSION : '';
+    var note = $('helpVersion');
+    if (note) note.textContent = APP_VERSION ? '界面版本 v' + APP_VERSION : '';
+  }
+
   /* ------------------------------------------------------------ 顶部求 star 横幅 */
 
   function applyStarBanner() {
@@ -1134,6 +1148,7 @@
     setEditorMode(prefs.mode);
     applyMobileView();
     applyStarBanner();
+    applyVersion();
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
     // 应用快捷方式：index.html?action=new 直接新建一份空白简历

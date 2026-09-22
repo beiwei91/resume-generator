@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>简历生成器 · Markdown → PDF</title>
 <style>
-/* ==== assets/resume.css ==== */
+/* ==== assets/resume.css?v=1.3.0 ==== */
 /*!
  * resume.css —— 简历纸张样式（预览与 PDF 共用，不含编辑器界面样式）
  * 变量：--r-accent / --r-font-size / --r-line-height / --r-margin-y / --r-margin-x
@@ -471,7 +471,7 @@
 }
 </style>
 <style>
-/* ==== assets/app.css ==== */
+/* ==== assets/app.css?v=1.3.0 ==== */
 /*!
  * app.css —— 编辑器 / 预览工作台界面样式（只作用于界面，不影响纸张与打印结果）
  */
@@ -997,6 +997,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 .statusbar .dot { color: #c2cad8; }
 .statusbar .grow { flex: 1; }
 .statusbar .tip { color: #98a2b3; }
+.statusbar .ver { color: #b3bbc8; font-size: 11.5px; }
 #statusSaved.saved { color: #0f766e; }
 #statusPages.overflow { color: #b45309; font-weight: 600; }
 
@@ -1172,6 +1173,9 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 }
 </style>
 <meta name="application-name" content="简历生成器">
+<!-- 版本号：静态资源都带 ?v= 查询串，改版本号即可让浏览器 / CDN 立刻取到新文件。
+     发布前记得把这里和下面 4 处脚本引用的版本号一起改掉。 -->
+<meta name="app-version" content="1.3.0">
 <link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,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">
 <style id="printPageStyle">@page { size: A4; }</style>
 </head>
@@ -1350,6 +1354,8 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     <span id="statusPages">共 1 页</span>
     <span class="dot">·</span>
     <span id="statusSaved">未保存</span>
+    <span class="dot">·</span>
+    <span id="statusVersion" class="ver" title="界面版本号（用它确认有没有加载到最新版）"></span>
     <span class="grow"></span>
     <span class="tip">打印对话框里选「另存为 PDF」并取消页眉页脚</span>
   </footer>
@@ -1368,6 +1374,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
         —— 觉得好用的话，欢迎点个 <b>Star</b> <span class="star">★</span>；遇到问题、或者想要新模板新功能，也欢迎提
         <a href="https://github.com/beiwei91/resume-generator/issues" target="_blank" rel="noreferrer">Issue</a>。
         谢谢喵 🐾</p>
+      <p class="help-note" id="helpVersion"></p>
       <table class="help-table">
         <thead><tr><th>写法</th><th>效果</th></tr></thead>
         <tbody>
@@ -1394,7 +1401,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 <div class="toast" id="toast" hidden></div>
 
 <script>
-/* ==== assets/resume-md.js ==== */
+/* ==== assets/resume-md.js?v=1.3.0 ==== */
 /*!
  * resume-md.js —— 轻量 Markdown → 简历 HTML 渲染引擎（零依赖，浏览器 / Node 通用）
  *
@@ -2027,7 +2034,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 });
 </script>
 <script>
-/* ==== assets/resume-form.js ==== */
+/* ==== assets/resume-form.js?v=1.3.0 ==== */
 /*!
  * resume-form.js —— 表单模式的「纯逻辑层」：把 Markdown 拆成模块，并按块改写
  *
@@ -2641,7 +2648,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 });
 </script>
 <script>
-/* ==== assets/form-view.js ==== */
+/* ==== assets/form-view.js?v=1.3.0 ==== */
 /*!
  * form-view.js —— 表单模式的界面层：把模块模型渲染成可折叠、可增删排序的表单
  *
@@ -3172,7 +3179,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 })(window);
 </script>
 <script>
-/* ==== assets/app.js ==== */
+/* ==== assets/app.js?v=1.3.0 ==== */
 /*!
  * app.js —— 简历生成器工作台逻辑
  * 数据流：Markdown 文本（含文首配置块）是唯一数据源 → 解析渲染 → 预览 / 打印导出
@@ -3976,6 +3983,20 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 版本号 */
+
+  var APP_VERSION = (function () {
+    var m = document.querySelector('meta[name="app-version"]');
+    return m && m.content ? String(m.content) : '';
+  })();
+
+  function applyVersion() {
+    var v = $('statusVersion');
+    if (v) v.textContent = APP_VERSION ? 'v' + APP_VERSION : '';
+    var note = $('helpVersion');
+    if (note) note.textContent = APP_VERSION ? '界面版本 v' + APP_VERSION : '';
+  }
+
   /* ------------------------------------------------------------ 顶部求 star 横幅 */
 
   function applyStarBanner() {
@@ -4309,6 +4330,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
     setEditorMode(prefs.mode);
     applyMobileView();
     applyStarBanner();
+    applyVersion();
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
     // 应用快捷方式：index.html?action=new 直接新建一份空白简历

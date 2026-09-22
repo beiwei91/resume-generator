@@ -4,9 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>简历生成器 · Markdown → PDF</title>
-<link rel="stylesheet" href="assets/resume.css">
-<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/resume.css?v=1.3.0">
+<link rel="stylesheet" href="assets/app.css?v=1.3.0">
 <meta name="application-name" content="简历生成器">
+<!-- 版本号：静态资源都带 ?v= 查询串，改版本号即可让浏览器 / CDN 立刻取到新文件。
+     发布前记得把这里和下面 4 处脚本引用的版本号一起改掉。 -->
+<meta name="app-version" content="1.3.0">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
 <style id="printPageStyle">@page { size: A4; }</style>
 </head>
@@ -185,6 +188,8 @@
     <span id="statusPages">共 1 页</span>
     <span class="dot">·</span>
     <span id="statusSaved">未保存</span>
+    <span class="dot">·</span>
+    <span id="statusVersion" class="ver" title="界面版本号（用它确认有没有加载到最新版）"></span>
     <span class="grow"></span>
     <span class="tip">打印对话框里选「另存为 PDF」并取消页眉页脚</span>
   </footer>
@@ -203,6 +208,7 @@
         —— 觉得好用的话，欢迎点个 <b>Star</b> <span class="star">★</span>；遇到问题、或者想要新模板新功能，也欢迎提
         <a href="https://github.com/beiwei91/resume-generator/issues" target="_blank" rel="noreferrer">Issue</a>。
         谢谢喵 🐾</p>
+      <p class="help-note" id="helpVersion"></p>
       <table class="help-table">
         <thead><tr><th>写法</th><th>效果</th></tr></thead>
         <tbody>
@@ -228,9 +234,9 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="assets/resume-md.js"></script>
-<script src="assets/resume-form.js"></script>
-<script src="assets/form-view.js"></script>
-<script src="assets/app.js"></script>
+<script src="assets/resume-md.js?v=1.3.0"></script>
+<script src="assets/resume-form.js?v=1.3.0"></script>
+<script src="assets/form-view.js?v=1.3.0"></script>
+<script src="assets/app.js?v=1.3.0"></script>
 </body>
 </html>

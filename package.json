@@ -1,14 +1,14 @@
-{
+﻿{
   "name": "resume-generator",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
-  "description": "简历生成器：表单 / Markdown 双模式编辑，实时 A4 预览 + 导出 PDF（零依赖，双击即用）",
+  "description": "绠€鍘嗙敓鎴愬櫒锛氳〃鍗?/ Markdown 鍙屾ā寮忕紪杈戯紝瀹炴椂 A4 棰勮 + 瀵煎嚭 PDF锛堥浂渚濊禆锛屽弻鍑诲嵆鐢級",
   "scripts": {
     "test": "node tests/smoke.mjs && node tests/form.mjs && node tests/edge.mjs",
     "verify": "node tests/verify-export.mjs",
     "verify:app": "node tests/verify-app.mjs",
-    "pdf": "node export-pdf.mjs resume.sample.md -o 简历.pdf",
-    "png": "node export-pdf.mjs resume.sample.md -o none --png 首页预览.png",
+    "pdf": "node export-pdf.mjs resume.sample.md -o 绠€鍘?pdf",
+    "png": "node export-pdf.mjs resume.sample.md -o none --png 棣栭〉棰勮.png",
     "single": "node build-single.mjs",
     "icons": "node tools/make-icons.mjs",
     "launchers": "node tools/make-launchers.mjs"

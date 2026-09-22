@@ -15,14 +15,14 @@ const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 let html = read('index.html');
 
-/* 内联样式 */
+/* 内联样式（资源引用可能带 ?v= 版本号，读文件时要忽略查询串） */
 html = html.replace(/[ \t]*<link rel="stylesheet" href="([^"]+)">\r?\n?/g, (m, href) => {
-  return '<style>\n/* ==== ' + href + ' ==== */\n' + read(href).trim() + '\n</style>\n';
+  return '<style>\n/* ==== ' + href + ' ==== */\n' + read(href.split('?')[0]).trim() + '\n</style>\n';
 });
 
 /* 内联脚本（转义 </script 以免提前结束脚本块） */
 html = html.replace(/[ \t]*<script src="([^"]+)"><\/script>\r?\n?/g, (m, src) => {
-  const js = read(src).replace(/<\/script/gi, '<\\/script');
+  const js = read(src.split('?')[0]).replace(/<\/script/gi, '<\\/script');
   return '<script>\n/* ==== ' + src + ' ==== */\n' + js.trim() + '\n</script>\n';
 });
 
@@ -46,7 +46,8 @@ if (leftovers.length) {
   console.error('打包失败：仍有外部引用 ' + leftovers.join(', '));
   process.exit(1);
 }
-if (!/<style>/.test(html) || !/resume-md\.js ====/.test(html) || !/app\.js ====/.test(html)) {
+if (!/<style>/.test(html) || !/resume-md\.js/.test(html) || !/app\.js/.test(html) ||
+    !/resume\.css/.test(html) || !/form-view\.js/.test(html)) {
   console.error('打包失败：样式或脚本没有内联成功');
   process.exit(1);
 }

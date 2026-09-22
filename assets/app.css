@@ -523,6 +523,7 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 .statusbar .dot { color: #c2cad8; }
 .statusbar .grow { flex: 1; }
 .statusbar .tip { color: #98a2b3; }
+.statusbar .ver { color: #b3bbc8; font-size: 11.5px; }
 #statusSaved.saved { color: #0f766e; }
 #statusPages.overflow { color: #b45309; font-weight: 600; }
 

@@ -203,7 +203,7 @@ check('打包脚本执行成功', build.status === 0 && fs.existsSync(single),
 if (fs.existsSync(single)) {
   const html = fs.readFileSync(single, 'utf8');
   check('没有残留外部引用', !/(?:src|href)="assets?\//.test(html));
-  check('样式与脚本已内联', /<style>/.test(html) && /==== assets\/app\.js ====/.test(html));
+  check('样式与脚本已内联', /<style>/.test(html) && /==== assets\/app\.js/.test(html) && /==== assets\/resume\.css/.test(html));
   check('体积合理', html.length > 20000 && html.length < 2000000, (html.length / 1024).toFixed(1) + ' KB');
 
   const dom = dumpDom(pathToFileURL(single).href);
@@ -272,6 +272,16 @@ if (fs.existsSync(single)) {
   check('章节卡片带标题输入 / 定位 / 添加章节',
     /fcard-title-input/.test(dom) && /定位/.test(dom) && /添加章节/.test(dom));
   check('默认表单模式：Markdown 文本框处于隐藏状态', /id="editor"[^>]*hidden/.test(dom));
+
+  // 版本号 / 缓存：静态资源带 ?v=，界面显示版本，方便确认"刷新后到底加载到哪一版"
+  const ver = ((/name="app-version" content="([^"]+)"/.exec(index)) || [])[1] || '';
+  const verRe = ver.replace(/\./g, '\\.');
+  const versioned = (index.match(new RegExp('assets/[a-z-]+\\.(?:js|css)\\?v=' + verRe, 'g')) || []).length;
+  check('静态资源引用都带版本号（改版本号即可让浏览器 / CDN 立刻取到新文件）',
+    !!ver && versioned === 6, 'v' + ver + '，带版本号的引用 ' + versioned + ' 处');
+  check('单文件包里也带版本号', new RegExp('name="app-version" content="' + verRe + '"').test(fs.readFileSync(single, 'utf8')));
+  check('界面状态栏会显示版本号', /id="statusVersion"/.test(index) &&
+    new RegExp('v' + verRe).test(dom), '界面显示 v' + ver);
 
   const formShot = path.join(BUILD, 'form-view.png');
   fs.rmSync(formShot, { force: true });
