@@ -2721,19 +2721,31 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
         line.appendChild(field('', c, { path: 'contact:' + i, placeholder: '138-0000-0000' }));
         var del = iconBtn('×', '删除这条联系方式', 'ibtn-danger');
         del.addEventListener('click', function () {
-          var next = list.slice();
+          // 读「此刻」的文档，别用渲染时的旧快照 —— 否则会把刚输入还没重绘的内容覆盖掉
+          var cur = Form.walk(api.getMd());
+          var next = cur.header.info.contacts.slice();
           next.splice(i, 1);
-          apply(Form.setHeaderInfo(api.getMd(), { subtitle: model.header.info.subtitle, contacts: next }), true);
+          apply(Form.setHeaderInfo(api.getMd(), { subtitle: cur.header.info.subtitle, contacts: next }), true);
         });
         line.appendChild(del);
         contacts.appendChild(line);
       });
+
       var addContact = el('button', 'fbtn', '+ 添加联系方式');
       addContact.type = 'button';
+      addContact.setAttribute('data-act', 'add-contact');
+      addContact.title = '先加一个空位，输入内容后才会写进 .md';
       addContact.addEventListener('click', function () {
-        var next = list.concat(['']);
-        apply(Form.setHeaderInfo(api.getMd(), { subtitle: model.header.info.subtitle, contacts: next }), true,
-          'contact:' + (next.length - 1));
+        // 只在界面上加一个空输入框并聚焦：不写空值进 .md，也不会用旧快照覆盖刚输入的内容
+        var line = el('div', 'frow frow-tight');
+        var wrap = field('', '', { path: 'contact-new', placeholder: '138-0000-0000' });
+        line.appendChild(wrap);
+        var drop = iconBtn('×', '不要这一条', 'ibtn-danger');
+        drop.addEventListener('click', function () { if (line.parentNode) line.parentNode.removeChild(line); });
+        line.appendChild(drop);
+        contacts.insertBefore(line, addContact);
+        var box = wrap.querySelector('input');
+        if (box && box.focus) box.focus();
       });
       contacts.appendChild(addContact);
       body.appendChild(contacts);
@@ -3009,7 +3021,16 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
       var next = null;
 
       if (path === 'name') next = Form.setHeaderName(md, value);
-      else if (path === 'subtitle' || parts[0] === 'contact') {
+      else if (path === 'contact-new') {
+        // 「+ 添加联系方式」产生的空位：第一次输入时才追加进文档，之后转为普通位置编辑
+        var curH = Form.walk(md);
+        var newIdx = curH.header.info.contacts.length;
+        next = Form.setHeaderInfo(md, {
+          subtitle: curH.header.info.subtitle,
+          contacts: curH.header.info.contacts.concat([value])
+        });
+        if (next !== md && input.setAttribute) input.setAttribute('data-path', 'contact:' + newIdx);
+      } else if (path === 'subtitle' || parts[0] === 'contact') {
         var model = Form.walk(md);
         var contacts = model.header.info.contacts.slice();
         var subtitle = model.header.info.subtitle;
@@ -3041,6 +3062,15 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
         render();
       }
     });
+
+    // 空着的「+ 添加联系方式」空位在失焦时收掉（blur 不冒泡，用捕获）
+    container.addEventListener('blur', function (ev) {
+      var t = ev.target;
+      if (!t || !t.getAttribute) return;
+      if (t.getAttribute('data-path') !== 'contact-new' || String(t.value || '').trim()) return;
+      var row = t.closest ? t.closest('.frow') : null;
+      if (row && row.parentNode) row.parentNode.removeChild(row);
+    }, true);
 
     render();
     return { render: render };

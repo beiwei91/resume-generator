@@ -421,6 +421,8 @@ async function testInteractions() {
     'function q(sel) { return doc.querySelector(sel); }',
     'function fire(el, type) { el.dispatchEvent(new win.Event(type, { bubbles: true })); }',
     'function probe() { var n = q(".r-name"); return { name: n ? n.textContent : "", sections: doc.querySelectorAll(".r-section").length, field: (q("[data-path=\\"name\\"]") || {}).value || "" }; }',
+    'function header() { var s = q("[data-path=\\"subtitle\\"]"); var cs = Array.prototype.map.call(doc.querySelectorAll("[data-path^=\\"contact:\\"]"), function (i) { return i.value; }); return { sub: s ? s.value : "", contacts: cs, preview: doc.querySelectorAll(".r-contacts li").length }; }',
+    'function setVal(sel, v) { var el0 = q(sel); el0.value = v; fire(el0, "input"); return el0; }',
     'window.onerror = function (msg) { say("ERROR|" + msg); };',
     'window.addEventListener("load", function () {',
     '  (async function () {',
@@ -448,7 +450,20 @@ async function testInteractions() {
     '      var rebuilt = q("#docList").options[0].getAttribute("data-mark") !== "mark";',
     '      await load();',
     '      var D = probe();',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt }));',
+    '      var E0 = header();',
+    '      setVal("[data-path=\\"subtitle\\"]", "DDD-sub"); await wait(150);',
+    '      q("[data-act=\\"add-contact\\"]").click(); await wait(150);',
+    '      var hasSlot = !!q("[data-path=\\"contact-new\\"]");',
+    '      var slot = q("[data-path=\\"contact-new\\"]");',
+    '      if (slot) { slot.value = "DDD-phone"; fire(slot, "input"); }',
+    '      await wait(250);',
+    '      var E1 = header();',
+    '      q("[data-act=\\"add-contact\\"]").click(); await wait(120);',
+    '      var emptySlot = q("[data-path=\\"contact-new\\"]");',
+    '      if (emptySlot) fire(emptySlot, "blur"); await wait(200);',
+    '      var E2 = header();',
+    '      var slotGone = !q("[data-path=\\"contact-new\\"]");',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -483,6 +498,16 @@ async function testInteractions() {
     res.C.field === 'BBB-edit' && res.C.name === 'BBB-edit', JSON.stringify(res.C));
   check('保存不会重建文档下拉（手机系统选择器不会被打断）', res.rebuilt === false, '重建=' + res.rebuilt);
   check('重新加载后改动仍在', res.D.field === 'BBB-edit' && res.D.name === 'BBB-edit', JSON.stringify(res.D));
+  check('点「+ 添加联系方式」只加空位，不写空值进文档', res.hasSlot === true && res.E1.contacts.indexOf('DDD-phone') >= 0,
+    JSON.stringify(res.E1));
+  check('点「+ 添加联系方式」不会把刚输入的职位覆盖回去（本轮修复的 bug）',
+    res.E1.sub === 'DDD-sub', '职位=' + JSON.stringify(res.E1.sub));
+  check('新联系方式确实写进了文档并出现在预览里',
+    res.E1.contacts.length === res.E0.contacts.length + 1 && res.E1.preview === res.E0.preview + 1,
+    JSON.stringify(res.E0) + ' → ' + JSON.stringify(res.E1));
+  check('空着的空位失焦后自动收掉，文档不变',
+    res.slotGone === true && res.E2.sub === 'DDD-sub' && res.E2.contacts.length === res.E1.contacts.length,
+    JSON.stringify(res.E2));
 }
 
 await testInteractions();
