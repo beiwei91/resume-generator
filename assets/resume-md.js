@@ -30,7 +30,9 @@
     photoAlign: 'right',
     photoShape: 'rounded'
   };
-  var TEMPLATES = ['classic', 'modern', 'compact', 'timeline', 'minimal', 'banner', 'sidebar', 'twocol'];
+  // 模板只表示「样式」；栏数由 columns 单独决定（旧的 template: twocol 仍兼容，见 normalizeSettings）
+  var TEMPLATES = ['classic', 'modern', 'compact', 'timeline', 'minimal', 'banner', 'sidebar'];
+  var TWO_COL_LEGACY = 'twocol';
   var FONTS = ['sans', 'serif'];
   var PHOTO_ALIGNS = ['right', 'left'];
   var PHOTO_SHAPES = ['rounded', 'circle', 'square'];
@@ -40,7 +42,8 @@
     { label: '宽 (20mm / 22mm)', value: '20mm 22mm' }
   ];
   var ACCENT_PRESETS = ['#2563eb', '#0f766e', '#b91c1c', '#7c3aed', '#c2410c', '#111827'];
-  var FRONT_KEYS = ['template', 'accent', 'font', 'fontSize', 'lineHeight', 'margin', 'rail', 'photo', 'photoSize', 'photoAlign', 'photoShape'];
+  var FRONT_KEYS = ['template', 'accent', 'font', 'fontSize', 'lineHeight', 'margin',
+    'columns', 'rail', 'railFontSize', 'railColor', 'photo', 'photoSize', 'photoAlign', 'photoShape'];
   var A4 = { width: 210, height: 297 }; // mm
   var MM_PER_PX = 25.4 / 96;
   var TOKEN = '\u0001';
@@ -106,13 +109,31 @@
     return Math.min(max, Math.max(min, n));
   }
 
+  /** 左栏字号：不填就跟随正文 */
+  function normalizeRailFontSize(value) {
+    if (value == null || String(value).trim() === '') return '';
+    var n = parseFloat(String(value));
+    if (!isFinite(n)) return '';
+    return (Math.round(clampNum(n, 9, 20, 13) * 100) / 100) + 'px';
+  }
+
+  function normalizeHexColor(value) {
+    var v = String(value == null ? '' : value).trim();
+    return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v) ? v.toLowerCase() : '';
+  }
+
   function normalizeSettings(meta) {
     meta = meta || {};
     var tpl = String(meta.template == null ? '' : meta.template).trim();
     var font = String(meta.font == null ? '' : meta.font).trim();
     var accent = String(meta.accent == null ? '' : meta.accent).trim();
+    var legacyTwoCol = tpl === TWO_COL_LEGACY;             // 旧写法：双栏曾经是一套模板
+    var cols = String(meta.columns == null ? '' : meta.columns).trim();
     return {
       template: TEMPLATES.indexOf(tpl) >= 0 ? tpl : DEFAULTS.template,
+      columns: (legacyTwoCol || cols === '2') ? '2' : '1',
+      railFontSize: normalizeRailFontSize(meta.railFontSize),
+      railColor: normalizeHexColor(meta.railColor),
       accent: /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(accent) ? accent.toLowerCase() : DEFAULTS.accent,
       font: FONTS.indexOf(font) >= 0 ? font : DEFAULTS.font,
       fontSize: (Math.round(clampNum(meta.fontSize, 10, 20, 14) * 100) / 100) + 'px',
@@ -232,7 +253,9 @@
     var photoKeys = { photo: 1, photoSize: 1, photoAlign: 1, photoShape: 1 };
     var lines = FRONT_KEYS.filter(function (k) {
       if (photoKeys[k]) return !!s.photo;
+      if (k === 'columns') return s.columns === '2';            // 单栏是默认值，不写这一行
       if (k === 'rail') return !!String(s.rail || '').trim();   // 没配左栏就不写这一行
+      if (k === 'railFontSize' || k === 'railColor') return !!String(s[k] || '').trim();
       return true;
     }).map(function (k) { return k + ': ' + s[k]; });
     (extraLines || []).forEach(function (line) { lines.push(line); });
@@ -553,6 +576,7 @@
 
   function sheetClasses(settings, hasPhoto) {
     var cls = 'resume-sheet tpl-' + settings.template + ' font-' + settings.font;
+    if (settings.columns === '2') cls += ' cols-2';
     if (hasPhoto) {
       cls += ' has-photo photo-' + settings.photoAlign + ' shape-' + settings.photoShape;
     }
@@ -606,14 +630,19 @@
     // 双栏：把 rail 里列出的章节放到左侧栏，其余留在右侧主栏
     var railTitles = parseRailTitles(settings.rail);
     var body;
-    if (settings.template === 'twocol' && railTitles.length) {
+    var railStyle = [];
+    if (settings.railFontSize) railStyle.push('font-size: ' + settings.railFontSize);
+    if (settings.railColor) railStyle.push('--r-rail-ink: ' + settings.railColor, 'color: ' + settings.railColor);
+    var railStyleAttr = railStyle.length ? ' style="' + railStyle.join('; ') + '"' : '';
+
+    if (settings.columns === '2' && railTitles.length) {
       var railKids = [];
       var mainKids = [];
       (doc.children || []).forEach(function (child) {
         (railHit(railTitles, child.title) ? railKids : mainKids).push(child);
       });
       body = '<div class="r-cols' + (railKids.length ? ' has-rail' : '') + '">' +
-        (railKids.length ? '<aside class="r-rail">' + renderChildren(railKids, { rail: true }) + '</aside>' : '') +
+        (railKids.length ? '<aside class="r-rail"' + railStyleAttr + '>' + renderChildren(railKids, { rail: true }) + '</aside>' : '') +
         '<div class="r-main">' + renderChildren(mainKids) + '</div>' +
         '</div>';
     } else {

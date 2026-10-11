@@ -109,7 +109,7 @@ check('有照片时写出 photo 相关配置行，没有照片时一行都不写
   }));
 
 section('模板');
-check('内置 ' + MD.TEMPLATES.length + ' 套模板', MD.TEMPLATES.length === 8, MD.TEMPLATES.join(' / '));
+check('内置 ' + MD.TEMPLATES.length + ' 套模板样式', MD.TEMPLATES.length === 7, MD.TEMPLATES.join(' / '));
 check('每套模板都能渲染并带上对应的 class',
   MD.TEMPLATES.every(function (t) {
     var r = MD.renderResume(MD.upsertFrontMatter(sample, { template: t }));

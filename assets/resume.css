@@ -402,8 +402,8 @@
 /* ---------------------------------------------------------------- 模板八：双栏（左栏由 rail 配置指定） */
 /* 用浮动而不是 flex：分页时左栏不会把整块内容顶到下一页，打印更稳 */
 
-.resume-sheet.tpl-twocol .r-cols::after { content: ""; display: block; clear: both; }
-.resume-sheet.tpl-twocol .r-rail {
+.resume-sheet.cols-2 .r-cols::after { content: ""; display: block; clear: both; }
+.resume-sheet.cols-2 .r-rail {
   float: left;
   box-sizing: border-box;       /* 导出文档里没有全局 border-box，这里显式声明，保证两种场景宽度一致 */
   width: 36%;
@@ -415,41 +415,41 @@
 }
 
 /* 右栏让出左栏的宽度：否则正文会绕到左栏下方，看起来像「文字漏出去」 */
-.resume-sheet.tpl-twocol .r-cols.has-rail .r-main { margin-left: calc(36% + 6mm); }
+.resume-sheet.cols-2 .r-cols.has-rail .r-main { margin-left: calc(36% + 6mm); }
 
 /* 左栏窄，标题与职位各占一行：点号（由 .r-entry-role::before 生成）就不要了 */
-.resume-sheet.tpl-twocol .r-rail .r-entry-role::before { content: none; }
+.resume-sheet.cols-2 .r-rail .r-entry-role::before { content: none; }
 
 /* 左栏：条目改成上下堆叠（标题、时间各占一行），窄列里才排得开 */
-.resume-sheet.tpl-twocol .r-rail .r-entry-head { display: block; }
-.resume-sheet.tpl-twocol .r-rail .r-entry-title { display: block; }
-.resume-sheet.tpl-twocol .r-rail .r-entry-role { display: block; font-weight: 500; margin-left: 0; }
-.resume-sheet.tpl-twocol .r-rail .r-entry-meta {
+.resume-sheet.cols-2 .r-rail .r-entry-head { display: block; }
+.resume-sheet.cols-2 .r-rail .r-entry-title { display: block; }
+.resume-sheet.cols-2 .r-rail .r-entry-role { display: block; font-weight: 500; margin-left: 0; }
+.resume-sheet.cols-2 .r-rail .r-entry-meta {
   display: block;
   text-align: left;
   margin-top: 1px;
   padding-left: 0;
   white-space: normal;          /* 基础样式是 nowrap，窄列里会溢出 */
-  color: #6b7280;
+  color: var(--r-rail-ink, #6b7280);
 }
-.resume-sheet.tpl-twocol .r-rail .r-entry-sub { margin-top: 1px; }
-.resume-sheet.tpl-twocol .r-rail .r-quote { margin: 0; }
+.resume-sheet.cols-2 .r-rail .r-entry-sub { margin-top: 1px; }
+.resume-sheet.cols-2 .r-rail .r-quote { margin: 0; }
 
 /* 左栏里的表格已由渲染端改成「标签：值」堆叠 */
 .r-pairs { margin: 2px 0 0; }
 .r-pair { margin: 0 0 3px; line-height: 1.5; }
-.r-pair-k { color: #6b7280; margin-right: 4px; }
+.r-pair-k { color: var(--r-rail-ink, #6b7280); margin-right: 4px; }
 .r-pair-v { color: inherit; }
-.resume-sheet.tpl-twocol .r-rail .r-section { margin-top: 12px; }
-.resume-sheet.tpl-twocol .r-rail .r-section-title {
+.resume-sheet.cols-2 .r-rail .r-section { margin-top: 12px; }
+.resume-sheet.cols-2 .r-rail .r-section-title {
   border: 0;
   padding: 0 0 2px;
   font-size: .95em;
   letter-spacing: .06em;
   color: var(--r-accent);
 }
-.resume-sheet.tpl-twocol .r-rail .r-list { padding-left: 1.05em; }
-.resume-sheet.tpl-twocol .r-main .r-section:first-child { margin-top: 4px; }
+.resume-sheet.cols-2 .r-rail .r-list { padding-left: 1.05em; }
+.resume-sheet.cols-2 .r-main .r-section:first-child { margin-top: 4px; }
 
 /* ---------------------------------------------------------------- 证件照布局 */
 /* 放在三套模板之后：有照片时抬头改成「文字 + 照片」两列，
@@ -509,3 +509,9 @@
   .page-guide,
   .page-guide-label { display: none !important; }
 }
+
+/* 左栏文字色要覆盖到条目标题 / 职位 / 副信息 / 引用（它们原本各自写死了颜色） */
+.resume-sheet.cols-2 .r-rail .r-entry-title { color: var(--r-rail-ink, var(--r-ink-strong)); }
+.resume-sheet.cols-2 .r-rail .r-entry-role { color: var(--r-rail-ink, #374151); }
+.resume-sheet.cols-2 .r-rail .r-entry-sub { color: var(--r-rail-ink, var(--r-ink-soft)); }
+.resume-sheet.cols-2 .r-rail .r-quote { color: var(--r-rail-ink, #374151); }

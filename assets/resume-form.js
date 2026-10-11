@@ -633,10 +633,11 @@
     return MD.normalizeSettings(MD.splitFrontMatter(md).meta);
   }
 
-  /** 当前是不是双栏模板 */
-  function isTwocol(md) {
-    return settingsOf(md).template === 'twocol';
+  /** 当前是不是双栏（栏数现在由 columns 单独决定） */
+  function isTwoCol(md) {
+    return settingsOf(md).columns === '2';
   }
+  var isTwocol = isTwoCol;      // 兼容旧调用名
 
   /** 当前左栏章节标题列表 */
   function railTitles(md) {
@@ -715,6 +716,7 @@
     walk: walk,
     SECTION_TEMPLATES: SECTION_TEMPLATES,
     isTwocol: isTwocol,
+    isTwoCol: isTwoCol,
     railTitles: railTitles,
     inRail: inRail,
     setRail: setRail,

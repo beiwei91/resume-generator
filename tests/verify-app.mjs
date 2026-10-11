@@ -433,8 +433,11 @@ section('复制 / 撤销重做 / 备份');
   check('Esc 关闭弹窗 / 排版面板', /key \|\| ''\)\.toLowerCase\(\) !== 'escape'/.test(appJs));
   check('表单卡片有复制按钮（章节与条目）',
     /duplicateSection/.test(formViewJs) && /duplicateEntry/.test(formViewJs));
-  check('双栏模板下章节卡片有「左栏 / 右栏」一键切换',
-    /toggle-rail/.test(formViewJs) && /Form\.isTwocol/.test(formViewJs) && /Form\.setRail/.test(formViewJs));
+  check('双栏下章节卡片有「左栏 / 右栏」一键切换',
+    /toggle-rail/.test(formViewJs) && /Form\.isTwoCol/.test(formViewJs) && /Form\.setRail/.test(formViewJs));
+  check('栏数是独立选择项（模板只管样式）',
+    /id="columnsSelect"/.test(index) && /railFontSizeSelect/.test(index) && /railColorInput/.test(index) &&
+    /applyColumnFields/.test(appJs));
   check('切换双栏会自动填默认左栏（技能 / 证书 / 教育类）',
     /suggestRail/.test(appJs) && /rail: picked\.join/.test(appJs));
 }
@@ -444,12 +447,14 @@ section('复制 / 撤销重做 / 备份');
 section('压到一页 / 双栏');
 {
   const css = fs.readFileSync(path.join(ROOT, 'assets', 'app.css'), 'utf8');
-  check('排版面板有「压到一页」按钮', /id="btnFitPage"/.test(index) && /fitToOnePage/.test(appJs));
+  check('排版面板有「自动排版」按钮', /id="btnFitPage"/.test(index) && /function autoLayout/.test(appJs) && /自动排版/.test(index));
+  check('自动排版既能压缩也能放大填满（不再只是压到一页）',
+    /growGroups/.test(appJs) && /fill >= 0\.985/.test(appJs) && /放大填满一页/.test(appJs) && /mode = start\.pages > 1 \? 'shrink' : 'grow'/.test(appJs));
   check('压页依次收紧 字号 → 行距 → 页边距 → 证件照，且整步可撤销',
     /fontSize\) - 0\.5/.test(appJs) && /lineHeight\) - 0\.05/.test(appJs) &&
     /MARGIN_PRESETS/.test(appJs) && /if \(cur\.photo\)/.test(appJs) && /pushUndo\(true\)/.test(appJs));
   check('设置是同步应用的（压页循环里要立刻量页数）', /function applySettingsNow/.test(appJs) && /updateGuides\(\)/.test(appJs));
-  check('模板下拉里有双栏，且切换时会自动填左栏', /twocol/.test(appJs) && /suggestRail/.test(appJs) && /FR\.railTitles/.test(appJs));
+  check('栏数切到双栏时会自动填左栏', /columnsSelect/.test(index) && /suggestRail/.test(appJs) && /FR\.railTitles/.test(appJs));
   check('排版面板里有界面主题（跟随系统 / 浅色 / 深色）',
     /id="themeSelect"/.test(index) && /applyTheme/.test(appJs) && /prefers-color-scheme: dark/.test(appJs));
   check('深色只改界面，纸张仍是白底', /html\[data-theme="dark"\]/.test(css) && !/data-theme="dark"[^}]*resume-sheet[^}]*background/.test(css));
@@ -549,7 +554,7 @@ async function testInteractions() {
     '      var J1 = hasAll(["J1-UNDO"]) === false;',
     '      q("#btnRedo").click(); await wait(500);',
     '      var J2 = hasAll(["J1-UNDO"]) === true;',
-    '      var tplSel = q("#tplSelect"); tplSel.value = "twocol"; fire(tplSel, "change"); await wait(700);',
+    '      var colSel = q("#columnsSelect"); colSel.value = "2"; fire(colSel, "change"); await wait(700);',
     '      var K1 = /rail:/.test(q("#editor").value);',
     '      var railBtns = Array.prototype.slice.call(doc.querySelectorAll("[data-act=toggle-rail]"));',
     '      var K2 = railBtns.length > 0;',
@@ -567,7 +572,14 @@ async function testInteractions() {
     '      setSuffix(":entry:0:role", "QUOTA-TEST"); await wait(1400);',
     '      var S1 = q("#statusSaved").textContent.indexOf("已保存") < 0;',
     '      win.localStorage.setItem = origSet;',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3, T1: T1, T2: T2, T3: T3, T4: T4, S1: S1 }));',
+    '      q("#editor").value = q("#editor").value.replace(/fontSize: [0-9.]+px/, "fontSize: 11px");',
+    '      fire(q("#editor"), "input"); await wait(500);',
+    '      var A0 = /fontSize: 11px/.test(q("#editor").value);',
+    '      q("#btnFitPage").click(); await wait(1100);',
+    '      var mFit = /fontSize: ([0-9.]+)px/.exec(q("#editor").value);',
+    '      var A1 = A0 && !!mFit && parseFloat(mFit[1]) > 11 && q("#statusPages").textContent.indexOf("共 1 页") >= 0;',
+    '      var A2 = q("#editor").value.indexOf("fontSize: ") >= 0 && !!doc.querySelector(".resume-sheet");',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3, T1: T1, T2: T2, T3: T3, T4: T4, S1: S1, A0: A0, A1: A1, A2: A2 }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -630,6 +642,9 @@ async function testInteractions() {
   check('切回浅色生效', res.T3 === true, 'T3=' + res.T3);
   check('底部「导出 PDF」是主色按钮（不会被 .mv-btn 盖掉）', res.T4 === 'rgb(37, 99, 235)', 'T4=' + res.T4);
   check('浏览器存储写不进去时不谎报「已保存」', res.S1 === true, 'S1=' + res.S1);
+  check('测试前置条件成立（字号确实被改成 11px）', res.A0 === true, 'A0=' + res.A0);
+  check('点「自动排版」后字号被放大、仍然只有一页（真实点击）', res.A1 === true, 'A1=' + res.A1);
+  check('自动排版后文档与预览都正常', res.A2 === true, 'A2=' + res.A2);
 }
 
 await testInteractions();

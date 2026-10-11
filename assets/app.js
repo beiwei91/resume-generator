@@ -299,8 +299,7 @@
       timeline: '时间轴（左侧连线）',
       minimal: '极简（无框线）',
       banner: '色块（整条标题栏）',
-      sidebar: '侧栏标题（左侧留白栏）',
-      twocol: '双栏（自动分左右栏）'
+      sidebar: '侧栏标题（左侧留白栏）'
     };
     MD.TEMPLATES.forEach(function (t) {
       var o = document.createElement('option');
@@ -327,8 +326,33 @@
     });
   }
 
+  /** 只有双栏时才显示「左栏字号 / 左栏文字色」 */
+  function applyColumnFields(twoCol) {
+    var box = $('railFields');
+    if (box) box.hidden = !twoCol;
+  }
+
   function syncControls(s) {
     $('tplSelect').value = s.template;
+    $('columnsSelect').value = s.columns;
+    // 手写的字号可能不在下拉选项里：动态补一项，别让界面显示成「跟随正文」而文档里另有其值
+    var railFs = s.railFontSize ? String(parseFloat(s.railFontSize)) : '';
+    var fsSel = $('railFontSizeSelect');
+    var custom = fsSel.querySelector('option[data-custom]');
+    if (custom) custom.parentNode.removeChild(custom);
+    if (railFs && !Array.prototype.some.call(fsSel.options, function (o) { return o.value === railFs; })) {
+      var o2 = document.createElement('option');
+      o2.value = railFs;
+      o2.textContent = railFs + 'px（自定义）';
+      o2.setAttribute('data-custom', '1');
+      fsSel.appendChild(o2);
+    }
+    fsSel.value = railFs;
+    // <input type=color> 只认 6 位；文档里允许 3 位简写，先展开再赋值
+    var rc = s.railColor || '#6b7280';
+    if (/^#[0-9a-fA-F]{3}$/.test(rc)) rc = '#' + rc[1] + rc[1] + rc[2] + rc[2] + rc[3] + rc[3];
+    $('railColorInput').value = rc;
+    applyColumnFields(s.columns === '2');
     $('fontSelect').value = s.font;
     $('accentInput').value = s.accent;
     $('fontSizeInput').value = parseFloat(s.fontSize);
@@ -373,54 +397,151 @@
     var next = MD.upsertFrontMatter(state.markdown, settings);
     state.markdown = next;
     editor.value = next;
-    markDirty();             // 压页改的是文档本身：必须标脏并触发保存，否则刷新就白压了
+    markDirty();             // 自动排版改的是文档本身：必须标脏并触发保存，否则刷新就白排了
+    invalidateRedo();        // 这条路不走 setMarkdown，重做栈要手动作废
     scheduleAutoSave();
     render();
     updateGuides();
   }
 
-  /** 一键压到一页：依次收紧 字号 → 行距 → 页边距 → 证件照宽度，压到就停；整体算一步可撤销 */
-  function fitToOnePage() {
-    if (state.pages <= 1) { toast('已经是一页了，不用压'); return; }
-    var base = Object.assign({}, state.settings);
-    var cur = Object.assign({}, base);
-    var steps = [];
+  /**
+   * 纸张的真实内容高度（未缩放 px）。
+   * 不能直接用 sheet 的高度：.resume-sheet 有 min-height = A4，短内容也会被撑满一页，
+   * 那样填充率恒为 100%，「放大填满」就永远不生效了。
+   */
+  function sheetContentHeight() {
+    var prev = sheet.style.minHeight;
+    sheet.style.minHeight = '0px';
+    var h = sheet.getBoundingClientRect().height / currentZoom();
+    sheet.style.minHeight = prev;
+    return h;
+  }
+
+  /** 当前内容占一页的比例（未缩放布局 px），顺便拿到真实页数 */
+  function pageFill() {
+    var info = pageBreaks();
+    return { pages: 1 + info.positions.length, fill: sheetContentHeight() / PAGE_H_PX };
+  }
+
+  /** 收紧候选：字号 → 行距 → 页边距 → 证件照（按类别分组，一类到顶就换下一类） */
+  function shrinkGroups(cur) {
+    var groups = [[], [], [], []];
     var v;
     for (v = parseFloat(cur.fontSize) - 0.5; v >= 10; v -= 0.5) {
-      steps.push(['fontSize', (Math.round(v * 10) / 10) + 'px']);
+      groups[0].push(['fontSize', (Math.round(v * 10) / 10) + 'px']);
     }
     for (v = parseFloat(cur.lineHeight) - 0.05; v >= 1.15; v -= 0.05) {
-      steps.push(['lineHeight', (Math.round(v * 100) / 100).toFixed(2)]);
+      groups[1].push(['lineHeight', (Math.round(v * 100) / 100).toFixed(2)]);
     }
     var curY = MD.marginMm(cur).y;
     MD.MARGIN_PRESETS
       .filter(function (m) { return MD.marginMm({ margin: m.value }).y < curY; })
       .sort(function (a, b) { return MD.marginMm({ margin: b.value }).y - MD.marginMm({ margin: a.value }).y; })
-      .forEach(function (m) { steps.push(['margin', m.value]); });
+      .forEach(function (m) { groups[2].push(['margin', m.value]); });
     if (cur.photo) {
-      for (v = (parseFloat(cur.photoSize) || 26) - 1; v >= 18; v -= 1) steps.push(['photoSize', v + 'mm']);
+      for (v = (parseFloat(cur.photoSize) || 26) - 1; v >= 18; v -= 1) groups[3].push(['photoSize', v + 'mm']);
     }
+    return groups;
+  }
 
-    pushUndo(true);                       // 整个「压到一页」记成一步
-    var hit = null;
-    for (var i = 0; i < steps.length; i++) {
-      var next = Object.assign({}, cur);
-      next[steps[i][0]] = steps[i][1];
-      cur = next;
-      applySettingsNow(cur);
-      if (state.pages <= 1) { hit = cur; break; }
+  /** 放大候选：方向与收紧相反（字号 → 行距 → 页边距 → 证件照） */
+  function growGroups(cur) {
+    var groups = [[], [], [], []];
+    var v;
+    for (v = parseFloat(cur.fontSize) + 0.5; v <= 20; v += 0.5) {
+      groups[0].push(['fontSize', (Math.round(v * 10) / 10) + 'px']);
     }
-    if (!hit) {
-      applySettingsNow(base);
-      toast('内容确实太多，压不进一页；建议删掉几条要点，或换「紧凑」模板', 5200);
+    for (v = parseFloat(cur.lineHeight) + 0.05; v <= 2.4; v += 0.05) {
+      groups[1].push(['lineHeight', (Math.round(v * 100) / 100).toFixed(2)]);
+    }
+    var curY = MD.marginMm(cur).y;
+    MD.MARGIN_PRESETS
+      .filter(function (m) { return MD.marginMm({ margin: m.value }).y > curY; })
+      .sort(function (a, b) { return MD.marginMm({ margin: a.value }).y - MD.marginMm({ margin: b.value }).y; })
+      .forEach(function (m) { groups[2].push(['margin', m.value]); });
+    if (cur.photo) {
+      for (v = (parseFloat(cur.photoSize) || 26) + 2; v <= 40; v += 2) groups[3].push(['photoSize', v + 'mm']);
+    }
+    return groups;
+  }
+
+  function diffSettings(a, b) {
+    var out = [];
+    if (a.fontSize !== b.fontSize) out.push('字号 ' + b.fontSize + ' → ' + a.fontSize);
+    if (a.lineHeight !== b.lineHeight) out.push('行距 ' + b.lineHeight + ' → ' + a.lineHeight);
+    if (a.margin !== b.margin) out.push('页边距 ' + b.margin + ' → ' + a.margin);
+    if (a.photoSize !== b.photoSize) out.push('证件照 ' + b.photoSize + ' → ' + a.photoSize);
+    return out;
+  }
+
+  /**
+   * 自动排版：内容超过一页就依次收紧（字号 → 行距 → 页边距 → 证件照）压进一页；
+   * 不足一页就反向放大，尽量把整页填满（到 98% 就停）。整体算一步，Ctrl+Z 可撤销。
+   */
+  function autoLayout() {
+    var base = Object.assign({}, state.settings);
+    var start = pageFill();
+    var mode = start.pages > 1 ? 'shrink' : 'grow';
+    pushUndo(true);
+    invalidateRedo();
+    var cur = Object.assign({}, base);
+    try {
+      cur = runAutoLayout(base, cur, mode);
+    if (!cur) return;                       // 子函数已经还原并提示过了
+    } catch (e) {
+      applySettingsNow(base);                             // 万一中途出错，也要还原成原样，别留半成品
+      toast('自动排版出错了，已还原成原来的排版（可以再试一次）', 5600);
       return;
     }
-    var bits = [];
-    if (hit.fontSize !== base.fontSize) bits.push('字号 ' + hit.fontSize);
-    if (hit.lineHeight !== base.lineHeight) bits.push('行距 ' + hit.lineHeight);
-    if (hit.margin !== base.margin) bits.push('页边距 ' + hit.margin);
-    if (hit.photoSize !== base.photoSize) bits.push('证件照 ' + hit.photoSize);
-    toast('已压到一页：' + (bits.length ? bits.join('，') : '无需改动'));
+
+    var now = pageFill();
+    var pct = Math.round(now.fill * 100);
+    var bits = diffSettings(cur, base);
+    if (!bits.length) {
+      toast(mode === 'shrink' ? '内容正好一页，不需要调整' :
+        '自动排版：这块内容已经很贴合页面了（占 ' + pct + '%），没有需要调整的', 4600);
+      return;
+    }
+    toast((mode === 'shrink' ? '已自动排版：压到一页（' : '已自动排版：放大填满一页（') +
+      bits.join('，') + '，占 ' + pct + '%）', 5600);
+  }
+
+  /** 真正的调整过程（拆出来是为了包一层 try/catch，出错时能整体还原） */
+  function runAutoLayout(base, cur, mode) {
+    if (mode === 'shrink') {
+      var hit = null;
+      shrinkGroups(cur).forEach(function (group) {
+        if (hit) return;
+        for (var i = 0; i < group.length; i++) {
+          var next = Object.assign({}, cur);
+          next[group[i][0]] = group[i][1];
+          applySettingsNow(next);
+          cur = next;                                     // 每步累积：字号收紧后，行距要在收紧后的基础上继续
+          if (state.pages <= 1) { hit = next; return; }
+        }
+      });
+      if (!hit) {
+        applySettingsNow(base);
+        toast('内容确实太多，压不进一页；建议删掉几条要点，或换「紧凑」模板', 5600);
+        return null;                                 // 交给 autoLayout 收尾（提示已经给过）
+      }
+    } else {
+      growGroups(cur).forEach(function (group) {
+        for (var i = 0; i < group.length; i++) {
+          if (pageFill().fill >= 0.985) return;          // 已经够满了
+          var next = Object.assign({}, cur);
+          next[group[i][0]] = group[i][1];
+          applySettingsNow(next);
+          if (state.pages <= 1 && pageFill().fill <= 1) {
+            cur = next;                                   // 还放得下：留着
+          } else {
+            applySettingsNow(cur);                        // 这一类到顶了：回退，换下一类
+            return;
+          }
+        }
+      });
+    }
+    return cur;
   }
 
   /** 把排版参数写回 Markdown 文首配置块（保持正文不动） */
@@ -430,7 +551,7 @@
     setMarkdown(next, true);
     // 模板 / 左栏会影响表单渲染（双栏下每张章节卡片多一个「→ 左栏 / ← 右栏」按钮），
     // 所以这两项变化时必须重绘表单，否则界面与文档不一致
-    if (patch && (patch.template !== undefined || patch.rail !== undefined)) refreshForm();
+    if (patch && (patch.template !== undefined || patch.rail !== undefined || patch.columns !== undefined)) refreshForm();
   }
 
   /* ------------------------------------------------------------ 编辑与保存 */
@@ -449,14 +570,17 @@
       editor.selectionStart = Math.min(s, text.length);
       editor.selectionEnd = Math.min(e, text.length);
     }
-    // 任何新的改动都让「重做」作废（撤销/重做自己改文档时用 skipRedoClear 跳过）
-    if (!skipRedoClear) {
-      redoStack.length = 0;
-      updateUndoBtn();
-    }
+    invalidateRedo();
     markDirty();
     scheduleRender();
     scheduleAutoSave();
+  }
+
+  /** 任何新的改动都让「重做」作废（撤销/重做自己改文档时用 skipRedoClear 跳过） */
+  function invalidateRedo() {
+    if (skipRedoClear) return;
+    redoStack.length = 0;
+    updateUndoBtn();
   }
 
   function markDirty() {
@@ -1225,22 +1349,28 @@
 
     $('docList').addEventListener('change', function () { openDoc(this.value); });
 
-    $('tplSelect').addEventListener('change', function () {
-      var tpl = this.value;
+    $('tplSelect').addEventListener('change', function () { patchSettings({ template: this.value }); });
+
+    // 栏数是独立设置：任意样式都能配双栏；从单栏切过去且还没配左栏时自动填一次
+    $('columnsSelect').addEventListener('change', function () {
+      var two = this.value === '2';
+      applyColumnFields(two);
       var FR = window.ResumeForm;
-      // 切到双栏且还没配左栏：自动把技能 / 证书 / 教育这类章节放进去，省得手写配置
-      if (tpl === 'twocol' && FR && !FR.railTitles(state.markdown).length) {
-        var picked = FR.suggestRail(state.markdown);
+      if (two && FR && !FR.railTitles(state.markdown).length) {
+        // 标题里带逗号/顿号的章节没法表达进 rail，自动填充时先排除（手写配置有 setRail 把关）
+        var picked = FR.suggestRail(state.markdown).filter(function (t) { return !/[,，、]/.test(t); });
         if (picked.length) {
-          patchSettings({ template: tpl, rail: picked.join(', ') });
+          patchSettings({ columns: '2', rail: picked.join(', ') });
           toast('已切到双栏，并把「' + picked.join('、') + '」放进左栏；每张章节卡片上都有「→ 左栏 / ← 右栏」可随时调整', 5600);
           return;
         }
       }
-      patchSettings({ template: tpl });
-      if (tpl === 'twocol') toast('双栏已就绪：在章节卡片上点「→ 左栏」把章节放进左栏', 4600);
+      patchSettings({ columns: two ? '2' : '1' });
     });
-    $('btnFitPage').addEventListener('click', fitToOnePage);
+
+    $('railFontSizeSelect').addEventListener('change', function () { patchSettings({ railFontSize: this.value }); });
+    $('railColorInput').addEventListener('input', function () { patchSettings({ railColor: this.value }); });
+    $('btnFitPage').addEventListener('click', autoLayout);
     $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });
     $('themeSelect').addEventListener('change', function () {
       prefs.theme = this.value;

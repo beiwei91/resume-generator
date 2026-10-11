@@ -8,7 +8,7 @@
  *   - 激活时清理旧版本缓存。
  * 改动静态资源后请把 VERSION 加一。
  */
-const VERSION = 'v1';
+const VERSION = 'v1.8.0';   // 每次发版都要加一：activate 时靠它清掉旧缓存
 const CACHE = 'resume-gen-' + VERSION;
 
 const PRECACHE = [
@@ -18,6 +18,8 @@ const PRECACHE = [
   './assets/resume.css',
   './assets/app.css',
   './assets/resume-md.js',
+  './assets/resume-form.js',
+  './assets/form-view.js',
   './assets/app.js',
   './assets/icons/icon-192.png',
   './assets/icons/icon-256.png',
@@ -83,6 +85,8 @@ self.addEventListener('fetch', (event) => {
   // 静态资源：缓存优先，后台静默更新
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
+    // 预缓存写的是不带 ?v= 的 URL，而页面请求带 ?v=：必须 ignoreSearch 才能命中预缓存，
+    // 否则装好后首次离线打开会拿不到 CSS/JS。版本更新靠上面的 VERSION 清缓存。
     const cached = await cache.match(req, { ignoreSearch: true });
     const network = fetch(req).then((res) => {
       if (res && res.ok) cache.put(req, res.clone());

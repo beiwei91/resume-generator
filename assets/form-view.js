@@ -122,12 +122,22 @@
       var merged = commitInputs();
       var base = merged || api.getMd();
       var next = fn(base);
-      if (next == null || next === base) { render(); return; }
+      if (next == null || next === base) {
+        // 操作没改动文档，但界面里可能已有刚敲进去、还没写进文档的内容：先把它落下去再重绘。
+        // structural 传 false：这里紧接着自己 render()，不能再让 app 层刷一遍表单
+        if (merged) api.apply(merged, false);
+        render();
+        return;
+      }
       api.apply(next, true, typeof focusPath === 'function' ? focusPath(next) : focusPath);
     }
 
     function render(focusPath) {
-      var md = api.getMd();
+      // 第二道防线：重绘前先把界面里已输入的值提交进文档，避免"框里有字、文档里没有"。
+      // 必须真的落盘（structural=false 不会反过来再触发本函数，避免递归）
+      var pending = commitInputs();
+      if (pending) api.apply(pending, false);
+      var md = pending || api.getMd();
       var model = Form.walk(md);
       container.innerHTML = '';
       container.appendChild(renderBasic(model));
@@ -247,7 +257,7 @@
       head.appendChild(el('span', 'fcard-kind', KIND_LABEL[sec.kind] || sec.kind));
 
       // 双栏模板：一键把这个章节放进 / 移出左栏
-      if (Form.isTwocol(api.getMd())) {
+      if (Form.isTwoCol(api.getMd())) {
         var inRailNow = Form.inRail(api.getMd(), sec.title);
         var railBtn = iconBtn(inRailNow ? '← 右栏' : '→ 左栏', inRailNow ? '移回右侧主栏' : '放进左侧栏', 'ibtn-text');
         railBtn.setAttribute('data-act', 'toggle-rail');

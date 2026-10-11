@@ -524,7 +524,7 @@ section('双栏模板（rail 配置）');
   check('双栏：rail 里列出的章节进左栏', /技能清单/.test(rail) && /证书与荣誉/.test(rail));
   const main = r.html.slice(r.html.indexOf('class="r-main"'));
   check('双栏：其余章节留在主栏', /个人简介/.test(main) && /工作经历/.test(main) && !/技能清单/.test(main));
-  check('双栏：模板 class 生效', /tpl-twocol/.test(r.sheetClasses));
+  check('双栏：版式 class 生效', /cols-2/.test(r.sheetClasses), r.sheetClasses);
   check('未配置 rail 时退化为单栏', MD.renderResume(md.replace('rail: 技能清单, 证书与荣誉\n', '')).html.indexOf('r-rail') < 0);
   check('非双栏模板即使配了 rail 也不分栏', MD.renderResume(md.replace('twocol', 'classic')).html.indexOf('r-rail') < 0);
   check('rail 解析支持英文逗号 / 中文逗号 / 顿号',
@@ -599,10 +599,38 @@ section('左栏与撤销：代码审查提出的回归场景');
     /markDirty\(\);\s*\/\/[^\n]*压页[\s\S]{0,60}scheduleAutoSave\(\);/.test(appJs) ||
     /markDirty\(\);[\s\S]{0,120}scheduleAutoSave\(\);[\s\S]{0,80}render\(\);/.test(appJs));
   check('撤销 / 重做自身不会清掉重做栈', /skipRedoClear = true/.test(appJs) && /skipRedoClear = false/.test(appJs));
-  check('任何文档改动都会作废重做栈', /if \(!skipRedoClear\) \{[\s\S]{0,80}redoStack\.length = 0;/.test(appJs));
+  check('任何文档改动都会作废重做栈',
+    /function invalidateRedo\(\) \{[\s\S]{0,120}redoStack\.length = 0;/.test(appJs) &&
+    /invalidateRedo\(\);/.test(appJs) && /if \(skipRedoClear\) return;/.test(appJs));
   check('保存失败时不再谎报已保存', /保存失败：浏览器存储可能已满/.test(appJs) && /return;\s*\/\/ 保持 dirty/.test(appJs));
   check('改名撞名会先确认', /已经有一份叫/.test(appJs));
   check('恢复备份会换掉当前文档并应用偏好', /touchedCurrent/.test(appJs) && /data\.prefs/.test(appJs));
+}
+
+section('栏数与样式分开：任意样式都能双栏 + 左栏独立字号/颜色');
+{
+  const two = '---\ntemplate: modern\ncolumns: 2\nrail: 技能清单\n---\n\n# 甲\n\n前端 | 138\n\n## 技能清单\n\n- JS\n\n## 工作经历\n\n- 做事\n';
+  const r = MD.renderResume(two);
+  check('任意样式都能开双栏（modern + columns: 2）',
+    /cols-2/.test(r.sheetClasses) && /tpl-modern/.test(r.sheetClasses), r.sheetClasses);
+  check('单栏时不输出左栏容器', !/r-rail/.test(MD.renderResume(two.replace('columns: 2\n', '')).html));
+
+  const legacy = MD.renderResume(two.replace('template: modern\ncolumns: 2', 'template: twocol'));
+  check('旧写法 template: twocol 仍兼容（= 经典 + 双栏）',
+    /cols-2/.test(legacy.sheetClasses) && /tpl-classic/.test(legacy.sheetClasses), legacy.sheetClasses);
+
+  const styled = MD.renderResume('---\ncolumns: 2\nrail: 技能清单\nrailFontSize: 12px\nrailColor: #b45309\n---\n\n# 甲\n\n前端\n\n## 技能清单\n\n- JS\n').html;
+  check('左栏字号与颜色写到左栏容器上',
+    /<aside class="r-rail" style="[^"]*font-size: 12px/.test(styled) && /--r-rail-ink: #b45309/.test(styled), styled.slice(styled.indexOf('<aside'), styled.indexOf('<aside') + 90));
+  check('单栏时配置块不写 columns（默认值不落盘）', MD.serializeFrontMatter({ columns: '1' }).indexOf('columns') < 0);
+  check('双栏时配置块写 columns: 2', /columns: 2/.test(MD.serializeFrontMatter({ columns: '2' })));
+  check('左栏字号/颜色为空时不写这两行', (function () {
+    const s = MD.serializeFrontMatter({ columns: '2', railFontSize: '', railColor: '' });
+    return s.indexOf('railFontSize') < 0 && s.indexOf('railColor') < 0;
+  })());
+  check('左栏字号有范围夹取与非法值兜底',
+    MD.normalizeSettings({ railFontSize: '99px' }).railFontSize === '20px' &&
+    MD.normalizeSettings({ railFontSize: 'abc' }).railFontSize === '');
 }
 
 section('双栏左栏排版：表格与条目不硬塞窄列');
@@ -649,8 +677,20 @@ section('双栏左栏排版：表格与条目不硬塞窄列');
     /class="r-entry-role"/.test(html));
   const css = fs.readFileSync(path.join(ROOT, 'assets', 'resume.css'), 'utf8');
   check('右栏让出左栏宽度（真两列，不绕排）',
-    /\.resume-sheet\.tpl-twocol \.r-cols\.has-rail \.r-main \{ margin-left: calc\(36% \+ 6mm\); \}/.test(css) &&
+    /\.resume-sheet\.cols-2 \.r-cols\.has-rail \.r-main \{ margin-left: calc\(36% \+ 6mm\); \}/.test(css) &&
     /\.r-rail \{[\s\S]{0,200}box-sizing: border-box;/.test(css));
+}
+
+section('PWA 预缓存清单完整（离线首开不会缺文件）');
+{
+  const sw = fs.readFileSync(path.join(ROOT, '可选-本地服务', 'sw.js'), 'utf8');
+  const files = fs.readdirSync(path.join(ROOT, 'assets')).filter(function (f) { return /\.(js|css)$/.test(f); });
+  const missing = files.filter(function (f) { return sw.indexOf('./assets/' + f) < 0; });
+  check('assets 下所有 js/css 都在预缓存清单里', missing.length === 0, missing.join('、') || ('共 ' + files.length + ' 个文件完整'));
+  check('PWA 版本号已随发版更新（否则旧缓存清不掉）',
+    !/const VERSION = 'v1';/.test(sw), (sw.match(/const VERSION = '([^']+)'/) || [])[1] || '?');
+  check('预缓存与 ?v= 请求能对上（ignoreSearch + 发版清缓存）',
+    /ignoreSearch: true/.test(sw) && !/const VERSION = 'v1';/.test(sw));
 }
 
 /* ------------------------------------------------------------------ 结果 */

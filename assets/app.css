@@ -806,3 +806,6 @@ html[data-theme="dark"] .gh-link { background: linear-gradient(180deg, #3a2f14, 
 html[data-theme="dark"] .toast { background: #2d3648; color: #e3e9f3; }
 html[data-theme="dark"] .page-guide { border-color: #38425a; }
 }
+
+/* 双栏专属字段：不占位时直接融进设置面板的栅格 */
+#railFields:not([hidden]) { display: contents; }

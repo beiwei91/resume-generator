@@ -18,7 +18,7 @@ try {
 } catch (e) { /* 读不到偏好就按浅色 */ }
 </script>
 <style>
-/* ==== assets/resume.css?v=1.7.1 ==== */
+/* ==== assets/resume.css?v=1.8.0 ==== */
 /*!
  * resume.css —— 简历纸张样式（预览与 PDF 共用，不含编辑器界面样式）
  * 变量：--r-accent / --r-font-size / --r-line-height / --r-margin-y / --r-margin-x
@@ -423,8 +423,8 @@ try {
 /* ---------------------------------------------------------------- 模板八：双栏（左栏由 rail 配置指定） */
 /* 用浮动而不是 flex：分页时左栏不会把整块内容顶到下一页，打印更稳 */
 
-.resume-sheet.tpl-twocol .r-cols::after { content: ""; display: block; clear: both; }
-.resume-sheet.tpl-twocol .r-rail {
+.resume-sheet.cols-2 .r-cols::after { content: ""; display: block; clear: both; }
+.resume-sheet.cols-2 .r-rail {
   float: left;
   box-sizing: border-box;       /* 导出文档里没有全局 border-box，这里显式声明，保证两种场景宽度一致 */
   width: 36%;
@@ -436,41 +436,41 @@ try {
 }
 
 /* 右栏让出左栏的宽度：否则正文会绕到左栏下方，看起来像「文字漏出去」 */
-.resume-sheet.tpl-twocol .r-cols.has-rail .r-main { margin-left: calc(36% + 6mm); }
+.resume-sheet.cols-2 .r-cols.has-rail .r-main { margin-left: calc(36% + 6mm); }
 
 /* 左栏窄，标题与职位各占一行：点号（由 .r-entry-role::before 生成）就不要了 */
-.resume-sheet.tpl-twocol .r-rail .r-entry-role::before { content: none; }
+.resume-sheet.cols-2 .r-rail .r-entry-role::before { content: none; }
 
 /* 左栏：条目改成上下堆叠（标题、时间各占一行），窄列里才排得开 */
-.resume-sheet.tpl-twocol .r-rail .r-entry-head { display: block; }
-.resume-sheet.tpl-twocol .r-rail .r-entry-title { display: block; }
-.resume-sheet.tpl-twocol .r-rail .r-entry-role { display: block; font-weight: 500; margin-left: 0; }
-.resume-sheet.tpl-twocol .r-rail .r-entry-meta {
+.resume-sheet.cols-2 .r-rail .r-entry-head { display: block; }
+.resume-sheet.cols-2 .r-rail .r-entry-title { display: block; }
+.resume-sheet.cols-2 .r-rail .r-entry-role { display: block; font-weight: 500; margin-left: 0; }
+.resume-sheet.cols-2 .r-rail .r-entry-meta {
   display: block;
   text-align: left;
   margin-top: 1px;
   padding-left: 0;
   white-space: normal;          /* 基础样式是 nowrap，窄列里会溢出 */
-  color: #6b7280;
+  color: var(--r-rail-ink, #6b7280);
 }
-.resume-sheet.tpl-twocol .r-rail .r-entry-sub { margin-top: 1px; }
-.resume-sheet.tpl-twocol .r-rail .r-quote { margin: 0; }
+.resume-sheet.cols-2 .r-rail .r-entry-sub { margin-top: 1px; }
+.resume-sheet.cols-2 .r-rail .r-quote { margin: 0; }
 
 /* 左栏里的表格已由渲染端改成「标签：值」堆叠 */
 .r-pairs { margin: 2px 0 0; }
 .r-pair { margin: 0 0 3px; line-height: 1.5; }
-.r-pair-k { color: #6b7280; margin-right: 4px; }
+.r-pair-k { color: var(--r-rail-ink, #6b7280); margin-right: 4px; }
 .r-pair-v { color: inherit; }
-.resume-sheet.tpl-twocol .r-rail .r-section { margin-top: 12px; }
-.resume-sheet.tpl-twocol .r-rail .r-section-title {
+.resume-sheet.cols-2 .r-rail .r-section { margin-top: 12px; }
+.resume-sheet.cols-2 .r-rail .r-section-title {
   border: 0;
   padding: 0 0 2px;
   font-size: .95em;
   letter-spacing: .06em;
   color: var(--r-accent);
 }
-.resume-sheet.tpl-twocol .r-rail .r-list { padding-left: 1.05em; }
-.resume-sheet.tpl-twocol .r-main .r-section:first-child { margin-top: 4px; }
+.resume-sheet.cols-2 .r-rail .r-list { padding-left: 1.05em; }
+.resume-sheet.cols-2 .r-main .r-section:first-child { margin-top: 4px; }
 
 /* ---------------------------------------------------------------- 证件照布局 */
 /* 放在三套模板之后：有照片时抬头改成「文字 + 照片」两列，
@@ -530,9 +530,15 @@ try {
   .page-guide,
   .page-guide-label { display: none !important; }
 }
+
+/* 左栏文字色要覆盖到条目标题 / 职位 / 副信息 / 引用（它们原本各自写死了颜色） */
+.resume-sheet.cols-2 .r-rail .r-entry-title { color: var(--r-rail-ink, var(--r-ink-strong)); }
+.resume-sheet.cols-2 .r-rail .r-entry-role { color: var(--r-rail-ink, #374151); }
+.resume-sheet.cols-2 .r-rail .r-entry-sub { color: var(--r-rail-ink, var(--r-ink-soft)); }
+.resume-sheet.cols-2 .r-rail .r-quote { color: var(--r-rail-ink, #374151); }
 </style>
 <style>
-/* ==== assets/app.css?v=1.7.1 ==== */
+/* ==== assets/app.css?v=1.8.0 ==== */
 /*!
  * app.css —— 编辑器 / 预览工作台界面样式（只作用于界面，不影响纸张与打印结果）
  */
@@ -1341,11 +1347,14 @@ html[data-theme="dark"] .gh-link { background: linear-gradient(180deg, #3a2f14, 
 html[data-theme="dark"] .toast { background: #2d3648; color: #e3e9f3; }
 html[data-theme="dark"] .page-guide { border-color: #38425a; }
 }
+
+/* 双栏专属字段：不占位时直接融进设置面板的栅格 */
+#railFields:not([hidden]) { display: contents; }
 </style>
 <meta name="application-name" content="简历生成器">
 <!-- 版本号：静态资源都带 ?v= 查询串，改版本号即可让浏览器 / CDN 立刻取到新文件。
      发布前记得把这里和下面 4 处脚本引用的版本号一起改掉。 -->
-<meta name="app-version" content="1.7.1">
+<meta name="app-version" content="1.8.0">
 <link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,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">
 <style id="printPageStyle">@page { size: A4; }</style>
 </head>
@@ -1481,7 +1490,34 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
         </div>
         <div class="field">
           <button id="btnFitPage" class="btn" type="button"
-            title="自动收紧字号 / 行距 / 页边距 / 证件照宽度，把内容压进一页（可撤销）">压到一页</button>
+            title="自动排版：内容超过一页就收紧字号 / 行距 / 页边距 / 证件照压进一页；不足一页就放大填满（整体可撤销）">自动排版</button>
+        </div>
+        <div class="field">
+          <label for="columnsSelect">栏数</label>
+          <select id="columnsSelect">
+            <option value="1">单栏</option>
+            <option value="2">双栏（左栏章节由「rail」指定）</option>
+          </select>
+        </div>
+        <div id="railFields" hidden>
+          <div class="field">
+            <label for="railFontSizeSelect">左栏字号</label>
+            <select id="railFontSizeSelect">
+              <option value="">跟随正文</option>
+              <option value="11">11px</option>
+              <option value="12">12px</option>
+              <option value="12.5">12.5px</option>
+              <option value="13">13px</option>
+              <option value="13.5">13.5px</option>
+              <option value="14">14px</option>
+              <option value="15">15px</option>
+              <option value="16">16px</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="railColorInput">左栏文字色</label>
+            <input type="color" id="railColorInput" class="color-input" value="#6b7280">
+          </div>
         </div>
         <div class="field">
           <label for="themeSelect">界面主题</label>
@@ -1576,7 +1612,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
           <tr><td><code>| 技能 | 说明 |</code><br><code>| --- | --- |</code></td><td>表格（第二行是分隔行）</td></tr>
           <tr><td><code>&gt; 引用</code></td><td>高亮引用块（适合个人简介）</td></tr>
           <tr><td><code>---</code> 单独一行</td><td>手动分页；<code>***</code> 是分隔线</td></tr>
-          <tr><td><code>---<br>template: modern<br>accent: #0f766e<br>---</code></td><td>文首配置块：模板 / 主色 / 字体 / 字号 / 行距 / 页边距（界面上的排版控件会自动改写这里）<br>模板共 8 套：<code>classic</code> 经典居中 · <code>modern</code> 现代色块 · <code>compact</code> 紧凑单行 · <code>timeline</code> 时间轴 · <code>minimal</code> 极简 · <code>banner</code> 整条色块标题 · <code>sidebar</code> 左侧栏标题 · <code>twocol</code> 双栏（左栏由 <code>rail</code> 指定）<br>双栏不需要手写配置：切到 <code>twocol</code> 时会自动把「技能 / 证书 / 荣誉 / 教育」这类章节放进左栏，
+          <tr><td><code>---<br>template: modern<br>accent: #0f766e<br>---</code></td><td>文首配置块：模板 / 主色 / 字体 / 字号 / 行距 / 页边距（界面上的排版控件会自动改写这里）<br>样式共 7 套（栏数是独立设置：配置块写 <code>columns: 2</code>）：<code>classic</code> 经典居中 · <code>modern</code> 现代色块 · <code>compact</code> 紧凑单行 · <code>timeline</code> 时间轴 · <code>minimal</code> 极简 · <code>banner</code> 整条色块标题 · <code>sidebar</code> 左侧栏标题 · <br>双栏不需要手写配置：切到 <code>twocol</code> 时会自动把「技能 / 证书 / 荣誉 / 教育」这类章节放进左栏，
   之后在每张章节卡片上点「→ 左栏 / ← 右栏」即可调整（也可以在配置块手写 <code>rail: 技能清单, 证书与荣誉</code>）</td></tr>
           <tr><td><code>photo: ./证件照.jpg</code><br><code>photoSize: 26mm</code><br><code>photoAlign: right</code><br><code>photoShape: rounded</code></td><td>抬头证件照：<code>photoSize</code> 是宽度（高度按图片比例），<code>photoAlign</code> 取 <code>right</code>/<code>left</code>，<code>photoShape</code> 取 <code>rounded</code>/<code>circle</code>/<code>square</code>。<br>也可以直接在姓名下一行写 <code>![证件照](照片路径)</code>。<br>地址支持本地相对路径、网址、<code>file://</code> 或内嵌 data URI —— 推荐点工具栏的「证件照」按钮插入（自动压缩为内嵌图片，跟着 .md 文件走，导出 PDF 不会丢图）</td></tr>
           <tr><td><code>![说明](图片路径)</code></td><td>正文里插入图片，最大宽度不会超出纸张</td></tr>
@@ -1590,7 +1626,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
 <div class="toast" id="toast" hidden></div>
 
 <script>
-/* ==== assets/resume-md.js?v=1.7.1 ==== */
+/* ==== assets/resume-md.js?v=1.8.0 ==== */
 /*!
  * resume-md.js —— 轻量 Markdown → 简历 HTML 渲染引擎（零依赖，浏览器 / Node 通用）
  *
@@ -1623,7 +1659,9 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     photoAlign: 'right',
     photoShape: 'rounded'
   };
-  var TEMPLATES = ['classic', 'modern', 'compact', 'timeline', 'minimal', 'banner', 'sidebar', 'twocol'];
+  // 模板只表示「样式」；栏数由 columns 单独决定（旧的 template: twocol 仍兼容，见 normalizeSettings）
+  var TEMPLATES = ['classic', 'modern', 'compact', 'timeline', 'minimal', 'banner', 'sidebar'];
+  var TWO_COL_LEGACY = 'twocol';
   var FONTS = ['sans', 'serif'];
   var PHOTO_ALIGNS = ['right', 'left'];
   var PHOTO_SHAPES = ['rounded', 'circle', 'square'];
@@ -1633,7 +1671,8 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     { label: '宽 (20mm / 22mm)', value: '20mm 22mm' }
   ];
   var ACCENT_PRESETS = ['#2563eb', '#0f766e', '#b91c1c', '#7c3aed', '#c2410c', '#111827'];
-  var FRONT_KEYS = ['template', 'accent', 'font', 'fontSize', 'lineHeight', 'margin', 'rail', 'photo', 'photoSize', 'photoAlign', 'photoShape'];
+  var FRONT_KEYS = ['template', 'accent', 'font', 'fontSize', 'lineHeight', 'margin',
+    'columns', 'rail', 'railFontSize', 'railColor', 'photo', 'photoSize', 'photoAlign', 'photoShape'];
   var A4 = { width: 210, height: 297 }; // mm
   var MM_PER_PX = 25.4 / 96;
   var TOKEN = '\u0001';
@@ -1699,13 +1738,31 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     return Math.min(max, Math.max(min, n));
   }
 
+  /** 左栏字号：不填就跟随正文 */
+  function normalizeRailFontSize(value) {
+    if (value == null || String(value).trim() === '') return '';
+    var n = parseFloat(String(value));
+    if (!isFinite(n)) return '';
+    return (Math.round(clampNum(n, 9, 20, 13) * 100) / 100) + 'px';
+  }
+
+  function normalizeHexColor(value) {
+    var v = String(value == null ? '' : value).trim();
+    return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v) ? v.toLowerCase() : '';
+  }
+
   function normalizeSettings(meta) {
     meta = meta || {};
     var tpl = String(meta.template == null ? '' : meta.template).trim();
     var font = String(meta.font == null ? '' : meta.font).trim();
     var accent = String(meta.accent == null ? '' : meta.accent).trim();
+    var legacyTwoCol = tpl === TWO_COL_LEGACY;             // 旧写法：双栏曾经是一套模板
+    var cols = String(meta.columns == null ? '' : meta.columns).trim();
     return {
       template: TEMPLATES.indexOf(tpl) >= 0 ? tpl : DEFAULTS.template,
+      columns: (legacyTwoCol || cols === '2') ? '2' : '1',
+      railFontSize: normalizeRailFontSize(meta.railFontSize),
+      railColor: normalizeHexColor(meta.railColor),
       accent: /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(accent) ? accent.toLowerCase() : DEFAULTS.accent,
       font: FONTS.indexOf(font) >= 0 ? font : DEFAULTS.font,
       fontSize: (Math.round(clampNum(meta.fontSize, 10, 20, 14) * 100) / 100) + 'px',
@@ -1825,7 +1882,9 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     var photoKeys = { photo: 1, photoSize: 1, photoAlign: 1, photoShape: 1 };
     var lines = FRONT_KEYS.filter(function (k) {
       if (photoKeys[k]) return !!s.photo;
+      if (k === 'columns') return s.columns === '2';            // 单栏是默认值，不写这一行
       if (k === 'rail') return !!String(s.rail || '').trim();   // 没配左栏就不写这一行
+      if (k === 'railFontSize' || k === 'railColor') return !!String(s[k] || '').trim();
       return true;
     }).map(function (k) { return k + ': ' + s[k]; });
     (extraLines || []).forEach(function (line) { lines.push(line); });
@@ -2146,6 +2205,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
 
   function sheetClasses(settings, hasPhoto) {
     var cls = 'resume-sheet tpl-' + settings.template + ' font-' + settings.font;
+    if (settings.columns === '2') cls += ' cols-2';
     if (hasPhoto) {
       cls += ' has-photo photo-' + settings.photoAlign + ' shape-' + settings.photoShape;
     }
@@ -2199,14 +2259,19 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     // 双栏：把 rail 里列出的章节放到左侧栏，其余留在右侧主栏
     var railTitles = parseRailTitles(settings.rail);
     var body;
-    if (settings.template === 'twocol' && railTitles.length) {
+    var railStyle = [];
+    if (settings.railFontSize) railStyle.push('font-size: ' + settings.railFontSize);
+    if (settings.railColor) railStyle.push('--r-rail-ink: ' + settings.railColor, 'color: ' + settings.railColor);
+    var railStyleAttr = railStyle.length ? ' style="' + railStyle.join('; ') + '"' : '';
+
+    if (settings.columns === '2' && railTitles.length) {
       var railKids = [];
       var mainKids = [];
       (doc.children || []).forEach(function (child) {
         (railHit(railTitles, child.title) ? railKids : mainKids).push(child);
       });
       body = '<div class="r-cols' + (railKids.length ? ' has-rail' : '') + '">' +
-        (railKids.length ? '<aside class="r-rail">' + renderChildren(railKids, { rail: true }) + '</aside>' : '') +
+        (railKids.length ? '<aside class="r-rail"' + railStyleAttr + '>' + renderChildren(railKids, { rail: true }) + '</aside>' : '') +
         '<div class="r-main">' + renderChildren(mainKids) + '</div>' +
         '</div>';
     } else {
@@ -2289,7 +2354,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
 });
 </script>
 <script>
-/* ==== assets/resume-form.js?v=1.7.1 ==== */
+/* ==== assets/resume-form.js?v=1.8.0 ==== */
 /*!
  * resume-form.js —— 表单模式的「纯逻辑层」：把 Markdown 拆成模块，并按块改写
  *
@@ -2925,10 +2990,11 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     return MD.normalizeSettings(MD.splitFrontMatter(md).meta);
   }
 
-  /** 当前是不是双栏模板 */
-  function isTwocol(md) {
-    return settingsOf(md).template === 'twocol';
+  /** 当前是不是双栏（栏数现在由 columns 单独决定） */
+  function isTwoCol(md) {
+    return settingsOf(md).columns === '2';
   }
+  var isTwocol = isTwoCol;      // 兼容旧调用名
 
   /** 当前左栏章节标题列表 */
   function railTitles(md) {
@@ -3007,6 +3073,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     walk: walk,
     SECTION_TEMPLATES: SECTION_TEMPLATES,
     isTwocol: isTwocol,
+    isTwoCol: isTwoCol,
     railTitles: railTitles,
     inRail: inRail,
     setRail: setRail,
@@ -3037,7 +3104,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
 });
 </script>
 <script>
-/* ==== assets/form-view.js?v=1.7.1 ==== */
+/* ==== assets/form-view.js?v=1.8.0 ==== */
 /*!
  * form-view.js —— 表单模式的界面层：把模块模型渲染成可折叠、可增删排序的表单
  *
@@ -3162,12 +3229,22 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
       var merged = commitInputs();
       var base = merged || api.getMd();
       var next = fn(base);
-      if (next == null || next === base) { render(); return; }
+      if (next == null || next === base) {
+        // 操作没改动文档，但界面里可能已有刚敲进去、还没写进文档的内容：先把它落下去再重绘。
+        // structural 传 false：这里紧接着自己 render()，不能再让 app 层刷一遍表单
+        if (merged) api.apply(merged, false);
+        render();
+        return;
+      }
       api.apply(next, true, typeof focusPath === 'function' ? focusPath(next) : focusPath);
     }
 
     function render(focusPath) {
-      var md = api.getMd();
+      // 第二道防线：重绘前先把界面里已输入的值提交进文档，避免"框里有字、文档里没有"。
+      // 必须真的落盘（structural=false 不会反过来再触发本函数，避免递归）
+      var pending = commitInputs();
+      if (pending) api.apply(pending, false);
+      var md = pending || api.getMd();
       var model = Form.walk(md);
       container.innerHTML = '';
       container.appendChild(renderBasic(model));
@@ -3287,7 +3364,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
       head.appendChild(el('span', 'fcard-kind', KIND_LABEL[sec.kind] || sec.kind));
 
       // 双栏模板：一键把这个章节放进 / 移出左栏
-      if (Form.isTwocol(api.getMd())) {
+      if (Form.isTwoCol(api.getMd())) {
         var inRailNow = Form.inRail(api.getMd(), sec.title);
         var railBtn = iconBtn(inRailNow ? '← 右栏' : '→ 左栏', inRailNow ? '移回右侧主栏' : '放进左侧栏', 'ibtn-text');
         railBtn.setAttribute('data-act', 'toggle-rail');
@@ -3611,7 +3688,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
 })(window);
 </script>
 <script>
-/* ==== assets/app.js?v=1.7.1 ==== */
+/* ==== assets/app.js?v=1.8.0 ==== */
 /*!
  * app.js —— 简历生成器工作台逻辑
  * 数据流：Markdown 文本（含文首配置块）是唯一数据源 → 解析渲染 → 预览 / 打印导出
@@ -3913,8 +3990,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
       timeline: '时间轴（左侧连线）',
       minimal: '极简（无框线）',
       banner: '色块（整条标题栏）',
-      sidebar: '侧栏标题（左侧留白栏）',
-      twocol: '双栏（自动分左右栏）'
+      sidebar: '侧栏标题（左侧留白栏）'
     };
     MD.TEMPLATES.forEach(function (t) {
       var o = document.createElement('option');
@@ -3941,8 +4017,33 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     });
   }
 
+  /** 只有双栏时才显示「左栏字号 / 左栏文字色」 */
+  function applyColumnFields(twoCol) {
+    var box = $('railFields');
+    if (box) box.hidden = !twoCol;
+  }
+
   function syncControls(s) {
     $('tplSelect').value = s.template;
+    $('columnsSelect').value = s.columns;
+    // 手写的字号可能不在下拉选项里：动态补一项，别让界面显示成「跟随正文」而文档里另有其值
+    var railFs = s.railFontSize ? String(parseFloat(s.railFontSize)) : '';
+    var fsSel = $('railFontSizeSelect');
+    var custom = fsSel.querySelector('option[data-custom]');
+    if (custom) custom.parentNode.removeChild(custom);
+    if (railFs && !Array.prototype.some.call(fsSel.options, function (o) { return o.value === railFs; })) {
+      var o2 = document.createElement('option');
+      o2.value = railFs;
+      o2.textContent = railFs + 'px（自定义）';
+      o2.setAttribute('data-custom', '1');
+      fsSel.appendChild(o2);
+    }
+    fsSel.value = railFs;
+    // <input type=color> 只认 6 位；文档里允许 3 位简写，先展开再赋值
+    var rc = s.railColor || '#6b7280';
+    if (/^#[0-9a-fA-F]{3}$/.test(rc)) rc = '#' + rc[1] + rc[1] + rc[2] + rc[2] + rc[3] + rc[3];
+    $('railColorInput').value = rc;
+    applyColumnFields(s.columns === '2');
     $('fontSelect').value = s.font;
     $('accentInput').value = s.accent;
     $('fontSizeInput').value = parseFloat(s.fontSize);
@@ -3987,54 +4088,151 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     var next = MD.upsertFrontMatter(state.markdown, settings);
     state.markdown = next;
     editor.value = next;
-    markDirty();             // 压页改的是文档本身：必须标脏并触发保存，否则刷新就白压了
+    markDirty();             // 自动排版改的是文档本身：必须标脏并触发保存，否则刷新就白排了
+    invalidateRedo();        // 这条路不走 setMarkdown，重做栈要手动作废
     scheduleAutoSave();
     render();
     updateGuides();
   }
 
-  /** 一键压到一页：依次收紧 字号 → 行距 → 页边距 → 证件照宽度，压到就停；整体算一步可撤销 */
-  function fitToOnePage() {
-    if (state.pages <= 1) { toast('已经是一页了，不用压'); return; }
-    var base = Object.assign({}, state.settings);
-    var cur = Object.assign({}, base);
-    var steps = [];
+  /**
+   * 纸张的真实内容高度（未缩放 px）。
+   * 不能直接用 sheet 的高度：.resume-sheet 有 min-height = A4，短内容也会被撑满一页，
+   * 那样填充率恒为 100%，「放大填满」就永远不生效了。
+   */
+  function sheetContentHeight() {
+    var prev = sheet.style.minHeight;
+    sheet.style.minHeight = '0px';
+    var h = sheet.getBoundingClientRect().height / currentZoom();
+    sheet.style.minHeight = prev;
+    return h;
+  }
+
+  /** 当前内容占一页的比例（未缩放布局 px），顺便拿到真实页数 */
+  function pageFill() {
+    var info = pageBreaks();
+    return { pages: 1 + info.positions.length, fill: sheetContentHeight() / PAGE_H_PX };
+  }
+
+  /** 收紧候选：字号 → 行距 → 页边距 → 证件照（按类别分组，一类到顶就换下一类） */
+  function shrinkGroups(cur) {
+    var groups = [[], [], [], []];
     var v;
     for (v = parseFloat(cur.fontSize) - 0.5; v >= 10; v -= 0.5) {
-      steps.push(['fontSize', (Math.round(v * 10) / 10) + 'px']);
+      groups[0].push(['fontSize', (Math.round(v * 10) / 10) + 'px']);
     }
     for (v = parseFloat(cur.lineHeight) - 0.05; v >= 1.15; v -= 0.05) {
-      steps.push(['lineHeight', (Math.round(v * 100) / 100).toFixed(2)]);
+      groups[1].push(['lineHeight', (Math.round(v * 100) / 100).toFixed(2)]);
     }
     var curY = MD.marginMm(cur).y;
     MD.MARGIN_PRESETS
       .filter(function (m) { return MD.marginMm({ margin: m.value }).y < curY; })
       .sort(function (a, b) { return MD.marginMm({ margin: b.value }).y - MD.marginMm({ margin: a.value }).y; })
-      .forEach(function (m) { steps.push(['margin', m.value]); });
+      .forEach(function (m) { groups[2].push(['margin', m.value]); });
     if (cur.photo) {
-      for (v = (parseFloat(cur.photoSize) || 26) - 1; v >= 18; v -= 1) steps.push(['photoSize', v + 'mm']);
+      for (v = (parseFloat(cur.photoSize) || 26) - 1; v >= 18; v -= 1) groups[3].push(['photoSize', v + 'mm']);
     }
+    return groups;
+  }
 
-    pushUndo(true);                       // 整个「压到一页」记成一步
-    var hit = null;
-    for (var i = 0; i < steps.length; i++) {
-      var next = Object.assign({}, cur);
-      next[steps[i][0]] = steps[i][1];
-      cur = next;
-      applySettingsNow(cur);
-      if (state.pages <= 1) { hit = cur; break; }
+  /** 放大候选：方向与收紧相反（字号 → 行距 → 页边距 → 证件照） */
+  function growGroups(cur) {
+    var groups = [[], [], [], []];
+    var v;
+    for (v = parseFloat(cur.fontSize) + 0.5; v <= 20; v += 0.5) {
+      groups[0].push(['fontSize', (Math.round(v * 10) / 10) + 'px']);
     }
-    if (!hit) {
-      applySettingsNow(base);
-      toast('内容确实太多，压不进一页；建议删掉几条要点，或换「紧凑」模板', 5200);
+    for (v = parseFloat(cur.lineHeight) + 0.05; v <= 2.4; v += 0.05) {
+      groups[1].push(['lineHeight', (Math.round(v * 100) / 100).toFixed(2)]);
+    }
+    var curY = MD.marginMm(cur).y;
+    MD.MARGIN_PRESETS
+      .filter(function (m) { return MD.marginMm({ margin: m.value }).y > curY; })
+      .sort(function (a, b) { return MD.marginMm({ margin: a.value }).y - MD.marginMm({ margin: b.value }).y; })
+      .forEach(function (m) { groups[2].push(['margin', m.value]); });
+    if (cur.photo) {
+      for (v = (parseFloat(cur.photoSize) || 26) + 2; v <= 40; v += 2) groups[3].push(['photoSize', v + 'mm']);
+    }
+    return groups;
+  }
+
+  function diffSettings(a, b) {
+    var out = [];
+    if (a.fontSize !== b.fontSize) out.push('字号 ' + b.fontSize + ' → ' + a.fontSize);
+    if (a.lineHeight !== b.lineHeight) out.push('行距 ' + b.lineHeight + ' → ' + a.lineHeight);
+    if (a.margin !== b.margin) out.push('页边距 ' + b.margin + ' → ' + a.margin);
+    if (a.photoSize !== b.photoSize) out.push('证件照 ' + b.photoSize + ' → ' + a.photoSize);
+    return out;
+  }
+
+  /**
+   * 自动排版：内容超过一页就依次收紧（字号 → 行距 → 页边距 → 证件照）压进一页；
+   * 不足一页就反向放大，尽量把整页填满（到 98% 就停）。整体算一步，Ctrl+Z 可撤销。
+   */
+  function autoLayout() {
+    var base = Object.assign({}, state.settings);
+    var start = pageFill();
+    var mode = start.pages > 1 ? 'shrink' : 'grow';
+    pushUndo(true);
+    invalidateRedo();
+    var cur = Object.assign({}, base);
+    try {
+      cur = runAutoLayout(base, cur, mode);
+    if (!cur) return;                       // 子函数已经还原并提示过了
+    } catch (e) {
+      applySettingsNow(base);                             // 万一中途出错，也要还原成原样，别留半成品
+      toast('自动排版出错了，已还原成原来的排版（可以再试一次）', 5600);
       return;
     }
-    var bits = [];
-    if (hit.fontSize !== base.fontSize) bits.push('字号 ' + hit.fontSize);
-    if (hit.lineHeight !== base.lineHeight) bits.push('行距 ' + hit.lineHeight);
-    if (hit.margin !== base.margin) bits.push('页边距 ' + hit.margin);
-    if (hit.photoSize !== base.photoSize) bits.push('证件照 ' + hit.photoSize);
-    toast('已压到一页：' + (bits.length ? bits.join('，') : '无需改动'));
+
+    var now = pageFill();
+    var pct = Math.round(now.fill * 100);
+    var bits = diffSettings(cur, base);
+    if (!bits.length) {
+      toast(mode === 'shrink' ? '内容正好一页，不需要调整' :
+        '自动排版：这块内容已经很贴合页面了（占 ' + pct + '%），没有需要调整的', 4600);
+      return;
+    }
+    toast((mode === 'shrink' ? '已自动排版：压到一页（' : '已自动排版：放大填满一页（') +
+      bits.join('，') + '，占 ' + pct + '%）', 5600);
+  }
+
+  /** 真正的调整过程（拆出来是为了包一层 try/catch，出错时能整体还原） */
+  function runAutoLayout(base, cur, mode) {
+    if (mode === 'shrink') {
+      var hit = null;
+      shrinkGroups(cur).forEach(function (group) {
+        if (hit) return;
+        for (var i = 0; i < group.length; i++) {
+          var next = Object.assign({}, cur);
+          next[group[i][0]] = group[i][1];
+          applySettingsNow(next);
+          cur = next;                                     // 每步累积：字号收紧后，行距要在收紧后的基础上继续
+          if (state.pages <= 1) { hit = next; return; }
+        }
+      });
+      if (!hit) {
+        applySettingsNow(base);
+        toast('内容确实太多，压不进一页；建议删掉几条要点，或换「紧凑」模板', 5600);
+        return null;                                 // 交给 autoLayout 收尾（提示已经给过）
+      }
+    } else {
+      growGroups(cur).forEach(function (group) {
+        for (var i = 0; i < group.length; i++) {
+          if (pageFill().fill >= 0.985) return;          // 已经够满了
+          var next = Object.assign({}, cur);
+          next[group[i][0]] = group[i][1];
+          applySettingsNow(next);
+          if (state.pages <= 1 && pageFill().fill <= 1) {
+            cur = next;                                   // 还放得下：留着
+          } else {
+            applySettingsNow(cur);                        // 这一类到顶了：回退，换下一类
+            return;
+          }
+        }
+      });
+    }
+    return cur;
   }
 
   /** 把排版参数写回 Markdown 文首配置块（保持正文不动） */
@@ -4044,7 +4242,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
     setMarkdown(next, true);
     // 模板 / 左栏会影响表单渲染（双栏下每张章节卡片多一个「→ 左栏 / ← 右栏」按钮），
     // 所以这两项变化时必须重绘表单，否则界面与文档不一致
-    if (patch && (patch.template !== undefined || patch.rail !== undefined)) refreshForm();
+    if (patch && (patch.template !== undefined || patch.rail !== undefined || patch.columns !== undefined)) refreshForm();
   }
 
   /* ------------------------------------------------------------ 编辑与保存 */
@@ -4063,14 +4261,17 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
       editor.selectionStart = Math.min(s, text.length);
       editor.selectionEnd = Math.min(e, text.length);
     }
-    // 任何新的改动都让「重做」作废（撤销/重做自己改文档时用 skipRedoClear 跳过）
-    if (!skipRedoClear) {
-      redoStack.length = 0;
-      updateUndoBtn();
-    }
+    invalidateRedo();
     markDirty();
     scheduleRender();
     scheduleAutoSave();
+  }
+
+  /** 任何新的改动都让「重做」作废（撤销/重做自己改文档时用 skipRedoClear 跳过） */
+  function invalidateRedo() {
+    if (skipRedoClear) return;
+    redoStack.length = 0;
+    updateUndoBtn();
   }
 
   function markDirty() {
@@ -4839,22 +5040,28 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
 
     $('docList').addEventListener('change', function () { openDoc(this.value); });
 
-    $('tplSelect').addEventListener('change', function () {
-      var tpl = this.value;
+    $('tplSelect').addEventListener('change', function () { patchSettings({ template: this.value }); });
+
+    // 栏数是独立设置：任意样式都能配双栏；从单栏切过去且还没配左栏时自动填一次
+    $('columnsSelect').addEventListener('change', function () {
+      var two = this.value === '2';
+      applyColumnFields(two);
       var FR = window.ResumeForm;
-      // 切到双栏且还没配左栏：自动把技能 / 证书 / 教育这类章节放进去，省得手写配置
-      if (tpl === 'twocol' && FR && !FR.railTitles(state.markdown).length) {
-        var picked = FR.suggestRail(state.markdown);
+      if (two && FR && !FR.railTitles(state.markdown).length) {
+        // 标题里带逗号/顿号的章节没法表达进 rail，自动填充时先排除（手写配置有 setRail 把关）
+        var picked = FR.suggestRail(state.markdown).filter(function (t) { return !/[,，、]/.test(t); });
         if (picked.length) {
-          patchSettings({ template: tpl, rail: picked.join(', ') });
+          patchSettings({ columns: '2', rail: picked.join(', ') });
           toast('已切到双栏，并把「' + picked.join('、') + '」放进左栏；每张章节卡片上都有「→ 左栏 / ← 右栏」可随时调整', 5600);
           return;
         }
       }
-      patchSettings({ template: tpl });
-      if (tpl === 'twocol') toast('双栏已就绪：在章节卡片上点「→ 左栏」把章节放进左栏', 4600);
+      patchSettings({ columns: two ? '2' : '1' });
     });
-    $('btnFitPage').addEventListener('click', fitToOnePage);
+
+    $('railFontSizeSelect').addEventListener('change', function () { patchSettings({ railFontSize: this.value }); });
+    $('railColorInput').addEventListener('input', function () { patchSettings({ railColor: this.value }); });
+    $('btnFitPage').addEventListener('click', autoLayout);
     $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });
     $('themeSelect').addEventListener('change', function () {
       prefs.theme = this.value;

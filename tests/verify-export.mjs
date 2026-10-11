@@ -357,8 +357,12 @@ check('界面截图生成', fs.existsSync(shotApp), path.relative(ROOT, shotApp)
 
 console.log('\n双栏（rail）打印');
 {
-  const railMd = sample.replace(/^# /m, '---\ntemplate: twocol\nrail: 技能清单, 教育背景\n---\n\n# ')
+  // 用 upsertFrontMatter 改配置块：直接往文首再插一块是无效的（splitFrontMatter 只认第一块）
+  const railMd = MD.upsertFrontMatter(sample, { template: 'classic', columns: '2', rail: '技能清单, 教育背景' })
     .replace(/\n## 个人简介/, '\n## 附加信息\n\n' + Array.from({ length: 40 }, (_, i) => '- 补充条目 ' + (i + 1)).join('\n') + '\n\n## 个人简介');
+  const railHtml = MD.renderResume(railMd).html;
+  check('这份用例确实启用了双栏（左栏容器存在）',
+    /class="r-rail"/.test(railHtml) && /class="r-main"/.test(railHtml));
   const pdf = renderPdf('twocol-rail', railMd, {});
   const st = pdf ? pageMeta(pdf) : null;
   check('带左栏的双栏也能导出标准 A4（不是退化成单栏）',
