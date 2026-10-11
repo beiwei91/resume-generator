@@ -13,13 +13,13 @@ try {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
 } catch (e) { /* 读不到偏好就按浅色 */ }
 </script>
-<link rel="stylesheet" href="assets/resume.css?v=1.8.0">
-<link rel="stylesheet" href="assets/app.css?v=1.8.0">
+<link rel="stylesheet" href="assets/resume.css?v=1.8.1">
+<link rel="stylesheet" href="assets/app.css?v=1.8.1">
 <meta name="application-name" content="简历生成器">
 <!-- 版本号：静态资源都带 ?v= 查询串，改版本号即可让浏览器 / CDN 立刻取到新文件。
      发布前记得把这里和下面 4 处脚本引用的版本号一起改掉。 -->
-<meta name="app-version" content="1.8.0">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=1.8.0">
+<meta name="app-version" content="1.8.1">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=1.8.1">
 <style id="printPageStyle">@page { size: A4; }</style>
 </head>
 <body>
@@ -125,9 +125,17 @@ try {
           <label class="inline-field">模板
             <select id="tplSelect"></select>
           </label>
+          <label class="inline-field" title="单栏 / 双栏；双栏时左栏章节在「排版」面板里指定，也能单独设左栏字号与颜色">栏数
+            <select id="columnsSelect">
+              <option value="1">单栏</option>
+              <option value="2">双栏</option>
+            </select>
+          </label>
           <span class="swatches" id="accentSwatches"></span>
           <input id="accentInput" class="color-input" type="color" value="#2563eb" title="主色">
           <button id="btnFit" class="tool" type="button" title="让纸张适应预览区宽度">适应宽度</button>
+          <button id="btnFitPage" class="tool" type="button"
+            title="自动排版：内容超过一页就收紧字号 / 行距 / 页边距 / 证件照压进一页；不足一页就放大填满（整体可撤销）">自动排版</button>
           <button id="btnMore" class="tool" type="button" aria-expanded="false">排版 ▾</button>
         </div>
       </div>
@@ -151,17 +159,6 @@ try {
         <div class="field">
           <label for="marginSelect">页边距</label>
           <select id="marginSelect"></select>
-        </div>
-        <div class="field">
-          <button id="btnFitPage" class="btn" type="button"
-            title="自动排版：内容超过一页就收紧字号 / 行距 / 页边距 / 证件照压进一页；不足一页就放大填满（整体可撤销）">自动排版</button>
-        </div>
-        <div class="field">
-          <label for="columnsSelect">栏数</label>
-          <select id="columnsSelect">
-            <option value="1">单栏</option>
-            <option value="2">双栏（左栏章节由「rail」指定）</option>
-          </select>
         </div>
         <div id="railFields" hidden>
           <div class="field">
@@ -289,9 +286,9 @@ try {
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="assets/resume-md.js?v=1.8.0"></script>
-<script src="assets/resume-form.js?v=1.8.0"></script>
-<script src="assets/form-view.js?v=1.8.0"></script>
-<script src="assets/app.js?v=1.8.0"></script>
+<script src="assets/resume-md.js?v=1.8.1"></script>
+<script src="assets/resume-form.js?v=1.8.1"></script>
+<script src="assets/form-view.js?v=1.8.1"></script>
+<script src="assets/app.js?v=1.8.1"></script>
 </body>
 </html>

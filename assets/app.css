@@ -809,3 +809,7 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
 
 /* 双栏专属字段：不占位时直接融进设置面板的栅格 */
 #railFields:not([hidden]) { display: contents; }
+
+/* 预览区右上角：模板 / 栏数 / 主色 / 适应宽度 / 自动排版 / 排版 —— 放不下就换行，别挤出去 */
+.pane-head .tools { flex-wrap: wrap; row-gap: 4px; }
+.pane-head .tools .inline-field select { max-width: 170px; }

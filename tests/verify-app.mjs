@@ -435,6 +435,11 @@ section('复制 / 撤销重做 / 备份');
     /duplicateSection/.test(formViewJs) && /duplicateEntry/.test(formViewJs));
   check('双栏下章节卡片有「左栏 / 右栏」一键切换',
     /toggle-rail/.test(formViewJs) && /Form\.isTwoCol/.test(formViewJs) && /Form\.setRail/.test(formViewJs));
+  check('栏数与自动排版都在预览区右上角（样式下拉与「排版」按钮旁）',
+    /class="pane-head"[\s\S]{0,1200}id="columnsSelect"/.test(index) &&
+    /id="btnFitPage"[\s\S]{0,300}排版 ▾/.test(index) &&
+    !/id="settingsPanel"[\s\S]{0,4000}id="columnsSelect"/.test(index) &&
+    /flex-wrap: wrap/.test(css));
   check('栏数是独立选择项（模板只管样式）',
     /id="columnsSelect"/.test(index) && /railFontSizeSelect/.test(index) && /railColorInput/.test(index) &&
     /applyColumnFields/.test(appJs));

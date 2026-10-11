@@ -1,6 +1,6 @@
 {
   "name": "resume-generator",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "description": "简历生成器：表单 / Markdown 双模式编辑，实时 A4 预览 + 导出 PDF（零依赖，双击即用）",
   "scripts": {
