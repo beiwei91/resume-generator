@@ -423,8 +423,10 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 .ibtn-toggle { font-size: 11px; }
 .ibtn-danger:hover:not(:disabled) { color: #b91c1c; border-color: #eccfcf; background: #fef6f6; }
 
-.ftable-wrap { display: flex; flex-direction: column; gap: 6px; }
-.ftable { border-collapse: collapse; width: 100%; }
+.ftable-wrap { display: flex; flex-direction: column; gap: 6px; overflow-x: auto; }
+.ftable { border-collapse: collapse; width: 100%; table-layout: fixed; }
+.ftable .fld-input { width: 100%; min-width: 0; }      /* 输入框撑满单元格，别缩成一条缝 */
+.ftable .ftable-del { padding: 2px 0; }   /* 单元格只放一个按钮；text-align 对 grid 按钮无效，别写 */
 .ftable th, .ftable td { padding: 2px 3px; vertical-align: middle; }
 .ftable th .fld-input { font-weight: 600; background: #f8fafc; }
 .ftable td:last-child, .ftable th:last-child { width: 32px; }
@@ -706,7 +708,11 @@ body.drop-active::after {
   .ibtn { width: 30px; height: 30px; font-size: 14px; }
   .ibtn-text { width: auto; padding: 0 8px; }        /* 「→ 左栏」这类文字按钮要保持能放下字 */
   .fbtn { padding: 7px 12px; }
-  .ftable td:last-child, .ftable th:last-child { width: 34px; }
+  .ftable td:last-child, .ftable th:last-child { width: 38px; }   /* 30px 按钮 + 2px 间距 + 6px padding 才装得下 */
+  .ftable th:first-child, .ftable td:first-child { width: 42%; }   /* 第一列是短标签，别占太多 */
+
+  /* 状态栏里「字段为空」时，它前面的分隔点也别留着 */
+  .statusbar .dot:has(+ .ver:empty) { display: none; }   /* 版本号还没填上时，别留一个孤零零的点 */
   .fcard-title-input { flex: 0 1 150px; }
   .fcard-head { gap: 4px; }
 
@@ -724,6 +730,9 @@ body.drop-active::after {
   .swatches { display: none; }        /* 小屏用取色器代替色板 */
   #tplSelect { max-width: 118px; }
   #statusStats { display: none; }
+  /* 窄屏连字数一起藏了，它左右那两个分隔点也要一起藏，否则会看到「未命名 · · 共 1 页」 */
+  .statusbar .dot:has(+ #statusStats),
+  #statusStats + .dot { display: none; }
 
   /* 卡片头：标题独占一行，操作按钮换到第二行，免得互相挤压 */
   .fcard-head { flex-wrap: wrap; row-gap: 4px; }

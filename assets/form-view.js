@@ -466,13 +466,17 @@
           input.value = row[ci] == null ? '' : row[ci];
           withPath(input, 'sec:' + si + ':cell:' + ri + ':' + ci, input.value);
           cell.appendChild(input);
-          if (ri > 0 && ci === cols - 1) {
-            var del = iconBtn('×', '删除这一行', 'ibtn-danger');
-            del.addEventListener('click', function () { structural(function (md) { return Form.removeTableRow(md, si, ri); }); });
-            cell.appendChild(del);
-          }
           tr.appendChild(cell);
         }
+        // 删除按钮单独占一列：不能塞在最后一个数据格里，
+        // 否则最后那一列被 CSS 固定成 32px，会把「说明」这类输入框挤成一条缝
+        var delCell = el(ri === 0 ? 'th' : 'td', 'ftable-del');
+        if (ri > 0) {
+          var del = iconBtn('×', '删除这一行', 'ibtn-danger');
+          del.addEventListener('click', function () { structural(function (md) { return Form.removeTableRow(md, si, ri); }); });
+          delCell.appendChild(del);
+        }
+        tr.appendChild(delCell);
         table.appendChild(tr);
       });
       wrap.appendChild(table);

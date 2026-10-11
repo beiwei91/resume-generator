@@ -1131,6 +1131,19 @@
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 微信 / QQ 内置浏览器提示 */
+
+  // 这类内置浏览器常常禁止打印、下载与文件保存，导致「导出 PDF / 保存文件」失败
+  var IN_APP_BROWSER = /MicroMessenger|QQ\/|QQBrowser|MQQBrowser|Weibo|AlipayClient|DingTalk|Feishu|Lark/i
+    .test((window.navigator && window.navigator.userAgent) || '');
+
+  function warnInAppBrowser() {
+    if (!IN_APP_BROWSER) return false;
+    toast('提示：你正在微信 / QQ 等内置浏览器里打开，这类浏览器可能无法导出 PDF 或保存文件。' +
+      '建议点右上角「⋯」→「在浏览器中打开」（Safari / Chrome），或把网址复制到浏览器里打开', 9600);
+    return true;
+  }
+
   /* ------------------------------------------------------------ 界面主题 */
 
   function applyTheme() {
@@ -1295,6 +1308,15 @@
     }
 
     $('btnPdf').addEventListener('click', exportPdf);
+    // 导出 / 下载 / 保存这几条路在内置浏览器里最容易失败，点了就提醒一次。
+    // 注意用冒泡阶段：捕获阶段会让警告先弹出、紧接着被按钮自己的 toast 覆盖掉，用户根本看不到
+    document.addEventListener('click', function (ev) {
+      var t = ev.target;
+      var hit = t && t.closest && t.closest('#btnPdf, #btnPdfMobile, #btnDownload, #btnSaveDisk, #btnBackup, #btnRestore');
+      if (hit || (t && t.closest && t.closest('button') && /导出|下载|保存/.test(t.closest('button').textContent || ''))) {
+        warnInAppBrowser();
+      }
+    });
     $('btnPdfMobile').addEventListener('click', exportPdf);
     $('btnDownload').addEventListener('click', downloadMD);
     $('btnSaveDisk').addEventListener('click', saveToDisk);
@@ -1565,6 +1587,7 @@
     setEditorMode(prefs.mode);
     applyMobileView();
     applyStarBanner();
+    warnInAppBrowser();
     applyTheme();
     bindSystemTheme();
     applyVersion();

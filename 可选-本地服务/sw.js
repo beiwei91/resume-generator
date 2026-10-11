@@ -8,7 +8,7 @@
  *   - 激活时清理旧版本缓存。
  * 改动静态资源后请把 VERSION 加一。
  */
-const VERSION = 'v1.8.1';   // 每次发版都要加一：activate 时靠它清掉旧缓存
+const VERSION = 'v1.8.3';   // 每次发版都要加一：activate 时靠它清掉旧缓存
 const CACHE = 'resume-gen-' + VERSION;
 
 const PRECACHE = [

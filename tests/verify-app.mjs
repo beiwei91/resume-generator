@@ -435,6 +435,16 @@ section('复制 / 撤销重做 / 备份');
     /duplicateSection/.test(formViewJs) && /duplicateEntry/.test(formViewJs));
   check('双栏下章节卡片有「左栏 / 右栏」一键切换',
     /toggle-rail/.test(formViewJs) && /Form\.isTwoCol/.test(formViewJs) && /Form\.setRail/.test(formViewJs));
+  check('表格章节的删除按钮单独占一列（不会挤扁数据输入框）',
+    /ftable-del/.test(formViewJs) && /\.ftable \.fld-input \{ width: 100%/.test(css));
+  check('微信 / QQ 内置浏览器会提示可能无法导出',
+    /MicroMessenger/.test(appJs) && /warnInAppBrowser/.test(appJs) && /在浏览器中打开/.test(appJs));
+  check('提示用冒泡阶段注册（捕获阶段会被动作自己的 toast 覆盖）',
+    /warnInAppBrowser\(\);/.test(appJs) && !/warnInAppBrowser\(\);\s*\}\s*\}, true\)/.test(appJs));
+  check('窄屏表格末列放得下删除按钮、状态栏不留多余分隔点',
+    /\.ftable td:last-child, \.ftable th:last-child \{ width: 38px; \}/.test(css) &&
+    /\.statusbar \.dot:has\(\+ #statusStats\)/.test(css) &&
+    /#statusStats \+ \.dot \{ display: none; \}/.test(css));
   check('栏数与自动排版都在预览区右上角（样式下拉与「排版」按钮旁）',
     /class="pane-head"[\s\S]{0,1200}id="columnsSelect"/.test(index) &&
     /id="btnFitPage"[\s\S]{0,300}排版 ▾/.test(index) &&
@@ -584,7 +594,14 @@ async function testInteractions() {
     '      var mFit = /fontSize: ([0-9.]+)px/.exec(q("#editor").value);',
     '      var A1 = A0 && !!mFit && parseFloat(mFit[1]) > 11 && q("#statusPages").textContent.indexOf("共 1 页") >= 0;',
     '      var A2 = q("#editor").value.indexOf("fontSize: ") >= 0 && !!doc.querySelector(".resume-sheet");',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3, T1: T1, T2: T2, T3: T3, T4: T4, S1: S1, A0: A0, A1: A1, A2: A2 }));',
+    '      var tRows = doc.querySelectorAll(".ftable tr");',
+    '      var tCells = tRows.length > 1 ? tRows[1].children.length : 0;',
+    '      var tInput = doc.querySelector(".ftable tr:nth-child(2) td:nth-child(2) input");',
+    '      var T5 = tCells >= 3 && !!tInput && tInput.getBoundingClientRect().width > 60;',
+    '      var tDel = tRows.length > 1 ? tRows[1].querySelector(".ftable-del") : null;',
+    '      var tCard = q(".ftable") ? q(".ftable").closest(".fcard") : null;',
+    '      var T6 = !!tDel && !!tCard && tDel.getBoundingClientRect().right <= tCard.getBoundingClientRect().right + 1;',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3, T1: T1, T2: T2, T3: T3, T4: T4, S1: S1, A0: A0, A1: A1, A2: A2, T5: T5, T6: T6 }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -650,6 +667,8 @@ async function testInteractions() {
   check('测试前置条件成立（字号确实被改成 11px）', res.A0 === true, 'A0=' + res.A0);
   check('点「自动排版」后字号被放大、仍然只有一页（真实点击）', res.A1 === true, 'A1=' + res.A1);
   check('自动排版后文档与预览都正常', res.A2 === true, 'A2=' + res.A2);
+  check('表格第二列输入框有正常宽度（真实量 DOM 宽度）', res.T5 === true, 'T5=' + res.T5);
+  check('表格的删除按钮落在卡片内（表格没有溢出右边界）', res.T6 === true, 'T6=' + res.T6);
 }
 
 await testInteractions();
