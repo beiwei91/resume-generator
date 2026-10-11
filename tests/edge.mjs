@@ -566,6 +566,45 @@ section('双栏易用性：一键切换 / 改名同步 / 宽容匹配');
   check('非双栏模板下 isTwocol 为 false', Form.isTwocol(base.replace('twocol', 'classic')) === false);
 }
 
+section('左栏与撤销：代码审查提出的回归场景');
+{
+  const base = '---\ntemplate: twocol\nrail: 技能清单\n---\n\n# 甲\n\n前端 | 138\n\n' +
+    '## 技能清单\n\n- JS\n\n## 证书与荣誉\n\n- CET-6\n';
+
+  const renamed = Form.setSectionTitle(base, 0, '技术栈');
+  check('改名后左栏配置精确同步（不会误改互相包含的另一条）',
+    Form.railTitles(renamed).join('、') === '技术栈', Form.railTitles(renamed).join('、'));
+
+  const ambiguous = '---\ntemplate: twocol\nrail: 技能清单\n---\n\n# 甲\n\n前端 | 138\n\n' +
+    '## 技能\n\n- a\n\n## 技能清单\n\n- JS\n';
+  check('有歧义时不动配置（不许误删别人的左栏条目）', Form.setRail(ambiguous, '技能', false) === ambiguous);
+
+  const alias = '---\ntemplate: twocol\nrail: 技能\n---\n\n# 甲\n\n前端 | 138\n\n## 技能清单\n\n- JS\n';
+  check('无歧义的手写别名仍可移除', Form.railTitles(Form.setRail(alias, '技能清单', false)).length === 0);
+
+  const doubled = Form.setRail(base, '技能清单', true);
+  check('重复加同一章节不改动文档（不产生重复项）', doubled === base);
+
+  const removed = Form.removeSection(base, 0);
+  check('删掉左栏章节后配置里不留幽灵标题',
+    removed.indexOf('rail:') < 0 && removed.indexOf('技能清单') < 0 && removed.indexOf('证书与荣誉') >= 0);
+
+  const titleWithComma = '---\ntemplate: twocol\nrail: 技能清单\n---\n\n# 甲\n\n前端 | 138\n\n' +
+    '## 技能, 证书\n\n- JS\n';
+  check('标题含分隔符时左栏不会写出不可解析的配置',
+    Form.railTitles(Form.setRail(titleWithComma, '技能, 证书', true)).join('|') === '技能清单');
+
+  const appJs = fs.readFileSync(path.join(ROOT, 'assets', 'app.js'), 'utf8');
+  check('压到一页的结果会标脏并触发保存（不会再「压了但没保存」）',
+    /markDirty\(\);\s*\/\/[^\n]*压页[\s\S]{0,60}scheduleAutoSave\(\);/.test(appJs) ||
+    /markDirty\(\);[\s\S]{0,120}scheduleAutoSave\(\);[\s\S]{0,80}render\(\);/.test(appJs));
+  check('撤销 / 重做自身不会清掉重做栈', /skipRedoClear = true/.test(appJs) && /skipRedoClear = false/.test(appJs));
+  check('任何文档改动都会作废重做栈', /if \(!skipRedoClear\) \{[\s\S]{0,80}redoStack\.length = 0;/.test(appJs));
+  check('保存失败时不再谎报已保存', /保存失败：浏览器存储可能已满/.test(appJs) && /return;\s*\/\/ 保持 dirty/.test(appJs));
+  check('改名撞名会先确认', /已经有一份叫/.test(appJs));
+  check('恢复备份会换掉当前文档并应用偏好', /touchedCurrent/.test(appJs) && /data\.prefs/.test(appJs));
+}
+
 /* ------------------------------------------------------------------ 结果 */
 
 console.log('\n结果');

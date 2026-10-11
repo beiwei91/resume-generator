@@ -2794,6 +2794,7 @@ body.drop-active::after {
   function setRail(md, title, on) {
     var t = String(title == null ? '' : title).trim();
     if (!t) return md;
+    if (/[,，、]/.test(t)) return md;   // 标题含分隔符就没法表达进 rail：宁可不写，也不写出读不回来的配置
     var list = railTitles(md);
     var exact = list.indexOf(t);
 
@@ -2833,7 +2834,9 @@ body.drop-active::after {
     var list = railTitles(beforeMd);
     var at = list.indexOf(old);            // 只认精确匹配：模糊匹配会把别人的配置改掉
     if (at < 0) return afterMd;
-    list[at] = String(newTitle == null ? '' : newTitle).trim();
+    var next = String(newTitle == null ? '' : newTitle).trim();
+    if (/[,，、]/.test(next)) list.splice(at, 1);   // 新标题含分隔符：宁可移出左栏，也不写出读不回来的配置
+    else list[at] = next;
     return MD.upsertFrontMatter(afterMd, { rail: dedupe(list).join(', ') });
   }
 
