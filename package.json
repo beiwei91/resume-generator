@@ -1,6 +1,6 @@
 {
   "name": "resume-generator",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "private": true,
   "description": "绠€鍘嗙敓鎴愬櫒锛氳〃鍗?/ Markdown 鍙屾ā寮忕紪杈戯紝瀹炴椂 A4 棰勮 + 瀵煎嚭 PDF锛堥浂渚濊禆锛屽弻鍑诲嵆鐢級",
   "scripts": {

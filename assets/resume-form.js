@@ -318,12 +318,15 @@
     },
 
     setSectionTitle: function (md, si, title) {
-      return withBody(md, function (lines, w) {
+      var oldTitle = (walk(md).sections[si] || {}).title || '';
+      var out = withBody(md, function (lines, w) {
         var s = sec(w, si);
         if (!s) return null;
         lines[s.titleIdx] = headText(2, title);
         return lines;
       });
+      if (out === md) return md;
+      return syncRailTitle(md, out, oldTitle, title);      // 改标题时左栏配置跟着走
     },
 
     /** 新增章节：kind = entries | list | quote | paragraph */
@@ -340,7 +343,8 @@
     },
 
     removeSection: function (md, si) {
-      return withBody(md, function (lines, w) {
+      var removedTitle = (walk(md).sections[si] || {}).title || '';
+      var dropped = withBody(md, function (lines, w) {
         var s = sec(w, si);
         if (!s) return null;
         var start = s.start;
@@ -351,6 +355,13 @@
         while (out.length > 1 && !out[out.length - 1].trim() && !out[out.length - 2].trim()) out.pop();
         return out;
       });
+      if (dropped === md || !removedTitle) return dropped;
+      // 顺手把左栏配置里的同名项摘掉（精确匹配），免得留下幽灵标题
+      var list = railTitles(dropped);
+      var at = list.indexOf(removedTitle);
+      if (at < 0) return dropped;
+      list.splice(at, 1);
+      return MD.upsertFrontMatter(dropped, { rail: dedupe(list).join(', ') });
     },
 
     moveSection: function (md, si, dir) {
@@ -614,9 +625,97 @@
     return list && list[bi] ? list[bi] : null;
   }
 
+  /* ------------------------------------------------------------------ 双栏左栏（rail） */
+
+  var RAIL_HINTS = ['技能', '证书', '荣誉', '奖项', '教育', '语言', '其他'];
+
+  function settingsOf(md) {
+    return MD.normalizeSettings(MD.splitFrontMatter(md).meta);
+  }
+
+  /** 当前是不是双栏模板 */
+  function isTwocol(md) {
+    return settingsOf(md).template === 'twocol';
+  }
+
+  /** 当前左栏章节标题列表 */
+  function railTitles(md) {
+    return MD.parseRailTitles(settingsOf(md).rail);
+  }
+
+  /** 某个章节是否在左栏 */
+  function inRail(md, title) {
+    return MD.railHit(railTitles(md), title);
+  }
+
+  function dedupe(list) {
+    var out = [];
+    list.forEach(function (x) {
+      var v = String(x == null ? '' : x).trim();
+      if (v && out.indexOf(v) < 0) out.push(v);
+    });
+    return out;
+  }
+
+  /**
+   * 把章节放进 / 移出左栏（只改文首配置块里的 rail 一行）。
+   * 写/删都优先精确匹配标题；只有在「手写别名」（如 rail: 技能 对应 技能清单）
+   * 且该别名不会再精确命中别的章节时才允许按包含关系删除 —— 避免误删别人的配置。
+   */
+  function setRail(md, title, on) {
+    var t = String(title == null ? '' : title).trim();
+    if (!t) return md;
+    var list = railTitles(md);
+    var exact = list.indexOf(t);
+
+    if (on) {
+      if (exact >= 0) return md;                   // 已经在左栏
+      list.push(t);
+    } else if (exact >= 0) {
+      list.splice(exact, 1);
+    } else {
+      var others = walk(md).sections
+        .map(function (s) { return s.title; })
+        .filter(function (x) { return x !== t; });
+      var at = -1;
+      for (var i = 0; i < list.length; i++) {
+        if (!MD.railHit([list[i]], t)) continue;
+        var ambiguous = others.some(function (x) { return x === list[i] || MD.railHit([list[i]], x); });
+        if (ambiguous) return md;                  // 有歧义：不动配置，交给用户手改
+        at = i;
+        break;
+      }
+      if (at < 0) return md;
+      list.splice(at, 1);
+    }
+    return MD.upsertFrontMatter(md, { rail: dedupe(list).join(', ') });
+  }
+
+  /** 切到双栏时的默认左栏：技能 / 证书 / 荣誉 / 教育 / 语言 这类章节 */
+  function suggestRail(md) {
+    return walk(md).sections
+      .map(function (s) { return s.title; })
+      .filter(function (t) { return RAIL_HINTS.some(function (h) { return t.indexOf(h) >= 0; }); });
+  }
+
+  /** 章节改名时，把左栏配置里的旧标题一起换掉，避免分栏悄悄失效 */
+  function syncRailTitle(beforeMd, afterMd, oldTitle, newTitle) {
+    var old = String(oldTitle == null ? '' : oldTitle).trim();
+    var list = railTitles(beforeMd);
+    var at = list.indexOf(old);            // 只认精确匹配：模糊匹配会把别人的配置改掉
+    if (at < 0) return afterMd;
+    list[at] = String(newTitle == null ? '' : newTitle).trim();
+    return MD.upsertFrontMatter(afterMd, { rail: dedupe(list).join(', ') });
+  }
+
   return {
     walk: walk,
     SECTION_TEMPLATES: SECTION_TEMPLATES,
+    isTwocol: isTwocol,
+    railTitles: railTitles,
+    inRail: inRail,
+    setRail: setRail,
+    suggestRail: suggestRail,
     setHeaderName: ops.setHeaderName,
     setHeaderInfo: ops.setHeaderInfo,
     setSectionTitle: ops.setSectionTitle,

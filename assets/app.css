@@ -689,6 +689,7 @@ body.drop-active::after {
   .frow-tight > .fld { flex: 1 1 auto; }
   .fld-input, #editor, textarea.fld-input { font-size: 16px; }
   .ibtn { width: 30px; height: 30px; font-size: 14px; }
+  .ibtn-text { width: auto; padding: 0 8px; }        /* 「→ 左栏」这类文字按钮要保持能放下字 */
   .fbtn { padding: 7px 12px; }
   .ftable td:last-child, .ftable th:last-child { width: 34px; }
   .fcard-title-input { flex: 0 1 150px; }

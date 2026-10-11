@@ -363,6 +363,8 @@
     var next = MD.upsertFrontMatter(state.markdown, settings);
     state.markdown = next;
     editor.value = next;
+    markDirty();             // 压页改的是文档本身：必须标脏并触发保存，否则刷新就白压了
+    scheduleAutoSave();
     render();
     updateGuides();
   }
@@ -416,6 +418,9 @@
     var next = MD.upsertFrontMatter(state.markdown, patch);
     if (next === state.markdown) return;
     setMarkdown(next, true);
+    // 模板 / 左栏会影响表单渲染（双栏下每张章节卡片多一个「→ 左栏 / ← 右栏」按钮），
+    // 所以这两项变化时必须重绘表单，否则界面与文档不一致
+    if (patch && (patch.template !== undefined || patch.rail !== undefined)) refreshForm();
   }
 
   /* ------------------------------------------------------------ 编辑与保存 */
@@ -433,6 +438,11 @@
     if (keepCaret) {
       editor.selectionStart = Math.min(s, text.length);
       editor.selectionEnd = Math.min(e, text.length);
+    }
+    // 任何新的改动都让「重做」作废（撤销/重做自己改文档时用 skipRedoClear 跳过）
+    if (!skipRedoClear) {
+      redoStack.length = 0;
+      updateUndoBtn();
     }
     markDirty();
     scheduleRender();
@@ -471,8 +481,13 @@
     if (!state.name) state.name = '我的简历';
     var docs = loadDocs();
     docs[state.name] = state.markdown;
-    writeDocs(docs);
-    writeRaw(LS.current, state.name);
+    try {
+      writeDocs(docs);
+      writeRaw(LS.current, state.name);
+    } catch (e) {
+      toast('保存失败：浏览器存储可能已满或被隐私模式限制；建议用「导出备份」或「下载 MD」留一份', 6400);
+      return;                       // 保持 dirty，别让状态栏谎报已保存
+    }
     state.dirty = false;
     state.savedAt = Date.now();
     var el = $('statusSaved');
@@ -645,14 +660,34 @@
       var docs = loadDocs();
       var added = 0;
       var updated = 0;
+      var touchedCurrent = false;
       incoming.forEach(function (name) {
         if (docs[name] == null) { docs[name] = String(data.docs[name]); added++; }
         else if (overwrite) { docs[name] = String(data.docs[name]); updated++; }
+        else return;
+        if (name === state.name) touchedCurrent = true;
       });
       writeDocs(docs);
       refreshDocList();
+      if (data.prefs && typeof data.prefs === 'object') {
+        Object.keys(data.prefs).forEach(function (k) { prefs[k] = data.prefs[k]; });
+        savePrefs();
+        setEditorMode(prefs.mode);
+        applyMobileView();
+        applyStarBanner();
+        applyZoom();
+      }
+      // 备份覆盖了正在看的这份：立刻换成恢复后的内容，
+      // 否则内存里还是旧内容，下一次自动保存会把刚恢复的版本又写回去
+      if (touchedCurrent) {
+        setMarkdown(docs[state.name], false);
+        resetDocHistory();
+        render();
+        refreshForm();
+      }
       toast('已恢复：新增 ' + added + ' 份' + (updated ? '，覆盖 ' + updated + ' 份' : '') +
-        (added + updated === 0 ? '（都跳过了）' : ''));
+        (added + updated === 0 ? '（都跳过了）' : '') +
+        (touchedCurrent ? '；当前文档已换成恢复后的内容' : ''));
     }).catch(function () { toast('读取备份失败'); });
   }
 
@@ -826,6 +861,7 @@
   var undoStack = [];
   var redoStack = [];
   var lastUndoAt = 0;
+  var skipRedoClear = false;      // 撤销 / 重做自己改文档时，别把重做栈清掉
 
   function updateUndoBtn() {
     var u = $('btnUndo');
@@ -855,7 +891,9 @@
     if (!undoStack.length) { toast('没有可撤销的操作'); return; }
     redoStack.push(state.markdown);
     if (redoStack.length > 80) redoStack.shift();
+    skipRedoClear = true;
     setMarkdown(undoStack.pop(), true);
+    skipRedoClear = false;
     refreshForm();
     updateUndoBtn();
     toast('已撤销');
@@ -866,7 +904,9 @@
     undoStack.push(state.markdown);
     if (undoStack.length > 80) undoStack.shift();
     lastUndoAt = 0;
+    skipRedoClear = true;
     setMarkdown(redoStack.pop(), true);
+    skipRedoClear = false;
     refreshForm();
     updateUndoBtn();
     toast('已重做');
@@ -891,6 +931,7 @@
         if (structural) refreshForm(focusPath);
       },
       hasPhoto: hasPhoto,
+      notice: toast,
       pickPhoto: function () { $('photoInput').click(); },
       removePhoto: removePhoto,
       locate: locateSection
@@ -1104,6 +1145,12 @@
       var next = this.value.trim() || '我的简历';
       flushAutoSave();               // 改名也算换文档，先落盘
       var docs = loadDocs();
+      if (next !== state.name && docs[next] != null) {
+        if (!window.confirm('已经有一份叫《' + next + '》的简历，改名会覆盖它。继续吗？')) {
+          this.value = state.name;
+          return;
+        }
+      }
       if (next !== state.name && docs[state.name] != null) {
         docs[next] = state.markdown;
         delete docs[state.name];
@@ -1119,10 +1166,19 @@
     $('docList').addEventListener('change', function () { openDoc(this.value); });
 
     $('tplSelect').addEventListener('change', function () {
-      patchSettings({ template: this.value });
-      if (this.value === 'twocol' && !MD.parseRailTitles(state.settings.rail).length) {
-        toast('双栏模板还要指定左栏内容：在文首配置块写一行 rail: 技能清单, 证书与荣誉（章节标题用逗号分隔）', 5200);
+      var tpl = this.value;
+      var FR = window.ResumeForm;
+      // 切到双栏且还没配左栏：自动把技能 / 证书 / 教育这类章节放进去，省得手写配置
+      if (tpl === 'twocol' && FR && !FR.railTitles(state.markdown).length) {
+        var picked = FR.suggestRail(state.markdown);
+        if (picked.length) {
+          patchSettings({ template: tpl, rail: picked.join(', ') });
+          toast('已切到双栏，并把「' + picked.join('、') + '」放进左栏；每张章节卡片上都有「→ 左栏 / ← 右栏」可随时调整', 5600);
+          return;
+        }
       }
+      patchSettings({ template: tpl });
+      if (tpl === 'twocol') toast('双栏已就绪：在章节卡片上点「→ 左栏」把章节放进左栏', 4600);
     });
     $('btnFitPage').addEventListener('click', fitToOnePage);
     $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });

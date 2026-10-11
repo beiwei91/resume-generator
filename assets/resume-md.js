@@ -553,6 +553,18 @@
   /* ------------------------------------------------------------------ 对外 API */
 
   /** 解析 `rail: 技能清单, 证书与荣誉` 这类配置：章节标题列表（中英文逗号、顿号都认） */
+  /** 左栏匹配：先精确，再互相包含 —— 这样配置里写「技能」也能匹配到「技能清单」 */
+  function railHit(railTitles, title) {
+    var t = String(title == null ? '' : title).trim();
+    if (!t) return false;
+    for (var i = 0; i < railTitles.length; i++) {
+      var r = String(railTitles[i] || '').trim();
+      if (!r) continue;
+      if (r === t || t.indexOf(r) >= 0 || r.indexOf(t) >= 0) return true;
+    }
+    return false;
+  }
+
   function parseRailTitles(value) {
     return String(value == null ? '' : value)
       .split(/[,，、]/)
@@ -573,7 +585,7 @@
       var railKids = [];
       var mainKids = [];
       (doc.children || []).forEach(function (child) {
-        (railTitles.indexOf(child.title) >= 0 ? railKids : mainKids).push(child);
+        (railHit(railTitles, child.title) ? railKids : mainKids).push(child);
       });
       body = '<div class="r-cols">' +
         (railKids.length ? '<aside class="r-rail">' + renderChildren(railKids) + '</aside>' : '') +
@@ -634,6 +646,7 @@
     FONTS: FONTS,
     MARGIN_PRESETS: MARGIN_PRESETS,
     parseRailTitles: parseRailTitles,
+    railHit: railHit,
     PHOTO_ALIGNS: PHOTO_ALIGNS,
     PHOTO_SHAPES: PHOTO_SHAPES,
     ACCENT_PRESETS: ACCENT_PRESETS,

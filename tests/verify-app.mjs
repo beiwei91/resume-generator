@@ -433,6 +433,10 @@ section('复制 / 撤销重做 / 备份');
   check('Esc 关闭弹窗 / 排版面板', /key \|\| ''\)\.toLowerCase\(\) !== 'escape'/.test(appJs));
   check('表单卡片有复制按钮（章节与条目）',
     /duplicateSection/.test(formViewJs) && /duplicateEntry/.test(formViewJs));
+  check('双栏模板下章节卡片有「左栏 / 右栏」一键切换',
+    /toggle-rail/.test(formViewJs) && /Form\.isTwocol/.test(formViewJs) && /Form\.setRail/.test(formViewJs));
+  check('切换双栏会自动填默认左栏（技能 / 证书 / 教育类）',
+    /suggestRail/.test(appJs) && /rail: picked\.join/.test(appJs));
 }
 
 /* ================================================================== 压到一页 / 双栏 */
@@ -444,7 +448,7 @@ section('压到一页 / 双栏');
     /fontSize\) - 0\.5/.test(appJs) && /lineHeight\) - 0\.05/.test(appJs) &&
     /MARGIN_PRESETS/.test(appJs) && /if \(cur\.photo\)/.test(appJs) && /pushUndo\(true\)/.test(appJs));
   check('设置是同步应用的（压页循环里要立刻量页数）', /function applySettingsNow/.test(appJs) && /updateGuides\(\)/.test(appJs));
-  check('模板下拉里有双栏，并在缺 rail 时给出提示', /twocol/.test(appJs) && /parseRailTitles/.test(appJs) && /rail: 技能清单/.test(appJs));
+  check('模板下拉里有双栏，且切换时会自动填左栏', /twocol/.test(appJs) && /suggestRail/.test(appJs) && /FR\.railTitles/.test(appJs));
 }
 
 /* ================================================================== 界面交互（真实点击 / 输入） */
@@ -538,7 +542,14 @@ async function testInteractions() {
     '      var J1 = hasAll(["J1-UNDO"]) === false;',
     '      q("#btnRedo").click(); await wait(500);',
     '      var J2 = hasAll(["J1-UNDO"]) === true;',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2 }));',
+    '      var tplSel = q("#tplSelect"); tplSel.value = "twocol"; fire(tplSel, "change"); await wait(700);',
+    '      var K1 = /rail:/.test(q("#editor").value);',
+    '      var railBtns = Array.prototype.slice.call(doc.querySelectorAll("[data-act=toggle-rail]"));',
+    '      var K2 = railBtns.length > 0;',
+    '      var mdBeforeRail = q("#editor").value;',
+    '      if (railBtns[0]) railBtns[0].click(); await wait(600);',
+    '      var K3 = q("#editor").value !== mdBeforeRail;',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3 }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -593,6 +604,9 @@ async function testInteractions() {
     res.I1 === true, 'I1=' + res.I1);
   check('撤销能回退、重做能还原（真实点击按钮）',
     res.J1 === true && res.J2 === true, '撤销后=' + res.J1 + ' 重做后=' + res.J2);
+  check('切成双栏会自动填好左栏配置', res.K1 === true, 'K1=' + res.K1);
+  check('切成双栏后章节卡片出现「左栏 / 右栏」按钮', res.K2 === true, 'K2=' + res.K2);
+  check('点「左栏 / 右栏」按钮真的改动了文档', res.K3 === true, 'K3=' + res.K3);
 }
 
 await testInteractions();

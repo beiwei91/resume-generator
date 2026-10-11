@@ -245,6 +245,29 @@
       head.appendChild(titleInput);
 
       head.appendChild(el('span', 'fcard-kind', KIND_LABEL[sec.kind] || sec.kind));
+
+      // 双栏模板：一键把这个章节放进 / 移出左栏
+      if (Form.isTwocol(api.getMd())) {
+        var inRailNow = Form.inRail(api.getMd(), sec.title);
+        var railBtn = iconBtn(inRailNow ? '← 右栏' : '→ 左栏', inRailNow ? '移回右侧主栏' : '放进左侧栏', 'ibtn-text');
+        railBtn.setAttribute('data-act', 'toggle-rail');
+        railBtn.addEventListener('click', function () {
+          // 标题可能刚被改过（文本编辑不重绘），所以用「此刻」的章节标题与状态，
+          // 不能用渲染那一刻的快照，否则会把旧标题写进左栏配置
+          var cur = Form.walk(api.getMd()).sections[si];
+          if (!cur) return;
+          if (/[,，、]/.test(cur.title)) {
+            if (api.notice) api.notice('这个章节标题里有逗号 / 顿号，没法放进左栏：先把标题里的分隔符改掉（例如「技能·证书」）');
+            return;
+          }
+          structural(function (md) {
+            var now = Form.walk(md).sections[si];
+            if (!now) return null;
+            return Form.setRail(md, now.title, !Form.inRail(md, now.title));
+          });
+        });
+        head.appendChild(railBtn);
+      }
       head.appendChild(el('span', 'fcard-flex'));
 
       var locate = iconBtn('定位', '在右侧预览里定位到这个章节', 'ibtn-text');

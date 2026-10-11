@@ -541,6 +541,31 @@ section('双栏模板（rail 配置）');
   })());
 }
 
+section('双栏易用性：一键切换 / 改名同步 / 宽容匹配');
+{
+  const base = '---\ntemplate: twocol\nrail: 技能清单\n---\n\n# 甲\n\n前端 | 138\n\n' +
+    '## 技能清单\n\n- JS\n\n## 证书与荣誉\n\n- CET-6\n\n## 工作经历\n\n### 公司\n\n- 做事\n';
+  check('配置里写「技能」也能匹配「技能清单」',
+    Form.inRail(base.replace('rail: 技能清单', 'rail: 技能'), '技能清单') === true);
+  const added = Form.setRail(base, '证书与荣誉', true);
+  check('一键加进左栏（setRail true）', Form.railTitles(added).indexOf('证书与荣誉') >= 0, Form.railTitles(added).join('、'));
+  const htmlAdded = MD.renderResume(added).html;
+  check('加进左栏后渲染真的分栏了',
+    /class="r-rail"/.test(htmlAdded) &&
+    /证书与荣誉/.test(htmlAdded.slice(htmlAdded.indexOf('class="r-rail"'), htmlAdded.indexOf('class="r-main"'))));
+  check('一键移出左栏（setRail false）', Form.railTitles(Form.setRail(added, '技能清单', false)).indexOf('技能清单') < 0);
+  check('重复设置同一状态不改动文档', Form.setRail(base, '技能清单', true) === base);
+  check('左栏清空后配置块里不再保留 rail 行', Form.setRail(base, '技能清单', false).indexOf('rail:') < 0);
+  const renamed = Form.setSectionTitle(base, 0, '技术栈');
+  check('改章节标题时左栏配置跟着改名',
+    Form.railTitles(renamed).indexOf('技术栈') >= 0 && Form.railTitles(renamed).indexOf('技能清单') < 0,
+    Form.railTitles(renamed).join('、'));
+  check('不在左栏的章节改名时不乱动 rail', /rail: 技能清单/.test(Form.setSectionTitle(base, 1, '荣誉奖项')));
+  check('suggestRail 能挑出技能 / 证书 / 教育类章节',
+    Form.suggestRail(base).join('、') === '技能清单、证书与荣誉', Form.suggestRail(base).join('、'));
+  check('非双栏模板下 isTwocol 为 false', Form.isTwocol(base.replace('twocol', 'classic')) === false);
+}
+
 /* ------------------------------------------------------------------ 结果 */
 
 console.log('\n结果');
