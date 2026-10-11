@@ -383,6 +383,36 @@
       });
     },
 
+    /** 复制一条经历（连同要点），插在原条目之后 */
+    duplicateEntry: function (md, si, ei) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s || !s.entries[ei]) return null;
+        var e = s.entries[ei];
+        var end = e.end;
+        while (end > e.start && !lines[end - 1].trim()) end--;
+        var block = lines.slice(e.start, end);
+        var at = e.end;
+        while (at < lines.length && !lines[at].trim()) at++;
+        return lines.slice(0, at).concat(block, [''], lines.slice(at));
+      });
+    },
+
+    /** 复制整个章节，标题加「（副本）」便于分辨，插在原章节之后 */
+    duplicateSection: function (md, si) {
+      return withBody(md, function (lines, w) {
+        var s = sec(w, si);
+        if (!s) return null;
+        var end = s.end;
+        while (end > s.start && !lines[end - 1].trim()) end--;
+        var block = lines.slice(s.start, end);
+        block[0] = headText(2, (s.title || '章节') + '（副本）');
+        var at = s.end;
+        while (at < lines.length && !lines[at].trim()) at++;
+        return lines.slice(0, at).concat([''], block, lines.slice(at));
+      });
+    },
+
     removeEntry: function (md, si, ei) {
       return withBody(md, function (lines, w) {
         var s = sec(w, si);
@@ -595,6 +625,8 @@
     moveSection: ops.moveSection,
     addEntry: ops.addEntry,
     removeEntry: ops.removeEntry,
+    duplicateEntry: ops.duplicateEntry,
+    duplicateSection: ops.duplicateSection,
     moveEntry: ops.moveEntry,
     setEntryHead: ops.setEntryHead,
     setEntrySub: ops.setEntrySub,

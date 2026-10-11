@@ -38,6 +38,10 @@
       <button id="btnDownload" class="btn" type="button">下载 MD</button>
       <button id="btnSaveDisk" class="btn" type="button">保存到磁盘</button>
       <span class="bar-sep"></span>
+      <button id="btnBackup" class="btn" type="button" title="把浏览器里的全部简历导出成一个 JSON 备份文件">导出备份</button>
+      <button id="btnRestore" class="btn" type="button" title="从备份 JSON 恢复简历（可选择覆盖或只补充）">恢复备份</button>
+      <input id="backupInput" type="file" accept=".json,application/json" hidden>
+      <span class="bar-sep"></span>
       <button id="btnHelp" class="btn" type="button">语法速查</button>
       <a class="btn gh-link" id="ghLink" href="https://github.com/beiwei91/resume-generator"
          target="_blank" rel="noreferrer"
@@ -80,6 +84,7 @@
           <button class="mode-tab" type="button" data-mode="markdown">Markdown</button>
         </div>
         <button id="btnUndo" class="tool" type="button" title="撤销上一步操作 (Ctrl+Z)">撤销</button>
+        <button id="btnRedo" class="tool" type="button" title="重做 (Ctrl+Y)">重做</button>
         <div class="tools" id="mdTools" hidden>
           <button class="tool tool-bold" type="button" data-act="bold" title="加粗 (Ctrl+B)">B</button>
           <button class="tool tool-italic" type="button" data-act="italic" title="斜体">I</button>

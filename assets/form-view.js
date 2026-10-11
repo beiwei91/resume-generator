@@ -251,6 +251,12 @@
       locate.addEventListener('click', function () { api.locate(si); });
       head.appendChild(locate);
 
+      var dupSection = iconBtn('⧉', '复制这个章节（含全部内容）', 'ibtn-text');
+      dupSection.addEventListener('click', function () {
+        structural(function (md) { return Form.duplicateSection(md, si); }, 'sec:' + (si + 1) + ':title');
+      });
+      head.appendChild(dupSection);
+
       var up = iconBtn('↑', '上移章节');
       up.disabled = si === 0;
       up.addEventListener('click', function () { structural(function (md) { return Form.moveSection(md, si, -1); }); });
@@ -312,6 +318,13 @@
       var head = el('div', 'fentry-head');
       head.appendChild(el('span', 'fentry-index', '条目 ' + (ei + 1)));
       head.appendChild(el('span', 'fcard-flex'));
+
+      var dupEntry = iconBtn('⧉', '复制这条经历（连同要点）', 'ibtn-text');
+      dupEntry.addEventListener('click', function () {
+        structural(function (md) { return Form.duplicateEntry(md, si, ei); },
+          'sec:' + si + ':entry:' + (ei + 1) + ':title');
+      });
+      head.appendChild(dupEntry);
 
       var up = iconBtn('↑', '上移条目');
       up.disabled = ei === 0;

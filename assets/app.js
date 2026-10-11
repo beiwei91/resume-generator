@@ -549,6 +549,59 @@
     toast('已下载 ' + fileName());
   }
 
+  /** 把浏览器里的全部简历（含排版偏好）导出成一个 JSON 备份 */
+  function exportBackup() {
+    flushAutoSave();
+    var docs = loadDocs();
+    var payload = {
+      app: '简历生成器',
+      version: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      current: state.name,
+      prefs: prefs,
+      docs: docs
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '简历备份-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+    toast('已导出备份：' + Object.keys(docs).length + ' 份简历（换电脑 / 换浏览器都能恢复）');
+  }
+
+  /** 从备份 JSON 恢复：可「同名覆盖」，也可只补充本地没有的 */
+  function importBackup(file) {
+    if (!file) return;
+    file.text().then(function (text) {
+      var data = null;
+      try { data = JSON.parse(text); } catch (e) { data = null; }
+      if (!data || typeof data !== 'object' || !data.docs || typeof data.docs !== 'object') {
+        toast('这不是本应用的备份文件');
+        return;
+      }
+      var incoming = Object.keys(data.docs);
+      if (!incoming.length) { toast('备份里没有简历'); return; }
+      flushAutoSave();
+      var overwrite = window.confirm('备份里有 ' + incoming.length + ' 份简历。\n\n' +
+        '确定 = 覆盖：同名的用备份内容替换\n取消 = 补充：只导入本地没有的');
+      var docs = loadDocs();
+      var added = 0;
+      var updated = 0;
+      incoming.forEach(function (name) {
+        if (docs[name] == null) { docs[name] = String(data.docs[name]); added++; }
+        else if (overwrite) { docs[name] = String(data.docs[name]); updated++; }
+      });
+      writeDocs(docs);
+      refreshDocList();
+      toast('已恢复：新增 ' + added + ' 份' + (updated ? '，覆盖 ' + updated + ' 份' : '') +
+        (added + updated === 0 ? '（都跳过了）' : ''));
+    }).catch(function () { toast('读取备份失败'); });
+  }
+
   function saveToDisk() {
     var name = fileName();
     if (window.showSaveFilePicker) {
@@ -717,11 +770,14 @@
   /* ------------------------------------------------------------ 表单模式 / 撤销 / 定位 */
 
   var undoStack = [];
+  var redoStack = [];
   var lastUndoAt = 0;
 
   function updateUndoBtn() {
-    var b = $('btnUndo');
-    if (b) b.disabled = undoStack.length === 0;
+    var u = $('btnUndo');
+    if (u) u.disabled = undoStack.length === 0;
+    var r = $('btnRedo');
+    if (r) r.disabled = redoStack.length === 0;
   }
 
   /** structural=true 时一定记一步；连续打字的修改合并成一步，免得撤销要按几十次 */
@@ -730,21 +786,36 @@
     if (!structural && undoStack.length && now - lastUndoAt < 1500) { lastUndoAt = now; return; }
     undoStack.push(state.markdown);
     if (undoStack.length > 80) undoStack.shift();
+    redoStack.length = 0;              // 一旦有新改动，之前的「重做」就作废
     lastUndoAt = now;
     updateUndoBtn();
   }
 
   function resetDocHistory() {
     undoStack.length = 0;
+    redoStack.length = 0;
     updateUndoBtn();
   }
 
   function undoLast() {
     if (!undoStack.length) { toast('没有可撤销的操作'); return; }
+    redoStack.push(state.markdown);
+    if (redoStack.length > 80) redoStack.shift();
     setMarkdown(undoStack.pop(), true);
     refreshForm();
     updateUndoBtn();
     toast('已撤销');
+  }
+
+  function redoLast() {
+    if (!redoStack.length) { toast('没有可重做的操作'); return; }
+    undoStack.push(state.markdown);
+    if (undoStack.length > 80) undoStack.shift();
+    lastUndoAt = 0;
+    setMarkdown(redoStack.pop(), true);
+    refreshForm();
+    updateUndoBtn();
+    toast('已重做');
   }
 
   function refreshForm(focusPath) {
@@ -796,6 +867,7 @@
     editor.hidden = isForm;
     $('mdTools').hidden = isForm;
     $('btnUndo').hidden = !isForm;
+    $('btnRedo').hidden = !isForm;
     updateUndoBtn();
     if (isForm) refreshForm();
     else editor.focus();
@@ -905,14 +977,38 @@
       }
     });
 
-    // 拖动 .md 文件到编辑区即可导入
-    ['dragover', 'drop'].forEach(function (type) {
-      editor.addEventListener(type, function (ev) {
+    // 把文件拖到窗口任意位置都能导入：.md 导入简历、备份 .json 恢复、图片当证件照
+    ['dragenter', 'dragover'].forEach(function (type) {
+      document.addEventListener(type, function (ev) {
+        if (!ev.dataTransfer || !ev.dataTransfer.types) return;
+        var hasFile = Array.prototype.indexOf.call(ev.dataTransfer.types, 'Files') >= 0;
+        if (!hasFile) return;
         ev.preventDefault();
-        if (type === 'drop' && ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]) {
-          importFile(ev.dataTransfer.files[0]);
-        }
+        document.body.classList.add('drop-active');
       });
+    });
+    document.addEventListener('dragleave', function (ev) {
+      if (ev.relatedTarget) return;                 // 移到子元素上不算离开窗口
+      document.body.classList.remove('drop-active');
+    });
+    document.addEventListener('drop', function (ev) {
+      document.body.classList.remove('drop-active');
+      if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
+      ev.preventDefault();
+      var f = ev.dataTransfer.files[0];
+      if (/\.(md|markdown|txt)$/i.test(f.name)) importFile(f);
+      else if (/\.json$/i.test(f.name)) importBackup(f);
+      else if (/^image\//.test(f.type)) insertPhoto(f);
+      else toast('只能拖入 .md 简历、.json 备份或图片');
+    });
+
+    // Esc：先关弹窗，再关排版面板
+    document.addEventListener('keydown', function (ev) {
+      if (String(ev.key || '').toLowerCase() !== 'escape') return;
+      var modal = $('helpModal');
+      if (modal && !modal.hidden) { modal.hidden = true; return; }
+      var panel = $('settingsPanel');
+      if (panel && !panel.hidden) { panel.hidden = true; $('btnMore').textContent = '排版 ▾'; }
     });
 
     var tools = document.querySelectorAll('.tool[data-act]');
@@ -1020,6 +1116,13 @@
       if (btn) setEditorMode(btn.dataset.mode);
     });
     $('btnUndo').addEventListener('click', undoLast);
+    $('btnRedo').addEventListener('click', redoLast);
+    $('btnBackup').addEventListener('click', exportBackup);
+    $('btnRestore').addEventListener('click', function () { $('backupInput').click(); });
+    $('backupInput').addEventListener('change', function () {
+      if (this.files && this.files[0]) importBackup(this.files[0]);
+      this.value = '';
+    });
 
     var bannerClose = $('ghBannerClose');
     if (bannerClose) {
@@ -1067,7 +1170,10 @@
         exportPdf();
       } else if (key === 'z' && prefs.mode === 'form') {
         ev.preventDefault();
-        undoLast();
+        if (ev.shiftKey) redoLast(); else undoLast();
+      } else if (key === 'y' && prefs.mode === 'form') {
+        ev.preventDefault();
+        redoLast();
       }
     });
 

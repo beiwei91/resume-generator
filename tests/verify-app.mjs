@@ -221,6 +221,7 @@ if (fs.existsSync(single)) {
 section('纯静态自检（服务相关的东西都已移除）');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const appJs = fs.readFileSync(path.join(ROOT, 'assets', 'app.js'), 'utf8');
+const formViewJs = fs.readFileSync(path.join(ROOT, 'assets', 'form-view.js'), 'utf8');
 check('index.html 不再引用 manifest / Service Worker',
   !/rel="manifest"/.test(index) && !/serviceWorker/.test(index));
 check('index.html 不再有「安装为应用」入口', !/btnInstall/.test(index));
@@ -413,6 +414,27 @@ section('GitHub 入口');
     /hideStarBanner/.test(appJs) && /applyStarBanner/.test(appJs));
 }
 
+/* ================================================================== 复制 / 撤销重做 / 备份 */
+
+section('复制 / 撤销重做 / 备份');
+{
+  const css = fs.readFileSync(path.join(ROOT, 'assets', 'app.css'), 'utf8');
+  check('编辑区有「重做」按钮，且和撤销一起只在表单模式显示',
+    /id="btnRedo"/.test(index) && /btnRedo/.test(appJs) && /#btnUndo\[hidden\], #btnRedo\[hidden\]/.test(css));
+  check('支持 Ctrl+Y 与 Ctrl+Shift+Z 重做',
+    /key === 'y' && prefs\.mode === 'form'/.test(appJs) && /ev\.shiftKey\) redoLast\(\); else undoLast\(\)/.test(appJs));
+  check('顶栏有导出 / 恢复备份入口与隐藏的文件选择框',
+    /id="btnBackup"/.test(index) && /id="btnRestore"/.test(index) && /id="backupInput"[^>]*type="file"/.test(index));
+  check('备份会写出版本与导出时间（便于日后排查）',
+    /app: '简历生成器'/.test(appJs) && /app-version|APP_VERSION/.test(appJs) && /exportedAt/.test(appJs));
+  check('恢复备份区分「覆盖」与「只补充」', /window\.confirm\('备份里有/.test(appJs));
+  check('拖拽导入改为全窗口 + 视觉提示',
+    /document\.addEventListener\('drop'/.test(appJs) && /drop-active/.test(appJs) && /body\.drop-active::after/.test(css));
+  check('Esc 关闭弹窗 / 排版面板', /key \|\| ''\)\.toLowerCase\(\) !== 'escape'/.test(appJs));
+  check('表单卡片有复制按钮（章节与条目）',
+    /duplicateSection/.test(formViewJs) && /duplicateEntry/.test(formViewJs));
+}
+
 /* ================================================================== 界面交互（真实点击 / 输入） */
 
 async function testInteractions() {
@@ -499,7 +521,12 @@ async function testInteractions() {
     '      if (fresh2) fire(fresh2, "blur"); await wait(350);',
     '      var countAfterBlur = (q("#editor").value.match(/^- /gm) || []).length;',
     '      var I1 = countAfterBlur === countAfterAdd - 1;',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1 }));',
+    '      setSuffix(":entry:0:role", "J1-UNDO"); await wait(1300);',
+    '      q("#btnUndo").click(); await wait(500);',
+    '      var J1 = hasAll(["J1-UNDO"]) === false;',
+    '      q("#btnRedo").click(); await wait(500);',
+    '      var J2 = hasAll(["J1-UNDO"]) === true;',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2 }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -552,6 +579,8 @@ async function testInteractions() {
     res.H1 === true, 'H1=' + res.H1);
   check('新加的空要点没输入就失焦时自动收掉，不在 .md 里留空行',
     res.I1 === true, 'I1=' + res.I1);
+  check('撤销能回退、重做能还原（真实点击按钮）',
+    res.J1 === true && res.J2 === true, '撤销后=' + res.J1 + ' 重做后=' + res.J2);
 }
 
 await testInteractions();

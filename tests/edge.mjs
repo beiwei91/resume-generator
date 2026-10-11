@@ -482,6 +482,37 @@ section('要点列表：空要点与列表型章节（用户实测踩到的坑�
     MD.renderResume('## A\n\n- \n- \n').html.indexOf('r-list') < 0);
 }
 
+section('复制：条目与章节');
+{
+  const sample = fs.readFileSync(path.join(ROOT, 'resume.sample.md'), 'utf8');
+  const w0 = Form.walk(sample);
+
+  const dupE = Form.duplicateEntry(sample, 1, 0);
+  const wE = Form.walk(dupE);
+  check('复制条目：条目数 +1，内容与原件一致',
+    wE.sections[1].entries.length === w0.sections[1].entries.length + 1 &&
+    wE.sections[1].entries[1].title === w0.sections[1].entries[0].title &&
+    wE.sections[1].entries[1].bullets.length === w0.sections[1].entries[0].bullets.length,
+    wE.sections[1].entries[1].title);
+  check('复制条目：其它章节不受影响',
+    wE.sections.length === w0.sections.length && wE.sections[2].title === w0.sections[2].title);
+  check('删掉条目副本后回到原样', model(Form.removeEntry(dupE, 1, 1)) === model(sample));
+  check('副本与原件相互独立（改副本不影响原件）', (function () {
+    const edited = Form.setEntryHead(dupE, 1, 1, { title: '副本改名' });
+    const w2 = Form.walk(edited);
+    return w2.sections[1].entries[0].title !== '副本改名' && w2.sections[1].entries[1].title === '副本改名';
+  })());
+
+  const dupS = Form.duplicateSection(sample, 3);
+  const wS = Form.walk(dupS);
+  check('复制章节：章节数 +1 且标题带「（副本）」',
+    wS.sections.length === w0.sections.length + 1 && /（副本）$/.test(wS.sections[4].title), wS.sections[4].title);
+  check('复制章节：副本内容与原件一致（表格行数相同）',
+    wS.sections[4].kind === 'table' && wS.sections[4].table.rows.length === w0.sections[3].table.rows.length);
+  check('删掉章节副本后回到原样', model(Form.removeSection(dupS, 4)) === model(sample));
+  check('越界复制安全返回', Form.duplicateEntry(sample, 99, 0) === sample && Form.duplicateSection(sample, 99) === sample);
+}
+
 /* ------------------------------------------------------------------ 结果 */
 
 console.log('\n结果');

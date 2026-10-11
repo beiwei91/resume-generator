@@ -292,7 +292,7 @@ body { overflow: hidden; }
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(15, 23, 42, .1);
 }
-#btnUndo[hidden] { display: none; }
+#btnUndo[hidden], #btnRedo[hidden] { display: none; }
 #btnUndo:disabled { opacity: .45; cursor: default; }
 
 .form-view {
@@ -524,6 +524,23 @@ textarea.fld-input { resize: vertical; line-height: 1.6; }
 .statusbar .grow { flex: 1; }
 .statusbar .tip { color: #98a2b3; }
 .statusbar .ver { color: #b3bbc8; font-size: 11.5px; }
+
+/* 拖文件到窗口任意位置时的提示（松手即导入） */
+body.drop-active::after {
+  content: "松手即可导入：.md 简历 / JSON 备份 / 证件照图片";
+  position: fixed;
+  inset: 14px;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  border: 2px dashed #2563eb;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, .07);
+  color: #1d4ed8;
+  font-size: 15px;
+  font-weight: 600;
+  pointer-events: none;
+}
 #statusSaved.saved { color: #0f766e; }
 #statusPages.overflow { color: #b45309; font-weight: 600; }
 
