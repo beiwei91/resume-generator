@@ -654,12 +654,27 @@ body.drop-active::after {
   .appbar.tools-open .appbar-main { display: flex; }
 
   /* 编辑 / 预览 切换：窄屏一次只显示一个面板 */
+  /* 底部操作栏：编辑 / 预览 + 导出 PDF，放到拇指够得到的位置 */
+  .appbar { order: 1; }
+  .gh-banner { order: 2; }
+  .workspace { order: 3; }
+  .statusbar { order: 4; }
   #mobileView {
+    order: 5;
     display: flex;
     gap: 6px;
-    padding: 6px 10px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
     background: #fff;
-    border-bottom: 1px solid #dfe4ec;
+    border-top: 1px solid #dfe4ec;
+  }
+  .appbar-actions #btnPdf { display: none; }        /* 顶栏的导出让位给底部栏 */
+  #mobileView .mv-btn-pdf {
+    flex: 0 0 auto;
+    padding: 7px 14px;
+    font-weight: 600;
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
   }
   .mv-btn {
     flex: 1;
@@ -714,4 +729,80 @@ body.drop-active::after {
   .fcard-head { flex-wrap: wrap; row-gap: 4px; }
   .fcard-title-input { flex: 1 1 100%; order: -1; padding-left: 0; }
   .fcard-flex { display: none; }
+}
+
+
+/* ============================================================ 深色界面（只改界面；纸张预览与导出仍是白底） */
+/* 注意：整块限定在 screen 内 —— 否则打印时若勾选「背景图形」，纸张以外的深色会被印进 PDF */
+
+@media screen {
+html[data-theme="dark"] .help-table code { background: #232a38; border-color: #38425a; color: #e3e9f3; }
+html[data-theme="dark"] .help-table th,
+html[data-theme="dark"] .help-table td { border-bottom-color: #2b3342; }
+html[data-theme="dark"] .help-table th { color: #a9b3c4; }
+html[data-theme="dark"] .help-note { color: #93a0b4; }
+
+
+html[data-theme="dark"] body { background: #12161f; color: #d7dee9; }
+html[data-theme="dark"] .appbar,
+html[data-theme="dark"] .statusbar,
+html[data-theme="dark"] .pane,
+html[data-theme="dark"] .mobile-view { background: #1a1f2b; border-color: #2b3342; color: #d7dee9; }
+html[data-theme="dark"] .pane-head,
+html[data-theme="dark"] .fcard-head { background: #202634; border-color: #2b3342; }
+html[data-theme="dark"] .form-view { background: #161b26; }
+html[data-theme="dark"] .preview-scroll { background: #0f1319; }
+html[data-theme="dark"] .fcard,
+html[data-theme="dark"] .fentry,
+html[data-theme="dark"] .modal-card,
+html[data-theme="dark"] .settings-panel { background: #1e2430; border-color: #2b3342; }
+html[data-theme="dark"] .splitter { background: #2b3342; }
+/* 这两个在窄屏/基础样式里是 id 选择器，权重更高，必须也用 id 覆盖 */
+html[data-theme="dark"] #mobileView { background: #1a1f2b; border-color: #2b3342; }
+html[data-theme="dark"] #editor { background: #232a38; color: #e3e9f3; }
+html[data-theme="dark"] #mobileView .mv-btn { background: #232a38; border-color: #38425a; color: #c7d0de; }
+html[data-theme="dark"] #mobileView .mv-btn.is-active,
+html[data-theme="dark"] #mobileView .mv-btn-pdf { background: #2563eb; border-color: #2563eb; color: #fff; }
+html[data-theme="dark"] .mode-tabs { background: #232a38; }
+html[data-theme="dark"] .mode-tab { color: #a9b3c4; }
+html[data-theme="dark"] .mode-tab.is-active { background: #2d3648; color: #fff; }
+html[data-theme="dark"] .brand-text b,
+html[data-theme="dark"] .fcard-title-input,
+html[data-theme="dark"] .fld-input,
+html[data-theme="dark"] .doc-name { color: #e3e9f3; }
+html[data-theme="dark"] .btn,
+html[data-theme="dark"] .tool,
+html[data-theme="dark"] .btn-select,
+html[data-theme="dark"] .ibtn,
+html[data-theme="dark"] .fbtn,
+html[data-theme="dark"] .mv-btn,
+html[data-theme="dark"] .doc-name,
+html[data-theme="dark"] .fld-input,
+html[data-theme="dark"] .fcard-title-input,
+html[data-theme="dark"] #tplSelect,
+html[data-theme="dark"] #fontSelect,
+html[data-theme="dark"] #marginSelect,
+html[data-theme="dark"] #zoomSelect,
+html[data-theme="dark"] #themeSelect,
+html[data-theme="dark"] #photoAlignSelect,
+html[data-theme="dark"] #photoShapeSelect {
+  background: #232a38;
+  color: #e3e9f3;
+  border-color: #38425a;
+}
+html[data-theme="dark"] .btn:hover,
+html[data-theme="dark"] .tool:hover,
+html[data-theme="dark"] .ibtn:hover:not(:disabled),
+html[data-theme="dark"] .fbtn:hover { background: #2b3342; }
+html[data-theme="dark"] .btn-primary,
+html[data-theme="dark"] .fbtn-primary,
+html[data-theme="dark"] .mv-btn.is-active { background: #2563eb; border-color: #2563eb; color: #fff; }
+html[data-theme="dark"] .statusbar,
+html[data-theme="dark"] .statusbar .tip,
+html[data-theme="dark"] .statusbar .ver { color: #93a0b4; }
+html[data-theme="dark"] .gh-banner { background: linear-gradient(90deg, #2a2416, #1e2430); border-color: #4a4526; color: #e0c98a; }
+html[data-theme="dark"] .gh-banner a { color: #e8cf94; }
+html[data-theme="dark"] .gh-link { background: linear-gradient(180deg, #3a2f14, #2e2712); border-color: #6b5a24; color: #e8cf94; }
+html[data-theme="dark"] .toast { background: #2d3648; color: #e3e9f3; }
+html[data-theme="dark"] .page-guide { border-color: #38425a; }
 }

@@ -192,7 +192,8 @@ function handleShutdown(req, res) {
 
 function handleStatic(req, res, pathname) {
   const target = path.join(ROOT, pathname === '/' ? 'index.html' : pathname);
-  if (!target.startsWith(ROOT)) {
+  const rel = path.relative(ROOT, target);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {   // 按目录边界判断，别用字符串前缀
     res.writeHead(403);
     res.end('Forbidden');
     return;

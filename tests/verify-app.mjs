@@ -443,12 +443,19 @@ section('复制 / 撤销重做 / 备份');
 
 section('压到一页 / 双栏');
 {
+  const css = fs.readFileSync(path.join(ROOT, 'assets', 'app.css'), 'utf8');
   check('排版面板有「压到一页」按钮', /id="btnFitPage"/.test(index) && /fitToOnePage/.test(appJs));
   check('压页依次收紧 字号 → 行距 → 页边距 → 证件照，且整步可撤销',
     /fontSize\) - 0\.5/.test(appJs) && /lineHeight\) - 0\.05/.test(appJs) &&
     /MARGIN_PRESETS/.test(appJs) && /if \(cur\.photo\)/.test(appJs) && /pushUndo\(true\)/.test(appJs));
   check('设置是同步应用的（压页循环里要立刻量页数）', /function applySettingsNow/.test(appJs) && /updateGuides\(\)/.test(appJs));
   check('模板下拉里有双栏，且切换时会自动填左栏', /twocol/.test(appJs) && /suggestRail/.test(appJs) && /FR\.railTitles/.test(appJs));
+  check('排版面板里有界面主题（跟随系统 / 浅色 / 深色）',
+    /id="themeSelect"/.test(index) && /applyTheme/.test(appJs) && /prefers-color-scheme: dark/.test(appJs));
+  check('深色只改界面，纸张仍是白底', /html\[data-theme="dark"\]/.test(css) && !/data-theme="dark"[^}]*resume-sheet[^}]*background/.test(css));
+  check('手机底部栏：编辑 / 预览 + 导出 PDF（顶栏导出按钮在窄屏让位）',
+    /id="btnPdfMobile"/.test(index) && /mv-btn-pdf/.test(css) &&
+    /\.appbar-actions #btnPdf \{ display: none; \}/.test(css) && /#mobileView \{[\s\S]{0,120}order: 5;/.test(css));
 }
 
 /* ================================================================== 界面交互（真实点击 / 输入） */
@@ -549,7 +556,18 @@ async function testInteractions() {
     '      var mdBeforeRail = q("#editor").value;',
     '      if (railBtns[0]) railBtns[0].click(); await wait(600);',
     '      var K3 = q("#editor").value !== mdBeforeRail;',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3 }));',
+    '      var themeSel = q("#themeSelect"); themeSel.value = "dark"; fire(themeSel, "change"); await wait(300);',
+    '      var T1 = doc.documentElement.getAttribute("data-theme") === "dark";',
+    '      var T2 = win.getComputedStyle(q(".resume-sheet")).backgroundColor === "rgb(255, 255, 255)";',
+    '      themeSel.value = "light"; fire(themeSel, "change"); await wait(250);',
+    '      var T3 = doc.documentElement.getAttribute("data-theme") === "light";',
+    '      var T4 = win.getComputedStyle(q("#btnPdfMobile")).backgroundColor;',
+    '      var origSet = win.localStorage.setItem;',
+    '      win.localStorage.setItem = function () { throw new Error("quota"); };',
+    '      setSuffix(":entry:0:role", "QUOTA-TEST"); await wait(1400);',
+    '      var S1 = q("#statusSaved").textContent.indexOf("已保存") < 0;',
+    '      win.localStorage.setItem = origSet;',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3, T1: T1, T2: T2, T3: T3, T4: T4, S1: S1 }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -607,6 +625,11 @@ async function testInteractions() {
   check('切成双栏会自动填好左栏配置', res.K1 === true, 'K1=' + res.K1);
   check('切成双栏后章节卡片出现「左栏 / 右栏」按钮', res.K2 === true, 'K2=' + res.K2);
   check('点「左栏 / 右栏」按钮真的改动了文档', res.K3 === true, 'K3=' + res.K3);
+  check('切换到深色后界面变深色（真实点击下拉框）', res.T1 === true, 'T1=' + res.T1);
+  check('深色模式下纸张预览仍是白底', res.T2 === true, 'T2=' + res.T2);
+  check('切回浅色生效', res.T3 === true, 'T3=' + res.T3);
+  check('底部「导出 PDF」是主色按钮（不会被 .mv-btn 盖掉）', res.T4 === 'rgb(37, 99, 235)', 'T4=' + res.T4);
+  check('浏览器存储写不进去时不谎报「已保存」', res.S1 === true, 'S1=' + res.S1);
 }
 
 await testInteractions();

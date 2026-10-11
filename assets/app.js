@@ -130,7 +130,7 @@
   };
 
   var prefs = Object.assign(
-    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit', hideStarBanner: false },
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit', hideStarBanner: false, theme: 'system' },
     readJSON(LS.prefs, {})
   );
 
@@ -162,13 +162,23 @@
     } catch (e) { return dft; }
   }
   function writeJSON(key, value) {
-    try { window.localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* 隐私模式忽略 */ }
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      return false;          // 存储满 / 隐私模式：让调用方知道写失败了，别谎报已保存
+    }
   }
   function readRaw(key) {
     try { return window.localStorage.getItem(key); } catch (e) { return null; }
   }
   function writeRaw(key, value) {
-    try { window.localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+    try {
+      window.localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
   function savePrefs() { writeJSON(LS.prefs, prefs); }
 
@@ -475,16 +485,15 @@
   }
 
   function loadDocs() { return readJSON(LS.docs, {}); }
-  function writeDocs(docs) { writeJSON(LS.docs, docs); }
+  function writeDocs(docs) { return writeJSON(LS.docs, docs); }
 
   function saveCurrent(silent) {
     if (!state.name) state.name = '我的简历';
     var docs = loadDocs();
     docs[state.name] = state.markdown;
-    try {
-      writeDocs(docs);
-      writeRaw(LS.current, state.name);
-    } catch (e) {
+    var okDocs = writeDocs(docs);
+    var okCur = writeRaw(LS.current, state.name);
+    if (!okDocs || !okCur) {
       toast('保存失败：浏览器存储可能已满或被隐私模式限制；建议用「导出备份」或「下载 MD」留一份', 6400);
       return;                       // 保持 dirty，别让状态栏谎报已保存
     }
@@ -642,9 +651,17 @@
     toast('已导出备份：' + Object.keys(docs).length + ' 份简历（换电脑 / 换浏览器都能恢复）');
   }
 
+  var BACKUP_BLOCKED_KEYS = ['__proto__', 'constructor', 'prototype'];
+  var BACKUP_MAX_BYTES = 8 * 1024 * 1024;
+  var PREF_BOOL_KEYS = ['guides', 'autoSave', 'hideStarBanner'];
+
   /** 从备份 JSON 恢复：可「同名覆盖」，也可只补充本地没有的 */
   function importBackup(file) {
     if (!file) return;
+    if (file.size > BACKUP_MAX_BYTES) {
+      toast('备份文件太大（超过 8MB），已取消导入', 5200);
+      return;
+    }
     file.text().then(function (text) {
       var data = null;
       try { data = JSON.parse(text); } catch (e) { data = null; }
@@ -660,22 +677,37 @@
       var docs = loadDocs();
       var added = 0;
       var updated = 0;
+      var skipped = 0;
       var touchedCurrent = false;
       incoming.forEach(function (name) {
-        if (docs[name] == null) { docs[name] = String(data.docs[name]); added++; }
-        else if (overwrite) { docs[name] = String(data.docs[name]); updated++; }
-        else return;
+        // 危险键名与非字符串值一律跳过：避免把 constructor 之类当成"文档"存下来，
+        // 也避免用 "null"/"[object Object]" 这类垃圾覆盖真实简历
+        if (BACKUP_BLOCKED_KEYS.indexOf(name) >= 0) { skipped++; return; }
+        var value = data.docs[name];
+        if (typeof value !== 'string') { skipped++; return; }
+        if (docs[name] == null) { docs[name] = value; added++; }
+        else if (overwrite) { docs[name] = value; updated++; }
+        else { skipped++; return; }
         if (name === state.name) touchedCurrent = true;
       });
       writeDocs(docs);
       refreshDocList();
       if (data.prefs && typeof data.prefs === 'object') {
-        Object.keys(data.prefs).forEach(function (k) { prefs[k] = data.prefs[k]; });
+        // 只接受白名单里的偏好，并做类型 / 范围校验，损坏的备份不至于把界面搞坏
+        var p = data.prefs;
+        if (p.theme === 'system' || p.theme === 'light' || p.theme === 'dark') prefs.theme = p.theme;
+        if (p.mode === 'form' || p.mode === 'markdown') prefs.mode = p.mode;
+        if (p.mobileView === 'edit' || p.mobileView === 'preview') prefs.mobileView = p.mobileView;
+        if (typeof p.editorWidth === 'number' && p.editorWidth >= 280 && p.editorWidth <= 900) prefs.editorWidth = p.editorWidth;
+        if (p.zoom === 'fit' || (typeof p.zoom === 'string' && parseFloat(p.zoom) > 0 && parseFloat(p.zoom) <= 2)) prefs.zoom = p.zoom;
+        PREF_BOOL_KEYS.forEach(function (k) { if (typeof p[k] === 'boolean') prefs[k] = p[k]; });
         savePrefs();
         setEditorMode(prefs.mode);
         applyMobileView();
         applyStarBanner();
+        applyTheme();
         applyZoom();
+        syncControls(state.settings);
       }
       // 备份覆盖了正在看的这份：立刻换成恢复后的内容，
       // 否则内存里还是旧内容，下一次自动保存会把刚恢复的版本又写回去
@@ -686,7 +718,7 @@
         refreshForm();
       }
       toast('已恢复：新增 ' + added + ' 份' + (updated ? '，覆盖 ' + updated + ' 份' : '') +
-        (added + updated === 0 ? '（都跳过了）' : '') +
+        (skipped ? '，跳过 ' + skipped + ' 项' : '') +
         (touchedCurrent ? '；当前文档已换成恢复后的内容' : ''));
     }).catch(function () { toast('读取备份失败'); });
   }
@@ -829,7 +861,14 @@
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
 
-        var dataUri = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+        var dataUri;
+        try {
+          dataUri = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+        } catch (err) {
+          toast('这张图片处理失败了，换一张试试（建议 JPG / PNG）', 5200);
+          return;
+        }
+        if (!dataUri) { toast('这张图片处理失败了，换一张试试'); return; }
         patchSettings({ photo: dataUri, photoSize: state.settings.photoSize || '26mm' });
         refreshForm();
         toast('已插入证件照：' + w + '×' + h + '，约 ' + Math.round(dataUri.length / 1024) +
@@ -968,6 +1007,25 @@
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 界面主题 */
+
+  function applyTheme() {
+    var mode = prefs.theme || 'system';
+    var dark = mode === 'dark' ||
+      (mode === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    var sel = $('themeSelect');
+    if (sel) sel.value = mode;
+  }
+
+  function bindSystemTheme() {
+    if (!window.matchMedia) return;
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var onChange = function () { if ((prefs.theme || 'system') === 'system') applyTheme(); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  }
+
   /* ------------------------------------------------------------ 版本号 */
 
   var APP_VERSION = (function () {
@@ -1091,6 +1149,7 @@
       if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
       ev.preventDefault();
       var f = ev.dataTransfer.files[0];
+      if (ev.dataTransfer.files.length > 1) toast('一次只导入一个文件，已取第一个：' + f.name, 4200);
       if (/\.(md|markdown|txt)$/i.test(f.name)) importFile(f);
       else if (/\.json$/i.test(f.name)) importBackup(f);
       else if (/^image\//.test(f.type)) insertPhoto(f);
@@ -1112,6 +1171,7 @@
     }
 
     $('btnPdf').addEventListener('click', exportPdf);
+    $('btnPdfMobile').addEventListener('click', exportPdf);
     $('btnDownload').addEventListener('click', downloadMD);
     $('btnSaveDisk').addEventListener('click', saveToDisk);
     $('btnNew').addEventListener('click', newDoc);
@@ -1182,6 +1242,11 @@
     });
     $('btnFitPage').addEventListener('click', fitToOnePage);
     $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });
+    $('themeSelect').addEventListener('change', function () {
+      prefs.theme = this.value;
+      savePrefs();
+      applyTheme();
+    });
     $('accentInput').addEventListener('input', function () { patchSettings({ accent: this.value }); });
     $('fontSizeInput').addEventListener('input', function () { patchSettings({ fontSize: parseFloat(this.value) + 'px' }); });
     $('lineHeightInput').addEventListener('input', function () { patchSettings({ lineHeight: String(parseFloat(this.value)) }); });
@@ -1370,6 +1435,8 @@
     setEditorMode(prefs.mode);
     applyMobileView();
     applyStarBanner();
+    applyTheme();
+    bindSystemTheme();
     applyVersion();
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 

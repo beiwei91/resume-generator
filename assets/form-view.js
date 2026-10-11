@@ -260,11 +260,18 @@
             if (api.notice) api.notice('这个章节标题里有逗号 / 顿号，没法放进左栏：先把标题里的分隔符改掉（例如「技能·证书」）');
             return;
           }
+          var blockedByAlias = false;
           structural(function (md) {
             var now = Form.walk(md).sections[si];
             if (!now) return null;
-            return Form.setRail(md, now.title, !Form.inRail(md, now.title));
+            var want = !Form.inRail(md, now.title);
+            var out = Form.setRail(md, now.title, want);
+            if (out === md && !want) blockedByAlias = true;     // 想移出却被别名保护挡住
+            return out;
           });
+          if (blockedByAlias && api.notice) {
+            api.notice('这个章节是靠文首配置里的别名进左栏的（例如 rail 写「技能」而章节叫「技能清单」）：请直接改 rail 那一行，或把章节标题改成与配置一致');
+          }
         });
         head.appendChild(railBtn);
       }

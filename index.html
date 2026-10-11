@@ -4,13 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>简历生成器 · Markdown → PDF</title>
-<link rel="stylesheet" href="assets/resume.css?v=1.6.0">
-<link rel="stylesheet" href="assets/app.css?v=1.6.0">
+<script>
+/* 首屏就定好主题，避免「跟随系统 + 深色」时先闪一下浅色界面 */
+try {
+  var p = JSON.parse(localStorage.getItem('resume-gen:prefs') || '{}');
+  var t = p.theme || 'system';
+  var dark = t === 'dark' || (t === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+} catch (e) { /* 读不到偏好就按浅色 */ }
+</script>
+<link rel="stylesheet" href="assets/resume.css?v=1.7.0">
+<link rel="stylesheet" href="assets/app.css?v=1.7.0">
 <meta name="application-name" content="简历生成器">
 <!-- 版本号：静态资源都带 ?v= 查询串，改版本号即可让浏览器 / CDN 立刻取到新文件。
      发布前记得把这里和下面 4 处脚本引用的版本号一起改掉。 -->
-<meta name="app-version" content="1.6.0">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=1.6.0">
+<meta name="app-version" content="1.7.0">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=1.7.0">
 <style id="printPageStyle">@page { size: A4; }</style>
 </head>
 <body>
@@ -69,6 +78,7 @@
   <div class="mobile-view" id="mobileView">
     <button class="mv-btn is-active" type="button" data-view="edit">✎ 编辑</button>
     <button class="mv-btn" type="button" data-view="preview">👁 预览</button>
+    <button class="mv-btn mv-btn-pdf" type="button" id="btnPdfMobile" title="导出 PDF（打印对话框里选「另存为 PDF」并取消页眉页脚）">导出 PDF</button>
   </div>
 
   <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown" hidden>
@@ -145,6 +155,14 @@
         <div class="field">
           <button id="btnFitPage" class="btn" type="button"
             title="自动收紧字号 / 行距 / 页边距 / 证件照宽度，把内容压进一页（可撤销）">压到一页</button>
+        </div>
+        <div class="field">
+          <label for="themeSelect">界面主题</label>
+          <select id="themeSelect">
+            <option value="system">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
         </div>
         <div class="field">
           <label for="zoomSelect">缩放</label>
@@ -244,9 +262,9 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="assets/resume-md.js?v=1.6.0"></script>
-<script src="assets/resume-form.js?v=1.6.0"></script>
-<script src="assets/form-view.js?v=1.6.0"></script>
-<script src="assets/app.js?v=1.6.0"></script>
+<script src="assets/resume-md.js?v=1.7.0"></script>
+<script src="assets/resume-form.js?v=1.7.0"></script>
+<script src="assets/form-view.js?v=1.7.0"></script>
+<script src="assets/app.js?v=1.7.0"></script>
 </body>
 </html>

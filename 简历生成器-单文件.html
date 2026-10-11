@@ -8,8 +8,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>简历生成器 · Markdown → PDF</title>
+<script>
+/* 首屏就定好主题，避免「跟随系统 + 深色」时先闪一下浅色界面 */
+try {
+  var p = JSON.parse(localStorage.getItem('resume-gen:prefs') || '{}');
+  var t = p.theme || 'system';
+  var dark = t === 'dark' || (t === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+} catch (e) { /* 读不到偏好就按浅色 */ }
+</script>
 <style>
-/* ==== assets/resume.css?v=1.6.0 ==== */
+/* ==== assets/resume.css?v=1.7.0 ==== */
 /*!
  * resume.css —— 简历纸张样式（预览与 PDF 共用，不含编辑器界面样式）
  * 变量：--r-accent / --r-font-size / --r-line-height / --r-margin-y / --r-margin-x
@@ -494,7 +503,7 @@
 }
 </style>
 <style>
-/* ==== assets/app.css?v=1.6.0 ==== */
+/* ==== assets/app.css?v=1.7.0 ==== */
 /*!
  * app.css —— 编辑器 / 预览工作台界面样式（只作用于界面，不影响纸张与打印结果）
  */
@@ -1151,12 +1160,27 @@ body.drop-active::after {
   .appbar.tools-open .appbar-main { display: flex; }
 
   /* 编辑 / 预览 切换：窄屏一次只显示一个面板 */
+  /* 底部操作栏：编辑 / 预览 + 导出 PDF，放到拇指够得到的位置 */
+  .appbar { order: 1; }
+  .gh-banner { order: 2; }
+  .workspace { order: 3; }
+  .statusbar { order: 4; }
   #mobileView {
+    order: 5;
     display: flex;
     gap: 6px;
-    padding: 6px 10px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
     background: #fff;
-    border-bottom: 1px solid #dfe4ec;
+    border-top: 1px solid #dfe4ec;
+  }
+  .appbar-actions #btnPdf { display: none; }        /* 顶栏的导出让位给底部栏 */
+  #mobileView .mv-btn-pdf {
+    flex: 0 0 auto;
+    padding: 7px 14px;
+    font-weight: 600;
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
   }
   .mv-btn {
     flex: 1;
@@ -1212,11 +1236,87 @@ body.drop-active::after {
   .fcard-title-input { flex: 1 1 100%; order: -1; padding-left: 0; }
   .fcard-flex { display: none; }
 }
+
+
+/* ============================================================ 深色界面（只改界面；纸张预览与导出仍是白底） */
+/* 注意：整块限定在 screen 内 —— 否则打印时若勾选「背景图形」，纸张以外的深色会被印进 PDF */
+
+@media screen {
+html[data-theme="dark"] .help-table code { background: #232a38; border-color: #38425a; color: #e3e9f3; }
+html[data-theme="dark"] .help-table th,
+html[data-theme="dark"] .help-table td { border-bottom-color: #2b3342; }
+html[data-theme="dark"] .help-table th { color: #a9b3c4; }
+html[data-theme="dark"] .help-note { color: #93a0b4; }
+
+
+html[data-theme="dark"] body { background: #12161f; color: #d7dee9; }
+html[data-theme="dark"] .appbar,
+html[data-theme="dark"] .statusbar,
+html[data-theme="dark"] .pane,
+html[data-theme="dark"] .mobile-view { background: #1a1f2b; border-color: #2b3342; color: #d7dee9; }
+html[data-theme="dark"] .pane-head,
+html[data-theme="dark"] .fcard-head { background: #202634; border-color: #2b3342; }
+html[data-theme="dark"] .form-view { background: #161b26; }
+html[data-theme="dark"] .preview-scroll { background: #0f1319; }
+html[data-theme="dark"] .fcard,
+html[data-theme="dark"] .fentry,
+html[data-theme="dark"] .modal-card,
+html[data-theme="dark"] .settings-panel { background: #1e2430; border-color: #2b3342; }
+html[data-theme="dark"] .splitter { background: #2b3342; }
+/* 这两个在窄屏/基础样式里是 id 选择器，权重更高，必须也用 id 覆盖 */
+html[data-theme="dark"] #mobileView { background: #1a1f2b; border-color: #2b3342; }
+html[data-theme="dark"] #editor { background: #232a38; color: #e3e9f3; }
+html[data-theme="dark"] #mobileView .mv-btn { background: #232a38; border-color: #38425a; color: #c7d0de; }
+html[data-theme="dark"] #mobileView .mv-btn.is-active,
+html[data-theme="dark"] #mobileView .mv-btn-pdf { background: #2563eb; border-color: #2563eb; color: #fff; }
+html[data-theme="dark"] .mode-tabs { background: #232a38; }
+html[data-theme="dark"] .mode-tab { color: #a9b3c4; }
+html[data-theme="dark"] .mode-tab.is-active { background: #2d3648; color: #fff; }
+html[data-theme="dark"] .brand-text b,
+html[data-theme="dark"] .fcard-title-input,
+html[data-theme="dark"] .fld-input,
+html[data-theme="dark"] .doc-name { color: #e3e9f3; }
+html[data-theme="dark"] .btn,
+html[data-theme="dark"] .tool,
+html[data-theme="dark"] .btn-select,
+html[data-theme="dark"] .ibtn,
+html[data-theme="dark"] .fbtn,
+html[data-theme="dark"] .mv-btn,
+html[data-theme="dark"] .doc-name,
+html[data-theme="dark"] .fld-input,
+html[data-theme="dark"] .fcard-title-input,
+html[data-theme="dark"] #tplSelect,
+html[data-theme="dark"] #fontSelect,
+html[data-theme="dark"] #marginSelect,
+html[data-theme="dark"] #zoomSelect,
+html[data-theme="dark"] #themeSelect,
+html[data-theme="dark"] #photoAlignSelect,
+html[data-theme="dark"] #photoShapeSelect {
+  background: #232a38;
+  color: #e3e9f3;
+  border-color: #38425a;
+}
+html[data-theme="dark"] .btn:hover,
+html[data-theme="dark"] .tool:hover,
+html[data-theme="dark"] .ibtn:hover:not(:disabled),
+html[data-theme="dark"] .fbtn:hover { background: #2b3342; }
+html[data-theme="dark"] .btn-primary,
+html[data-theme="dark"] .fbtn-primary,
+html[data-theme="dark"] .mv-btn.is-active { background: #2563eb; border-color: #2563eb; color: #fff; }
+html[data-theme="dark"] .statusbar,
+html[data-theme="dark"] .statusbar .tip,
+html[data-theme="dark"] .statusbar .ver { color: #93a0b4; }
+html[data-theme="dark"] .gh-banner { background: linear-gradient(90deg, #2a2416, #1e2430); border-color: #4a4526; color: #e0c98a; }
+html[data-theme="dark"] .gh-banner a { color: #e8cf94; }
+html[data-theme="dark"] .gh-link { background: linear-gradient(180deg, #3a2f14, #2e2712); border-color: #6b5a24; color: #e8cf94; }
+html[data-theme="dark"] .toast { background: #2d3648; color: #e3e9f3; }
+html[data-theme="dark"] .page-guide { border-color: #38425a; }
+}
 </style>
 <meta name="application-name" content="简历生成器">
 <!-- 版本号：静态资源都带 ?v= 查询串，改版本号即可让浏览器 / CDN 立刻取到新文件。
      发布前记得把这里和下面 4 处脚本引用的版本号一起改掉。 -->
-<meta name="app-version" content="1.6.0">
+<meta name="app-version" content="1.7.0">
 <link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,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">
 <style id="printPageStyle">@page { size: A4; }</style>
 </head>
@@ -1276,6 +1376,7 @@ body.drop-active::after {
   <div class="mobile-view" id="mobileView">
     <button class="mv-btn is-active" type="button" data-view="edit">✎ 编辑</button>
     <button class="mv-btn" type="button" data-view="preview">👁 预览</button>
+    <button class="mv-btn mv-btn-pdf" type="button" id="btnPdfMobile" title="导出 PDF（打印对话框里选「另存为 PDF」并取消页眉页脚）">导出 PDF</button>
   </div>
 
   <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown" hidden>
@@ -1352,6 +1453,14 @@ body.drop-active::after {
         <div class="field">
           <button id="btnFitPage" class="btn" type="button"
             title="自动收紧字号 / 行距 / 页边距 / 证件照宽度，把内容压进一页（可撤销）">压到一页</button>
+        </div>
+        <div class="field">
+          <label for="themeSelect">界面主题</label>
+          <select id="themeSelect">
+            <option value="system">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
         </div>
         <div class="field">
           <label for="zoomSelect">缩放</label>
@@ -1452,7 +1561,7 @@ body.drop-active::after {
 <div class="toast" id="toast" hidden></div>
 
 <script>
-/* ==== assets/resume-md.js?v=1.6.0 ==== */
+/* ==== assets/resume-md.js?v=1.7.0 ==== */
 /*!
  * resume-md.js —— 轻量 Markdown → 简历 HTML 渲染引擎（零依赖，浏览器 / Node 通用）
  *
@@ -2126,7 +2235,7 @@ body.drop-active::after {
 });
 </script>
 <script>
-/* ==== assets/resume-form.js?v=1.6.0 ==== */
+/* ==== assets/resume-form.js?v=1.7.0 ==== */
 /*!
  * resume-form.js —— 表单模式的「纯逻辑层」：把 Markdown 拆成模块，并按块改写
  *
@@ -2874,7 +2983,7 @@ body.drop-active::after {
 });
 </script>
 <script>
-/* ==== assets/form-view.js?v=1.6.0 ==== */
+/* ==== assets/form-view.js?v=1.7.0 ==== */
 /*!
  * form-view.js —— 表单模式的界面层：把模块模型渲染成可折叠、可增删排序的表单
  *
@@ -3137,11 +3246,18 @@ body.drop-active::after {
             if (api.notice) api.notice('这个章节标题里有逗号 / 顿号，没法放进左栏：先把标题里的分隔符改掉（例如「技能·证书」）');
             return;
           }
+          var blockedByAlias = false;
           structural(function (md) {
             var now = Form.walk(md).sections[si];
             if (!now) return null;
-            return Form.setRail(md, now.title, !Form.inRail(md, now.title));
+            var want = !Form.inRail(md, now.title);
+            var out = Form.setRail(md, now.title, want);
+            if (out === md && !want) blockedByAlias = true;     // 想移出却被别名保护挡住
+            return out;
           });
+          if (blockedByAlias && api.notice) {
+            api.notice('这个章节是靠文首配置里的别名进左栏的（例如 rail 写「技能」而章节叫「技能清单」）：请直接改 rail 那一行，或把章节标题改成与配置一致');
+          }
         });
         head.appendChild(railBtn);
       }
@@ -3441,7 +3557,7 @@ body.drop-active::after {
 })(window);
 </script>
 <script>
-/* ==== assets/app.js?v=1.6.0 ==== */
+/* ==== assets/app.js?v=1.7.0 ==== */
 /*!
  * app.js —— 简历生成器工作台逻辑
  * 数据流：Markdown 文本（含文首配置块）是唯一数据源 → 解析渲染 → 预览 / 打印导出
@@ -3574,7 +3690,7 @@ body.drop-active::after {
   };
 
   var prefs = Object.assign(
-    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit', hideStarBanner: false },
+    { zoom: 'fit', guides: true, editorWidth: 460, autoSave: true, helpSeen: false, mode: 'form', mobileView: 'edit', hideStarBanner: false, theme: 'system' },
     readJSON(LS.prefs, {})
   );
 
@@ -3606,13 +3722,23 @@ body.drop-active::after {
     } catch (e) { return dft; }
   }
   function writeJSON(key, value) {
-    try { window.localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* 隐私模式忽略 */ }
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      return false;          // 存储满 / 隐私模式：让调用方知道写失败了，别谎报已保存
+    }
   }
   function readRaw(key) {
     try { return window.localStorage.getItem(key); } catch (e) { return null; }
   }
   function writeRaw(key, value) {
-    try { window.localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+    try {
+      window.localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
   function savePrefs() { writeJSON(LS.prefs, prefs); }
 
@@ -3919,16 +4045,15 @@ body.drop-active::after {
   }
 
   function loadDocs() { return readJSON(LS.docs, {}); }
-  function writeDocs(docs) { writeJSON(LS.docs, docs); }
+  function writeDocs(docs) { return writeJSON(LS.docs, docs); }
 
   function saveCurrent(silent) {
     if (!state.name) state.name = '我的简历';
     var docs = loadDocs();
     docs[state.name] = state.markdown;
-    try {
-      writeDocs(docs);
-      writeRaw(LS.current, state.name);
-    } catch (e) {
+    var okDocs = writeDocs(docs);
+    var okCur = writeRaw(LS.current, state.name);
+    if (!okDocs || !okCur) {
       toast('保存失败：浏览器存储可能已满或被隐私模式限制；建议用「导出备份」或「下载 MD」留一份', 6400);
       return;                       // 保持 dirty，别让状态栏谎报已保存
     }
@@ -4086,9 +4211,17 @@ body.drop-active::after {
     toast('已导出备份：' + Object.keys(docs).length + ' 份简历（换电脑 / 换浏览器都能恢复）');
   }
 
+  var BACKUP_BLOCKED_KEYS = ['__proto__', 'constructor', 'prototype'];
+  var BACKUP_MAX_BYTES = 8 * 1024 * 1024;
+  var PREF_BOOL_KEYS = ['guides', 'autoSave', 'hideStarBanner'];
+
   /** 从备份 JSON 恢复：可「同名覆盖」，也可只补充本地没有的 */
   function importBackup(file) {
     if (!file) return;
+    if (file.size > BACKUP_MAX_BYTES) {
+      toast('备份文件太大（超过 8MB），已取消导入', 5200);
+      return;
+    }
     file.text().then(function (text) {
       var data = null;
       try { data = JSON.parse(text); } catch (e) { data = null; }
@@ -4104,22 +4237,37 @@ body.drop-active::after {
       var docs = loadDocs();
       var added = 0;
       var updated = 0;
+      var skipped = 0;
       var touchedCurrent = false;
       incoming.forEach(function (name) {
-        if (docs[name] == null) { docs[name] = String(data.docs[name]); added++; }
-        else if (overwrite) { docs[name] = String(data.docs[name]); updated++; }
-        else return;
+        // 危险键名与非字符串值一律跳过：避免把 constructor 之类当成"文档"存下来，
+        // 也避免用 "null"/"[object Object]" 这类垃圾覆盖真实简历
+        if (BACKUP_BLOCKED_KEYS.indexOf(name) >= 0) { skipped++; return; }
+        var value = data.docs[name];
+        if (typeof value !== 'string') { skipped++; return; }
+        if (docs[name] == null) { docs[name] = value; added++; }
+        else if (overwrite) { docs[name] = value; updated++; }
+        else { skipped++; return; }
         if (name === state.name) touchedCurrent = true;
       });
       writeDocs(docs);
       refreshDocList();
       if (data.prefs && typeof data.prefs === 'object') {
-        Object.keys(data.prefs).forEach(function (k) { prefs[k] = data.prefs[k]; });
+        // 只接受白名单里的偏好，并做类型 / 范围校验，损坏的备份不至于把界面搞坏
+        var p = data.prefs;
+        if (p.theme === 'system' || p.theme === 'light' || p.theme === 'dark') prefs.theme = p.theme;
+        if (p.mode === 'form' || p.mode === 'markdown') prefs.mode = p.mode;
+        if (p.mobileView === 'edit' || p.mobileView === 'preview') prefs.mobileView = p.mobileView;
+        if (typeof p.editorWidth === 'number' && p.editorWidth >= 280 && p.editorWidth <= 900) prefs.editorWidth = p.editorWidth;
+        if (p.zoom === 'fit' || (typeof p.zoom === 'string' && parseFloat(p.zoom) > 0 && parseFloat(p.zoom) <= 2)) prefs.zoom = p.zoom;
+        PREF_BOOL_KEYS.forEach(function (k) { if (typeof p[k] === 'boolean') prefs[k] = p[k]; });
         savePrefs();
         setEditorMode(prefs.mode);
         applyMobileView();
         applyStarBanner();
+        applyTheme();
         applyZoom();
+        syncControls(state.settings);
       }
       // 备份覆盖了正在看的这份：立刻换成恢复后的内容，
       // 否则内存里还是旧内容，下一次自动保存会把刚恢复的版本又写回去
@@ -4130,7 +4278,7 @@ body.drop-active::after {
         refreshForm();
       }
       toast('已恢复：新增 ' + added + ' 份' + (updated ? '，覆盖 ' + updated + ' 份' : '') +
-        (added + updated === 0 ? '（都跳过了）' : '') +
+        (skipped ? '，跳过 ' + skipped + ' 项' : '') +
         (touchedCurrent ? '；当前文档已换成恢复后的内容' : ''));
     }).catch(function () { toast('读取备份失败'); });
   }
@@ -4273,7 +4421,14 @@ body.drop-active::after {
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
 
-        var dataUri = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+        var dataUri;
+        try {
+          dataUri = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+        } catch (err) {
+          toast('这张图片处理失败了，换一张试试（建议 JPG / PNG）', 5200);
+          return;
+        }
+        if (!dataUri) { toast('这张图片处理失败了，换一张试试'); return; }
         patchSettings({ photo: dataUri, photoSize: state.settings.photoSize || '26mm' });
         refreshForm();
         toast('已插入证件照：' + w + '×' + h + '，约 ' + Math.round(dataUri.length / 1024) +
@@ -4412,6 +4567,25 @@ body.drop-active::after {
     else editor.focus();
   }
 
+  /* ------------------------------------------------------------ 界面主题 */
+
+  function applyTheme() {
+    var mode = prefs.theme || 'system';
+    var dark = mode === 'dark' ||
+      (mode === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    var sel = $('themeSelect');
+    if (sel) sel.value = mode;
+  }
+
+  function bindSystemTheme() {
+    if (!window.matchMedia) return;
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var onChange = function () { if ((prefs.theme || 'system') === 'system') applyTheme(); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  }
+
   /* ------------------------------------------------------------ 版本号 */
 
   var APP_VERSION = (function () {
@@ -4535,6 +4709,7 @@ body.drop-active::after {
       if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
       ev.preventDefault();
       var f = ev.dataTransfer.files[0];
+      if (ev.dataTransfer.files.length > 1) toast('一次只导入一个文件，已取第一个：' + f.name, 4200);
       if (/\.(md|markdown|txt)$/i.test(f.name)) importFile(f);
       else if (/\.json$/i.test(f.name)) importBackup(f);
       else if (/^image\//.test(f.type)) insertPhoto(f);
@@ -4556,6 +4731,7 @@ body.drop-active::after {
     }
 
     $('btnPdf').addEventListener('click', exportPdf);
+    $('btnPdfMobile').addEventListener('click', exportPdf);
     $('btnDownload').addEventListener('click', downloadMD);
     $('btnSaveDisk').addEventListener('click', saveToDisk);
     $('btnNew').addEventListener('click', newDoc);
@@ -4626,6 +4802,11 @@ body.drop-active::after {
     });
     $('btnFitPage').addEventListener('click', fitToOnePage);
     $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });
+    $('themeSelect').addEventListener('change', function () {
+      prefs.theme = this.value;
+      savePrefs();
+      applyTheme();
+    });
     $('accentInput').addEventListener('input', function () { patchSettings({ accent: this.value }); });
     $('fontSizeInput').addEventListener('input', function () { patchSettings({ fontSize: parseFloat(this.value) + 'px' }); });
     $('lineHeightInput').addEventListener('input', function () { patchSettings({ lineHeight: String(parseFloat(this.value)) }); });
@@ -4814,6 +4995,8 @@ body.drop-active::after {
     setEditorMode(prefs.mode);
     applyMobileView();
     applyStarBanner();
+    applyTheme();
+    bindSystemTheme();
     applyVersion();
     $('statusSaved').textContent = loadDocs()[state.name] != null ? '已加载' : '未保存';
 
