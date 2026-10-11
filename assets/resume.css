@@ -405,12 +405,41 @@
 .resume-sheet.tpl-twocol .r-cols::after { content: ""; display: block; clear: both; }
 .resume-sheet.tpl-twocol .r-rail {
   float: left;
-  width: 33%;
+  box-sizing: border-box;       /* 导出文档里没有全局 border-box，这里显式声明，保证两种场景宽度一致 */
+  width: 36%;
   margin-right: 6mm;
   padding-right: 5mm;
   border-right: 1px solid var(--r-line);
   font-size: .95em;
+  overflow-wrap: anywhere;      /* 技术名词很长时允许断行，不要把列挤爆 */
 }
+
+/* 右栏让出左栏的宽度：否则正文会绕到左栏下方，看起来像「文字漏出去」 */
+.resume-sheet.tpl-twocol .r-cols.has-rail .r-main { margin-left: calc(36% + 6mm); }
+
+/* 左栏窄，标题与职位各占一行：点号（由 .r-entry-role::before 生成）就不要了 */
+.resume-sheet.tpl-twocol .r-rail .r-entry-role::before { content: none; }
+
+/* 左栏：条目改成上下堆叠（标题、时间各占一行），窄列里才排得开 */
+.resume-sheet.tpl-twocol .r-rail .r-entry-head { display: block; }
+.resume-sheet.tpl-twocol .r-rail .r-entry-title { display: block; }
+.resume-sheet.tpl-twocol .r-rail .r-entry-role { display: block; font-weight: 500; margin-left: 0; }
+.resume-sheet.tpl-twocol .r-rail .r-entry-meta {
+  display: block;
+  text-align: left;
+  margin-top: 1px;
+  padding-left: 0;
+  white-space: normal;          /* 基础样式是 nowrap，窄列里会溢出 */
+  color: #6b7280;
+}
+.resume-sheet.tpl-twocol .r-rail .r-entry-sub { margin-top: 1px; }
+.resume-sheet.tpl-twocol .r-rail .r-quote { margin: 0; }
+
+/* 左栏里的表格已由渲染端改成「标签：值」堆叠 */
+.r-pairs { margin: 2px 0 0; }
+.r-pair { margin: 0 0 3px; line-height: 1.5; }
+.r-pair-k { color: #6b7280; margin-right: 4px; }
+.r-pair-v { color: inherit; }
 .resume-sheet.tpl-twocol .r-rail .r-section { margin-top: 12px; }
 .resume-sheet.tpl-twocol .r-rail .r-section-title {
   border: 0;

@@ -355,6 +355,17 @@ fs.rmSync(shotProfile, { recursive: true, force: true });
 chrome(['--screenshot=' + shotApp, '--window-size=1600,1000', '--force-device-scale-factor=1.5', pathToFileURL(path.join(ROOT, 'index.html')).href], shotProfile);
 check('界面截图生成', fs.existsSync(shotApp), path.relative(ROOT, shotApp));
 
+console.log('\n双栏（rail）打印');
+{
+  const railMd = sample.replace(/^# /m, '---\ntemplate: twocol\nrail: 技能清单, 教育背景\n---\n\n# ')
+    .replace(/\n## 个人简介/, '\n## 附加信息\n\n' + Array.from({ length: 40 }, (_, i) => '- 补充条目 ' + (i + 1)).join('\n') + '\n\n## 个人简介');
+  const pdf = renderPdf('twocol-rail', railMd, {});
+  const st = pdf ? pageMeta(pdf) : null;
+  check('带左栏的双栏也能导出标准 A4（不是退化成单栏）',
+    !!pdf && st && st.pages >= 1 && Math.abs(st.box.w - A4.w) < 2 && Math.abs(st.box.h - A4.h) < 2,
+    st ? st.pages + ' 页，' + st.box.w.toFixed(1) + ' × ' + st.box.h.toFixed(1) + ' pt' : '失败');
+}
+
 console.log('\n应用界面打印（界面元素不能跟正文一起导出）');
 {
   // 打印时的页盒宽约 794px（A4），会命中「窄屏」媒体查询 —— 曾经因此把

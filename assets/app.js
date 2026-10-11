@@ -300,7 +300,7 @@
       minimal: '极简（无框线）',
       banner: '色块（整条标题栏）',
       sidebar: '侧栏标题（左侧留白栏）',
-      twocol: '双栏（左栏由 rail 配置指定）'
+      twocol: '双栏（自动分左右栏）'
     };
     MD.TEMPLATES.forEach(function (t) {
       var o = document.createElement('option');

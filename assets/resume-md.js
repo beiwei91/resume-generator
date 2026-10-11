@@ -442,7 +442,29 @@
     return html + '</' + tag + '>';
   }
 
-  function renderTable(table) {
+  /** 左栏是窄列：把两列表格改成「标签：值」上下堆叠，比硬塞表格可读得多 */
+  function renderTableAsPairs(table) {
+    var cols = (table.head || []).length;
+    (table.rows || []).forEach(function (r) { cols = Math.max(cols, (r || []).length); });
+    var rows = (table.rows || []).filter(function (r) {
+      return (r || []).some(function (c) { return String(c == null ? '' : c).trim(); });
+    });
+    if (!rows.length) return '';
+    var html = '<div class="r-pairs">';
+    rows.forEach(function (row) {
+      var cells = (row || []).map(function (c) { return String(c == null ? '' : c).trim(); });
+      // 两列以上：第一格当标签，其余全部并入值（用 · 连接）——绝不丢列
+      var k = (cols > 1 && cells.length > 1) ? cells[0] : '';
+      var v = (k ? cells.slice(1) : cells).filter(Boolean).join(' · ');
+      html += '<p class="r-pair">';
+      if (k) html += '<span class="r-pair-k">' + inline(k) + '</span>';
+      html += '<span class="r-pair-v">' + inline(v) + '</span></p>';
+    });
+    return html + '</div>';
+  }
+
+  function renderTable(table, opts) {
+    if (opts && opts.rail) return renderTableAsPairs(table);
     var html = '<table class="r-table"><thead><tr>';
     table.head.forEach(function (c, idx) {
       html += '<th class="ta-' + (table.aligns[idx] || 'left') + '">' + inline(c) + '</th>';
@@ -450,15 +472,18 @@
     html += '</tr></thead><tbody>';
     table.rows.forEach(function (row) {
       html += '<tr>';
-      table.head.forEach(function (_, idx) {
-        html += '<td class="ta-' + (table.aligns[idx] || 'left') + '">' + inline(row[idx] == null ? '' : row[idx]) + '</td>';
-      });
+      // 以「表头列数」与「本行列数」的较大者渲染：数据行多出来的单元格不再被丢掉
+      var n = Math.max(table.head.length, (row || []).length);
+      for (var idx = 0; idx < n; idx++) {
+        var align = idx < table.aligns.length ? table.aligns[idx] : (table.aligns[table.aligns.length - 1] || 'left');
+        html += '<td class="ta-' + align + '">' + inline(row[idx] == null ? '' : row[idx]) + '</td>';
+      }
       html += '</tr>';
     });
     return html + '</tbody></table>';
   }
 
-  function renderEntry(entry) {
+  function renderEntry(entry, opts) {
     var html = '<div class="r-entry">';
     html += '<div class="r-entry-head"><h3 class="r-entry-title">' + inline(entry.title);
     if (entry.subtitle) html += '<span class="r-entry-role">' + inline(entry.subtitle) + '</span>';
@@ -466,27 +491,27 @@
     if (entry.meta) html += '<span class="r-entry-meta">' + inline(entry.meta) + '</span>';
     html += '</div>';
     if (entry.sub) html += '<p class="r-entry-sub">' + inline(entry.sub) + '</p>';
-    html += renderChildren(entry.children);
+    html += renderChildren(entry.children, opts);
     return html + '</div>';
   }
 
-  function renderChildren(nodes) {
+  function renderChildren(nodes, opts) {
     var html = '';
     (nodes || []).forEach(function (node) {
       switch (node.type) {
         case 'section':
-          if (!node.title) { html += renderChildren(node.children); break; }
+          if (!node.title) { html += renderChildren(node.children, opts); break; }
           html += '<section class="r-section"><h2 class="r-section-title"><span>' + inline(node.title) + '</span></h2>' +
-            renderChildren(node.children) + '</section>';
+            renderChildren(node.children, opts) + '</section>';
           break;
         case 'entry':
-          html += renderEntry(node);
+          html += renderEntry(node, opts);
           break;
         case 'list':
           html += renderList(node);
           break;
         case 'table':
-          html += renderTable(node);
+          html += renderTable(node, opts);
           break;
         case 'quote':
           html += '<blockquote class="r-quote">' + inline(node.text) + '</blockquote>';
@@ -587,8 +612,8 @@
       (doc.children || []).forEach(function (child) {
         (railHit(railTitles, child.title) ? railKids : mainKids).push(child);
       });
-      body = '<div class="r-cols">' +
-        (railKids.length ? '<aside class="r-rail">' + renderChildren(railKids) + '</aside>' : '') +
+      body = '<div class="r-cols' + (railKids.length ? ' has-rail' : '') + '">' +
+        (railKids.length ? '<aside class="r-rail">' + renderChildren(railKids, { rail: true }) + '</aside>' : '') +
         '<div class="r-main">' + renderChildren(mainKids) + '</div>' +
         '</div>';
     } else {

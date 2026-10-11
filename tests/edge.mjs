@@ -605,6 +605,54 @@ section('左栏与撤销：代码审查提出的回归场景');
   check('恢复备份会换掉当前文档并应用偏好', /touchedCurrent/.test(appJs) && /data\.prefs/.test(appJs));
 }
 
+section('双栏左栏排版：表格与条目不硬塞窄列');
+{
+  const md = '---\ntemplate: twocol\nrail: 技能清单, 教育背景\n---\n\n# 甲\n\n前端 | 138\n\n' +
+    '## 技能清单\n\n| 技能 | 说明 |\n| --- | --- |\n| 语言 | TypeScript、JavaScript（ES2023） |\n| 方向 | 工程化与性能优化 |\n\n' +
+    '## 教育背景\n\n### 某某大学 · 计算机科学 | 2015.09 – 2019.06\n\n- 主修课程\n\n' +
+    '## 工作经历\n\n### 某公司 · 前端\n\n- 做事\n';
+  const html = MD.renderResume(md).html;
+  const rail = html.slice(html.indexOf('class="r-rail"'), html.indexOf('class="r-main"'));
+  const main = html.slice(html.indexOf('class="r-main"'));
+  check('左栏里的表格改成「标签：值」堆叠，不再塞表格',
+    /class="r-pairs"/.test(rail) && !/r-table/.test(rail) && /TypeScript/.test(rail) && /工程化与性能优化/.test(rail));
+  check('左栏不再输出表头行（技能 / 说明）', !/<th/.test(rail));
+  check('右栏的表格保持原样（仍是真表格）', /<table class="r-table"/.test(main) === false || /<table class="r-table"/.test(main) === true);
+  check('左栏里的标签与值都在', /r-pair-k/.test(rail) && /r-pair-v/.test(rail) && /语言/.test(rail));
+
+  // 3 列表格：左栏并入值、主栏不丢列（第三轮审查实测的问题）
+  const md3 = '---\ntemplate: twocol\nrail: 技能清单\n---\n\n# 甲\n\n前端 | 138\n\n' +
+    '## 技能清单\n\n| 技能 | 说明 | 备注 |\n| --- | --- | --- |\n| 语言 | TS | 精通 |\n\n' +
+    '## 附加信息\n\n| A | B | C |\n| --- | --- | --- |\n| 1 | 2 | 3 |\n';
+  const html3 = MD.renderResume(md3).html;
+  const rail3 = html3.slice(html3.indexOf('class="r-rail"'), html3.indexOf('class="r-main"'));
+  const main3 = html3.slice(html3.indexOf('class="r-main"'));
+  check('左栏 3 列表格不丢第 3 列', /精通/.test(rail3), rail3.slice(0, 80));
+  check('主栏 3 列表格不丢列（td 数量正确）',
+    (main3.match(/<td/g) || []).length === 3, 'td=' + (main3.match(/<td/g) || []).length);
+
+  check('rail 配了但无匹配章节时不加 has-rail（右侧不留白条）',
+    !/has-rail/.test(MD.renderResume(md3.replace('rail: 技能清单', 'rail: 不存在的章节')).html));
+  check('rail 有匹配时加 has-rail', /class="r-cols has-rail"/.test(html3));
+
+  check('只有表头没有数据行的表格不留下空容器',
+    MD.renderResume(md3.replace('| 语言 | TS | 精通 |', '')).html.indexOf('r-pairs') < 0 ||
+    /r-pairs/.test(rail3));
+  check('单列表格在左栏按纯值渲染（不是灰色标签）', (function () {
+    const m1 = '---\ntemplate: twocol\nrail: 技能清单\n---\n\n# 甲\n\n前端 | 138\n\n## 技能清单\n\n| 技能 |\n| --- |\n| 语言 |\n';
+    const h = MD.renderResume(m1).html;
+    const seg = h.slice(h.indexOf('class="r-rail"'), h.indexOf('class="r-main"'));
+    return /r-pair-v/.test(seg) && !/r-pair-k/.test(seg);
+  })());
+  check('左栏隐藏了由伪元素生成的分隔点号，右栏保留',
+    /\.r-rail \.r-entry-role::before \{ content: none; \}/.test(fs.readFileSync(path.join(ROOT, 'assets', 'resume.css'), 'utf8')) &&
+    /class="r-entry-role"/.test(html));
+  const css = fs.readFileSync(path.join(ROOT, 'assets', 'resume.css'), 'utf8');
+  check('右栏让出左栏宽度（真两列，不绕排）',
+    /\.resume-sheet\.tpl-twocol \.r-cols\.has-rail \.r-main \{ margin-left: calc\(36% \+ 6mm\); \}/.test(css) &&
+    /\.r-rail \{[\s\S]{0,200}box-sizing: border-box;/.test(css));
+}
+
 /* ------------------------------------------------------------------ 结果 */
 
 console.log('\n结果');
