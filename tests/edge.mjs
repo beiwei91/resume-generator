@@ -513,6 +513,34 @@ section('复制：条目与章节');
   check('越界复制安全返回', Form.duplicateEntry(sample, 99, 0) === sample && Form.duplicateSection(sample, 99) === sample);
 }
 
+section('双栏模板（rail 配置）');
+{
+  const md = '---\ntemplate: twocol\nrail: 技能清单, 证书与荣誉\n---\n\n# 甲\n\n前端 | 138\n\n' +
+    '## 个人简介\n\n> 一句话\n\n## 技能清单\n\n- JS\n\n## 证书与荣誉\n\n- CET-6\n\n' +
+    '## 工作经历\n\n### 公司 · 职位\n\n- 做事\n';
+  const r = MD.renderResume(md);
+  check('双栏：生成左栏与主栏容器', /class="r-rail"/.test(r.html) && /class="r-main"/.test(r.html));
+  const rail = r.html.slice(r.html.indexOf('class="r-rail"'), r.html.indexOf('class="r-main"'));
+  check('双栏：rail 里列出的章节进左栏', /技能清单/.test(rail) && /证书与荣誉/.test(rail));
+  const main = r.html.slice(r.html.indexOf('class="r-main"'));
+  check('双栏：其余章节留在主栏', /个人简介/.test(main) && /工作经历/.test(main) && !/技能清单/.test(main));
+  check('双栏：模板 class 生效', /tpl-twocol/.test(r.sheetClasses));
+  check('未配置 rail 时退化为单栏', MD.renderResume(md.replace('rail: 技能清单, 证书与荣誉\n', '')).html.indexOf('r-rail') < 0);
+  check('非双栏模板即使配了 rail 也不分栏', MD.renderResume(md.replace('twocol', 'classic')).html.indexOf('r-rail') < 0);
+  check('rail 解析支持英文逗号 / 中文逗号 / 顿号',
+    MD.parseRailTitles('技能清单, 证书与荣誉、其他信息，教育背景').length === 4,
+    JSON.stringify(MD.parseRailTitles('技能清单, 证书与荣誉、其他信息，教育背景')));
+  check('rail 为空时配置块里不写这一行', MD.serializeFrontMatter({ rail: '' }).indexOf('rail') < 0);
+  check('rail 有值时写进配置块并能读回',
+    /rail: 技能清单/.test(MD.serializeFrontMatter({ rail: '技能清单' })) &&
+    MD.normalizeSettings(MD.splitFrontMatter(MD.upsertFrontMatter('# 甲\n', { rail: '技能清单' })).meta).rail === '技能清单');
+  check('不认识的 rail 章节名会被忽略（不会丢章节）', (function () {
+    const out = MD.renderResume(md.replace('技能清单, 证书与荣誉', '不存在的章节'));
+    const m = out.html.slice(out.html.indexOf('class="r-main"'));
+    return /技能清单/.test(m) && /证书与荣誉/.test(m);
+  })());
+}
+
 /* ------------------------------------------------------------------ 结果 */
 
 console.log('\n结果');

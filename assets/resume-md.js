@@ -30,7 +30,7 @@
     photoAlign: 'right',
     photoShape: 'rounded'
   };
-  var TEMPLATES = ['classic', 'modern', 'compact', 'timeline', 'minimal', 'banner', 'sidebar'];
+  var TEMPLATES = ['classic', 'modern', 'compact', 'timeline', 'minimal', 'banner', 'sidebar', 'twocol'];
   var FONTS = ['sans', 'serif'];
   var PHOTO_ALIGNS = ['right', 'left'];
   var PHOTO_SHAPES = ['rounded', 'circle', 'square'];
@@ -40,7 +40,7 @@
     { label: '宽 (20mm / 22mm)', value: '20mm 22mm' }
   ];
   var ACCENT_PRESETS = ['#2563eb', '#0f766e', '#b91c1c', '#7c3aed', '#c2410c', '#111827'];
-  var FRONT_KEYS = ['template', 'accent', 'font', 'fontSize', 'lineHeight', 'margin', 'photo', 'photoSize', 'photoAlign', 'photoShape'];
+  var FRONT_KEYS = ['template', 'accent', 'font', 'fontSize', 'lineHeight', 'margin', 'rail', 'photo', 'photoSize', 'photoAlign', 'photoShape'];
   var A4 = { width: 210, height: 297 }; // mm
   var MM_PER_PX = 25.4 / 96;
   var TOKEN = '\u0001';
@@ -118,6 +118,7 @@
       fontSize: (Math.round(clampNum(meta.fontSize, 10, 20, 14) * 100) / 100) + 'px',
       lineHeight: String(Math.round(clampNum(meta.lineHeight, 1.15, 2.4, 1.65) * 100) / 100),
       margin: normalizeMargin(meta.margin),
+      rail: String(meta.rail == null ? '' : meta.rail).trim(),
       photo: sanitizePhoto(meta.photo),
       photoSize: normalizePhotoSize(meta.photoSize),
       photoAlign: PHOTO_ALIGNS.indexOf(String(meta.photoAlign || '').trim()) >= 0 ? String(meta.photoAlign).trim() : DEFAULTS.photoAlign,
@@ -231,6 +232,7 @@
     var photoKeys = { photo: 1, photoSize: 1, photoAlign: 1, photoShape: 1 };
     var lines = FRONT_KEYS.filter(function (k) {
       if (photoKeys[k]) return !!s.photo;
+      if (k === 'rail') return !!String(s.rail || '').trim();   // 没配左栏就不写这一行
       return true;
     }).map(function (k) { return k + ': ' + s[k]; });
     (extraLines || []).forEach(function (line) { lines.push(line); });
@@ -550,12 +552,37 @@
 
   /* ------------------------------------------------------------------ 对外 API */
 
+  /** 解析 `rail: 技能清单, 证书与荣誉` 这类配置：章节标题列表（中英文逗号、顿号都认） */
+  function parseRailTitles(value) {
+    return String(value == null ? '' : value)
+      .split(/[,，、]/)
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
+  }
+
   function renderResume(md, overrides) {
     var fm = splitFrontMatter(md);
     var settings = normalizeSettings(Object.assign({}, fm.meta, overrides || {}));
     var doc = parseDocument(fm.body);
     var hasPhoto = !!(settings.photo || (doc.header && doc.header.photo));
-    var html = (doc.header ? renderHeader(doc.header, settings) : '') + renderChildren(doc.children);
+
+    // 双栏：把 rail 里列出的章节放到左侧栏，其余留在右侧主栏
+    var railTitles = parseRailTitles(settings.rail);
+    var body;
+    if (settings.template === 'twocol' && railTitles.length) {
+      var railKids = [];
+      var mainKids = [];
+      (doc.children || []).forEach(function (child) {
+        (railTitles.indexOf(child.title) >= 0 ? railKids : mainKids).push(child);
+      });
+      body = '<div class="r-cols">' +
+        (railKids.length ? '<aside class="r-rail">' + renderChildren(railKids) + '</aside>' : '') +
+        '<div class="r-main">' + renderChildren(mainKids) + '</div>' +
+        '</div>';
+    } else {
+      body = renderChildren(doc.children);
+    }
+    var html = (doc.header ? renderHeader(doc.header, settings) : '') + body;
 
     var plain = fm.body
       .replace(/```[\s\S]*?```/g, '')
@@ -606,6 +633,7 @@
     TEMPLATES: TEMPLATES,
     FONTS: FONTS,
     MARGIN_PRESETS: MARGIN_PRESETS,
+    parseRailTitles: parseRailTitles,
     PHOTO_ALIGNS: PHOTO_ALIGNS,
     PHOTO_SHAPES: PHOTO_SHAPES,
     ACCENT_PRESETS: ACCENT_PRESETS,

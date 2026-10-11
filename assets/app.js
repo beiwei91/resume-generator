@@ -289,7 +289,8 @@
       timeline: '时间轴（左侧连线）',
       minimal: '极简（无框线）',
       banner: '色块（整条标题栏）',
-      sidebar: '侧栏标题（左侧留白栏）'
+      sidebar: '侧栏标题（左侧留白栏）',
+      twocol: '双栏（左栏由 rail 配置指定）'
     };
     MD.TEMPLATES.forEach(function (t) {
       var o = document.createElement('option');
@@ -355,6 +356,59 @@
     $('photoSizeVal').textContent = s.photoSize;
     $('photoAlignSelect').value = s.photoAlign;
     $('photoShapeSelect').value = s.photoShape;
+  }
+
+  /** 同步应用一份排版设置：压页时要在循环里立刻量出页数，等不了防抖 */
+  function applySettingsNow(settings) {
+    var next = MD.upsertFrontMatter(state.markdown, settings);
+    state.markdown = next;
+    editor.value = next;
+    render();
+    updateGuides();
+  }
+
+  /** 一键压到一页：依次收紧 字号 → 行距 → 页边距 → 证件照宽度，压到就停；整体算一步可撤销 */
+  function fitToOnePage() {
+    if (state.pages <= 1) { toast('已经是一页了，不用压'); return; }
+    var base = Object.assign({}, state.settings);
+    var cur = Object.assign({}, base);
+    var steps = [];
+    var v;
+    for (v = parseFloat(cur.fontSize) - 0.5; v >= 10; v -= 0.5) {
+      steps.push(['fontSize', (Math.round(v * 10) / 10) + 'px']);
+    }
+    for (v = parseFloat(cur.lineHeight) - 0.05; v >= 1.15; v -= 0.05) {
+      steps.push(['lineHeight', (Math.round(v * 100) / 100).toFixed(2)]);
+    }
+    var curY = MD.marginMm(cur).y;
+    MD.MARGIN_PRESETS
+      .filter(function (m) { return MD.marginMm({ margin: m.value }).y < curY; })
+      .sort(function (a, b) { return MD.marginMm({ margin: b.value }).y - MD.marginMm({ margin: a.value }).y; })
+      .forEach(function (m) { steps.push(['margin', m.value]); });
+    if (cur.photo) {
+      for (v = (parseFloat(cur.photoSize) || 26) - 1; v >= 18; v -= 1) steps.push(['photoSize', v + 'mm']);
+    }
+
+    pushUndo(true);                       // 整个「压到一页」记成一步
+    var hit = null;
+    for (var i = 0; i < steps.length; i++) {
+      var next = Object.assign({}, cur);
+      next[steps[i][0]] = steps[i][1];
+      cur = next;
+      applySettingsNow(cur);
+      if (state.pages <= 1) { hit = cur; break; }
+    }
+    if (!hit) {
+      applySettingsNow(base);
+      toast('内容确实太多，压不进一页；建议删掉几条要点，或换「紧凑」模板', 5200);
+      return;
+    }
+    var bits = [];
+    if (hit.fontSize !== base.fontSize) bits.push('字号 ' + hit.fontSize);
+    if (hit.lineHeight !== base.lineHeight) bits.push('行距 ' + hit.lineHeight);
+    if (hit.margin !== base.margin) bits.push('页边距 ' + hit.margin);
+    if (hit.photoSize !== base.photoSize) bits.push('证件照 ' + hit.photoSize);
+    toast('已压到一页：' + (bits.length ? bits.join('，') : '无需改动'));
   }
 
   /** 把排版参数写回 Markdown 文首配置块（保持正文不动） */
@@ -1064,7 +1118,13 @@
 
     $('docList').addEventListener('change', function () { openDoc(this.value); });
 
-    $('tplSelect').addEventListener('change', function () { patchSettings({ template: this.value }); });
+    $('tplSelect').addEventListener('change', function () {
+      patchSettings({ template: this.value });
+      if (this.value === 'twocol' && !MD.parseRailTitles(state.settings.rail).length) {
+        toast('双栏模板还要指定左栏内容：在文首配置块写一行 rail: 技能清单, 证书与荣誉（章节标题用逗号分隔）', 5200);
+      }
+    });
+    $('btnFitPage').addEventListener('click', fitToOnePage);
     $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });
     $('accentInput').addEventListener('input', function () { patchSettings({ accent: this.value }); });
     $('fontSizeInput').addEventListener('input', function () { patchSettings({ fontSize: parseFloat(this.value) + 'px' }); });

@@ -435,6 +435,18 @@ section('复制 / 撤销重做 / 备份');
     /duplicateSection/.test(formViewJs) && /duplicateEntry/.test(formViewJs));
 }
 
+/* ================================================================== 压到一页 / 双栏 */
+
+section('压到一页 / 双栏');
+{
+  check('排版面板有「压到一页」按钮', /id="btnFitPage"/.test(index) && /fitToOnePage/.test(appJs));
+  check('压页依次收紧 字号 → 行距 → 页边距 → 证件照，且整步可撤销',
+    /fontSize\) - 0\.5/.test(appJs) && /lineHeight\) - 0\.05/.test(appJs) &&
+    /MARGIN_PRESETS/.test(appJs) && /if \(cur\.photo\)/.test(appJs) && /pushUndo\(true\)/.test(appJs));
+  check('设置是同步应用的（压页循环里要立刻量页数）', /function applySettingsNow/.test(appJs) && /updateGuides\(\)/.test(appJs));
+  check('模板下拉里有双栏，并在缺 rail 时给出提示', /twocol/.test(appJs) && /parseRailTitles/.test(appJs) && /rail: 技能清单/.test(appJs));
+}
+
 /* ================================================================== 界面交互（真实点击 / 输入） */
 
 async function testInteractions() {

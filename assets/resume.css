@@ -399,6 +399,29 @@
   text-align: left;
 }
 
+/* ---------------------------------------------------------------- 模板八：双栏（左栏由 rail 配置指定） */
+/* 用浮动而不是 flex：分页时左栏不会把整块内容顶到下一页，打印更稳 */
+
+.resume-sheet.tpl-twocol .r-cols::after { content: ""; display: block; clear: both; }
+.resume-sheet.tpl-twocol .r-rail {
+  float: left;
+  width: 33%;
+  margin-right: 6mm;
+  padding-right: 5mm;
+  border-right: 1px solid var(--r-line);
+  font-size: .95em;
+}
+.resume-sheet.tpl-twocol .r-rail .r-section { margin-top: 12px; }
+.resume-sheet.tpl-twocol .r-rail .r-section-title {
+  border: 0;
+  padding: 0 0 2px;
+  font-size: .95em;
+  letter-spacing: .06em;
+  color: var(--r-accent);
+}
+.resume-sheet.tpl-twocol .r-rail .r-list { padding-left: 1.05em; }
+.resume-sheet.tpl-twocol .r-main .r-section:first-child { margin-top: 4px; }
+
 /* ---------------------------------------------------------------- 证件照布局 */
 /* 放在三套模板之后：有照片时抬头改成「文字 + 照片」两列，
    照片与文字块垂直居中，避免姓名被挤在变窄的居中列里、照片下方留一块空白 */
