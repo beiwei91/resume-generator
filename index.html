@@ -13,13 +13,13 @@ try {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
 } catch (e) { /* 读不到偏好就按浅色 */ }
 </script>
-<link rel="stylesheet" href="assets/resume.css?v=2.0.0">
-<link rel="stylesheet" href="assets/app.css?v=2.0.0">
+<link rel="stylesheet" href="assets/resume.css?v=2.1.0">
+<link rel="stylesheet" href="assets/app.css?v=2.1.0">
 <meta name="application-name" content="简历生成器">
 <!-- 版本号：静态资源都带 ?v= 查询串，改版本号即可让浏览器 / CDN 立刻取到新文件。
      发布前记得把这里和下面 4 处脚本引用的版本号一起改掉。 -->
-<meta name="app-version" content="2.0.0">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=2.0.0">
+<meta name="app-version" content="2.1.0">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png?v=2.1.0">
 <style id="printPageStyle">@page { size: A4; }</style>
 </head>
 <body>
@@ -35,10 +35,13 @@ try {
       </span>
     </div>
 
-    <div class="appbar-main" id="appbarMain">
+    <div class="appbar-title">
       <input id="docName" class="doc-name" type="text" value="我的简历" spellcheck="false"
              title="文档名（同时作为导出 PDF 的文件名）">
       <select id="docList" class="btn-select" title="打开浏览器中已保存的简历"></select>
+    </div>
+
+    <div class="appbar-main" id="appbarMain">
       <button id="btnNew" class="btn" type="button">新建</button>
       <button id="btnSaveAs" class="btn" type="button">另存为</button>
       <button id="btnDelDoc" class="btn" type="button">删除</button>
@@ -52,14 +55,16 @@ try {
       <input id="backupInput" type="file" accept=".json,application/json" hidden>
       <span class="bar-sep"></span>
       <button id="btnHelp" class="btn" type="button">语法速查</button>
-      <a class="btn gh-link" id="ghLink" href="https://github.com/beiwei91/resume-generator"
-         target="_blank" rel="noreferrer"
-         title="本项目开源在 GitHub —— 欢迎点个 Star ⭐，有问题或想要新功能也可以提 Issue（谢谢喵 🐾）"><span class="star">★</span> GitHub</a>
     </div>
 
     <div class="appbar-actions">
-      <button id="btnTools" class="btn" type="button" title="新建 / 另存为 / 导入导出等">更多 ⋯</button>
+      <a class="btn gh-link" id="ghLink" href="https://github.com/beiwei91/resume-generator"
+         target="_blank" rel="noreferrer"
+         title="本项目开源在 GitHub —— 欢迎点个 Star ⭐，有问题或想要新功能也可以提 Issue（谢谢喵 🐾）"><span class="star">★</span> GitHub</a>
       <button id="btnPdf" class="btn btn-primary" type="button">导出 PDF</button>
+      <button id="btnTools" class="btn btn-ellipsis" type="button" aria-expanded="false"
+              aria-controls="appbarMain" aria-label="更多操作"
+              title="更多操作：新建 / 另存为 / 导入导出 / 备份 / 语法速查">⋯</button>
     </div>
   </header>
 
@@ -286,9 +291,9 @@ try {
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="assets/resume-md.js?v=2.0.0"></script>
-<script src="assets/resume-form.js?v=2.0.0"></script>
-<script src="assets/form-view.js?v=2.0.0"></script>
-<script src="assets/app.js?v=2.0.0"></script>
+<script src="assets/resume-md.js?v=2.1.0"></script>
+<script src="assets/resume-form.js?v=2.1.0"></script>
+<script src="assets/form-view.js?v=2.1.0"></script>
+<script src="assets/app.js?v=2.1.0"></script>
 </body>
 </html>

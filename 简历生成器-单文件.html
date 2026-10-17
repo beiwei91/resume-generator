@@ -18,7 +18,7 @@ try {
 } catch (e) { /* 读不到偏好就按浅色 */ }
 </script>
 <style>
-/* ==== assets/resume.css?v=2.0.0 ==== */
+/* ==== assets/resume.css?v=2.1.0 ==== */
 /*!
  * resume.css —— 简历纸张样式（预览与 PDF 共用，不含编辑器界面样式）
  * 变量：--r-accent / --r-font-size / --r-line-height / --r-margin-y / --r-margin-x
@@ -538,7 +538,7 @@ try {
 .resume-sheet.cols-2 .r-rail .r-quote { color: var(--r-rail-ink, #374151); }
 </style>
 <style>
-/* ==== assets/app.css?v=2.0.0 ==== */
+/* ==== assets/app.css?v=2.1.0 ==== */
 /*!
  * app.css —— 编辑器 / 预览工作台界面样式（只作用于界面，不影响纸张与打印结果）
  */
@@ -1392,11 +1392,360 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
 @media screen and (max-width: 560px) {
   .ftable.ftable-wide { min-width: 300px; }   /* JS 会按列数覆盖成更合适的值 */
 }
+
+/* ================================================================ macOS 原生感主题（只作用于界面，不影响纸张与打印） */
+
+:root {
+  --ui-bg: #f5f5f7;
+  --ui-bg-elev: #ffffff;
+  --ui-bg-sunken: #ececf0;
+  --ui-bg-hover: #f0f0f3;
+  --ui-line: rgba(0, 0, 0, .10);
+  --ui-line-strong: rgba(0, 0, 0, .17);
+  --ui-text: #1d1d1f;
+  --ui-text-2: #6e6e73;
+  --ui-text-3: #6f6f74;
+  --ui-accent: #0071e3;
+  --ui-accent-hover: #0077ed;
+  --ui-r: 10px;
+  --ui-r-s: 7px;
+  --ui-r-xs: 6px;
+  --ui-sh-1: 0 1px 2px rgba(0, 0, 0, .06);
+  --ui-sh-2: 0 10px 30px rgba(0, 0, 0, .14), 0 1px 3px rgba(0, 0, 0, .08);
+  --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+}
+
+html[data-theme="dark"] {
+  --ui-bg: #1c1c1e;
+  --ui-bg-elev: #2c2c2e;
+  --ui-bg-sunken: #232325;
+  --ui-bg-hover: #3a3a3c;
+  --ui-line: rgba(255, 255, 255, .10);
+  --ui-line-strong: rgba(255, 255, 255, .20);
+  --ui-text: #f5f5f7;
+  --ui-text-2: #a1a1a6;
+  --ui-text-3: #8e8e93;
+  --ui-accent: #0a84ff;
+  --ui-accent-hover: #409cff;
+  --ui-sh-1: 0 1px 2px rgba(0, 0, 0, .35);
+  --ui-sh-2: 0 14px 40px rgba(0, 0, 0, .55), 0 1px 3px rgba(0, 0, 0, .4);
+}
+
+@media screen {
+  html[data-theme] body {
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    font-family: var(--ui-font);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- 顶栏 ---- */
+  html[data-theme] .appbar {
+    position: relative;
+    gap: 10px;
+    padding: 7px 12px;
+    background: var(--ui-bg-elev);
+    border-bottom: 1px solid var(--ui-line);
+    box-shadow: none;
+  }
+  html[data-theme] .appbar-title { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  html[data-theme] .brand .logo {
+    width: 26px; height: 26px; border-radius: 7px; font-size: 13px;
+    background: linear-gradient(160deg, #3b9bff, var(--ui-accent));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 2px rgba(0, 0, 0, .18);
+  }
+  html[data-theme] .brand-text b { font-size: 13.5px; font-weight: 650; }
+  html[data-theme] .brand-text i { font-size: 10.5px; color: var(--ui-text-3); }
+  html[data-theme] .doc-name {
+    width: 180px; height: 28px; padding: 0 9px;
+    border: 1px solid transparent; border-radius: var(--ui-r-xs);
+    background: transparent; color: var(--ui-text);
+    font: inherit; font-size: 13px; font-weight: 600;
+    transition: background .15s, border-color .15s, box-shadow .15s;
+  }
+  html[data-theme] .doc-name:hover { background: var(--ui-bg-hover); }
+  html[data-theme] .doc-name:focus {
+    outline: none; background: var(--ui-bg-elev); border-color: var(--ui-accent);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, .18);
+  }
+  html[data-theme] .btn,
+  html[data-theme] .tool,
+  html[data-theme] .btn-select,
+  html[data-theme] .fbtn {
+    height: 28px; padding: 0 10px;
+    font: inherit; font-size: 12.5px;
+    color: var(--ui-text);
+    background: var(--ui-bg-elev);
+    border: 1px solid var(--ui-line-strong);
+    border-radius: var(--ui-r-xs);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .03);
+    transition: background .12s, border-color .12s, transform .06s;
+  }
+  html[data-theme] .btn:hover,
+  html[data-theme] .tool:hover,
+  html[data-theme] .btn-select:hover,
+  html[data-theme] .fbtn:hover { background: var(--ui-bg-hover); }
+  html[data-theme] .btn:active,
+  html[data-theme] .tool:active,
+  html[data-theme] .fbtn:active { transform: scale(.985); }
+  html[data-theme] .btn-primary,
+  html[data-theme] .fbtn-primary {
+    background: var(--ui-accent); border-color: transparent; color: #fff; font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+  }
+  html[data-theme] .btn-primary:hover,
+  html[data-theme] .fbtn-primary:hover { background: var(--ui-accent-hover); border-color: transparent; }
+  html[data-theme] .bar-sep { height: 18px; background: var(--ui-line); }
+  html[data-theme] .gh-link {
+    background: linear-gradient(180deg, #fff8e3, #fff1c9);
+    border-color: rgba(180, 140, 20, .32); color: #8a5a00; font-weight: 600;
+  }
+  html[data-theme="dark"] .gh-link {
+    background: linear-gradient(180deg, #3a2f14, #302810);
+    border-color: #6b5a24; color: #f0d58a;
+  }
+  html[data-theme] .star { color: #f5a623; }
+
+  /* ---- 面板与分段控件 ---- */
+  html[data-theme] .pane { background: var(--ui-bg-elev); }
+  html[data-theme] .pane-head {
+    /* 不能写死高度，也不能被压缩：它是 flex 子项，显式 min-height 会关掉内容最小高度，
+       一旦父容器不够高就会缩到 36px、把换行的工具栏裁掉 */
+    flex: 0 0 auto;
+    min-height: 36px; height: auto; padding: 5px 10px; gap: 8px;
+    background: var(--ui-bg-elev); border-bottom: 1px solid var(--ui-line);
+  }
+  html[data-theme] .pane-title {
+    font-size: 11px; font-weight: 650; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--ui-text-3);
+  }
+  html[data-theme] .pane-head .tool { height: 24px; padding: 0 9px; font-size: 12px; box-shadow: none; }
+  html[data-theme] .mode-tabs {
+    display: inline-flex; gap: 2px; padding: 2px;
+    background: var(--ui-bg-sunken); border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r-s);
+  }
+  html[data-theme] .mode-tab {
+    height: 24px; padding: 0 12px; border: 0; border-radius: 5px;
+    background: transparent; color: var(--ui-text-2);
+    font: inherit; font-size: 12.5px; font-weight: 500;
+  }
+  html[data-theme] .mode-tab.is-active {
+    background: var(--ui-bg-elev); color: var(--ui-text); font-weight: 600;
+    box-shadow: var(--ui-sh-1);
+  }
+
+  /* ---- 表单卡片 ---- */
+  html[data-theme] .form-view { background: var(--ui-bg); }
+  html[data-theme] .fcard {
+    background: var(--ui-bg-elev);
+    border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r);
+    box-shadow: var(--ui-sh-1);
+  }
+  html[data-theme] .fcard-head { background: transparent; border-bottom: 1px solid var(--ui-line); }
+  html[data-theme] .fcard-title { font-size: 12px; font-weight: 650; color: var(--ui-text-2); }
+  html[data-theme] .fcard-title-input { font-size: 13px; font-weight: 600; color: var(--ui-text); }
+  html[data-theme] .fcard-kind { font-size: 10.5px; color: var(--ui-text-3); }
+  html[data-theme] .fld-label { font-size: 10.5px; letter-spacing: .02em; color: var(--ui-text-3); }
+  html[data-theme] .fld-input {
+    /* 只定公共外观，高度分开写：textarea 不能被压成一行 */
+    border: 1px solid var(--ui-line-strong); border-radius: var(--ui-r-xs);
+    background: var(--ui-bg-elev); color: var(--ui-text);
+    font: inherit; font-size: 13px;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  html[data-theme] input.fld-input { height: 30px; padding: 0 9px; }
+  html[data-theme] textarea.fld-input {
+    min-height: 64px; height: auto; padding: 7px 9px;
+    line-height: 1.55; resize: vertical;
+  }
+  html[data-theme] .fld-input:focus,
+  html[data-theme] .fcard-title-input:focus {
+    outline: none; border-color: var(--ui-accent);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, .16);
+  }
+  html[data-theme] .fentry { border-color: var(--ui-line); }
+  html[data-theme] .fentry-index { color: var(--ui-text-3); }
+  html[data-theme] .ibtn {
+    border: 1px solid var(--ui-line-strong); border-radius: var(--ui-r-xs);
+    background: var(--ui-bg-elev); color: var(--ui-text-2);
+  }
+  html[data-theme] .ibtn:hover:not(:disabled) { background: var(--ui-bg-hover); color: var(--ui-text); }
+
+  /* ---- 预览 / 设置面板 / 状态栏 ---- */
+  html[data-theme] .preview-scroll { background: var(--ui-bg-sunken); }
+  html[data-theme] .sheet-wrap { box-shadow: 0 12px 32px rgba(0, 0, 0, .14), 0 1px 3px rgba(0, 0, 0, .08); }
+  html[data-theme="dark"] .sheet-wrap { box-shadow: 0 16px 40px rgba(0, 0, 0, .6), 0 1px 3px rgba(0, 0, 0, .5); }
+  html[data-theme] .settings-panel {
+    background: var(--ui-bg-elev); border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r); box-shadow: var(--ui-sh-2);
+  }
+  html[data-theme] .splitter::after { background: var(--ui-line); }
+  html[data-theme] .splitter:hover::after,
+  html[data-theme] .splitter.dragging::after { background: var(--ui-accent); }
+  html[data-theme] .statusbar {
+    background: var(--ui-bg-elev); border-top: 1px solid var(--ui-line);
+    color: var(--ui-text-2); font-size: 11.5px;
+  }
+  html[data-theme] .statusbar .dot { color: var(--ui-line-strong); }
+  html[data-theme] .statusbar .tip,
+  html[data-theme] .statusbar .ver { color: var(--ui-text-3); }
+
+  /* ---- 提示条 / toast / 弹窗 ---- */
+  html[data-theme] .gh-banner {
+    background: linear-gradient(180deg, #fffbef, #fff7e0);
+    border-bottom: 1px solid rgba(180, 140, 20, .18);
+    color: #6b4e00; font-size: 12.5px;
+  }
+  html[data-theme="dark"] .gh-banner {
+    background: linear-gradient(180deg, #2a2416, #232013);
+    border-bottom-color: #3d3320; color: #e0c98a;
+  }
+  html[data-theme] .toast {
+    background: rgba(30, 30, 32, .92); color: #fff;
+    border: 0; border-radius: 10px; box-shadow: var(--ui-sh-2);
+    font-size: 12.5px;
+  }
+  html[data-theme="dark"] .toast { background: rgba(60, 60, 64, .95); }
+  html[data-theme] .modal-card {
+    background: var(--ui-bg-elev); border: 1px solid var(--ui-line);
+    border-radius: 12px; box-shadow: var(--ui-sh-2);
+  }
+  html[data-theme] .modal-head,
+  html[data-theme] .modal-body { border-color: var(--ui-line); }
+
+  /* ---- 细滚动条 ---- */
+  html[data-theme] ::-webkit-scrollbar { width: 10px; height: 10px; }
+  html[data-theme] ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, .18); border-radius: 6px;
+    border: 2px solid transparent; background-clip: content-box;
+  }
+  html[data-theme] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, .30); background-clip: content-box; border: 2px solid transparent; }
+  html[data-theme] ::-webkit-scrollbar-track { background: transparent; }
+  html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .22); background-clip: content-box; border: 2px solid transparent; }
+
+  /* ---- 桌面端：⋯ 变浮层菜单，工具栏只留主操作 ---- */
+  @media (min-width: 901px) {
+    html[data-theme] .appbar { flex-wrap: nowrap; }
+    html[data-theme] .appbar-main {
+      position: absolute; top: calc(100% + 6px); right: 12px; z-index: 40;
+      display: none; flex-direction: column; align-items: stretch; gap: 2px;
+      width: 210px; padding: 6px; margin: 0;
+      background: var(--ui-bg-elev); border: 1px solid var(--ui-line);
+      border-radius: 12px; box-shadow: var(--ui-sh-2);
+    }
+    html[data-theme] .appbar.tools-open .appbar-main { display: flex; }
+    html[data-theme] .appbar-main .btn {
+      width: 100%; height: 30px; justify-content: flex-start; text-align: left;
+      border: 0; background: transparent; box-shadow: none; font-size: 13px;
+    }
+    html[data-theme] .appbar-main .btn:hover { background: var(--ui-accent); color: #fff; }
+    html[data-theme] .appbar-main .bar-sep { display: none; }
+    html[data-theme] #btnTools { display: inline-flex; }
+    html[data-theme] .btn-ellipsis { padding: 0 11px; font-size: 16px; line-height: 1; letter-spacing: 1px; }
+  }
+}
+
+/* ---- 主题层收尾：移动端补丁 + 深色补丁 ---- */
+@media screen {
+  /* 移动端：新层要补回被压掉的窄屏规则（文档名宽度、16px 字号防 iOS 聚焦放大） */
+  @media (max-width: 900px) {
+    html[data-theme] .appbar { flex-wrap: nowrap; gap: 8px; }
+    html[data-theme] .appbar-title { flex: 1 1 auto; min-width: 0; gap: 2px; }
+    html[data-theme] .doc-name { width: 118px; height: 26px; padding: 0 6px; font-size: 12.5px; }
+    html[data-theme] .appbar-actions { gap: 5px; flex: 0 0 auto; }
+    html[data-theme] .brand-text { display: none; }
+    html[data-theme] .fld-input,
+    html[data-theme] #editor,
+    html[data-theme] textarea.fld-input { font-size: 16px; }
+    html[data-theme] #btnTools { display: inline-flex; }
+  }
+
+  /* 深色：这些组件原本由旧的深色块用深蓝配色覆盖，统一换成新的中性色 */
+  html[data-theme] #editor { background: var(--ui-bg-elev); color: var(--ui-text); }
+  html[data-theme] .splitter { background: transparent; }
+  html[data-theme] .fentry { background: transparent; }
+  html[data-theme="dark"] #editor { background: var(--ui-bg-elev); color: var(--ui-text); }
+  html[data-theme="dark"] .splitter { background: transparent; }
+  html[data-theme="dark"] .fentry { background: transparent; }
+  html[data-theme="dark"] #mobileView { background: var(--ui-bg-elev); border-color: var(--ui-line); }
+  html[data-theme="dark"] #mobileView .mv-btn {
+    background: var(--ui-bg-elev); border-color: var(--ui-line-strong); color: var(--ui-text);
+  }
+  html[data-theme="dark"] #mobileView .mv-btn.is-active,
+  html[data-theme="dark"] #mobileView .mv-btn-pdf {
+    background: var(--ui-accent); border-color: var(--ui-accent); color: #fff;
+  }
+  html[data-theme="dark"] #docList,
+  html[data-theme="dark"] #tplSelect,
+  html[data-theme="dark"] #fontSelect,
+  html[data-theme="dark"] #marginSelect,
+  html[data-theme="dark"] #zoomSelect,
+  html[data-theme="dark"] #themeSelect,
+  html[data-theme="dark"] #columnsSelect,
+  html[data-theme="dark"] #railFontSizeSelect,
+  html[data-theme="dark"] .btn-select {
+    background: var(--ui-bg-elev); color: var(--ui-text); border-color: var(--ui-line-strong);
+  }
+  html[data-theme="dark"] .help-table code { background: var(--ui-bg-sunken); border-color: var(--ui-line); color: var(--ui-text); }
+  html[data-theme="dark"] .page-guide { border-color: var(--ui-line-strong); }
+  html[data-theme="dark"] .page-guide-label { background: var(--ui-bg-sunken); color: var(--ui-text-2); }
+  /* ⋯ 按钮打开时的按压态 */
+  html[data-theme] .btn-ellipsis.is-active { background: var(--ui-bg-hover); color: var(--ui-text); }
+}
+
+/* ---- 2.1.0 收尾：浅色回归 / 移动端拥挤 / 深色补丁 / 对比度 ---- */
+@media screen {
+  /* 被新层「顺手压掉」的旧细节，补回来 */
+  html[data-theme] .gh-link:hover {
+    background: linear-gradient(180deg, #fff2c9, #ffe9b0);
+    border-color: rgba(180, 140, 20, .45);
+    color: #7a4f00;
+  }
+  html[data-theme="dark"] .gh-link:hover {
+    background: linear-gradient(180deg, #4a3a16, #3a3014);
+    border-color: #8a7431; color: #ffe8a8;
+  }
+  html[data-theme] .ftable th .fld-input { background: var(--ui-bg-sunken); }
+  html[data-theme] .fcard-add { border-style: dashed; background: transparent; }
+  html[data-theme] .fbtn-danger { color: #d70015; border-color: rgba(215, 0, 21, .28); }
+  html[data-theme] .fbtn-danger:hover { background: rgba(215, 0, 21, .08); border-color: rgba(215, 0, 21, .45); }
+  html[data-theme="dark"] .fbtn-danger { color: #ff6961; border-color: rgba(255, 105, 97, .35); }
+  html[data-theme] .sheet-wrap { filter: none; }          /* 旧规则还有一个 drop-shadow，会叠成双层阴影 */
+  html[data-theme] .field input[type="range"] { accent-color: var(--ui-accent); }
+  html[data-theme] .pane-head select,
+  html[data-theme] .settings-panel select {
+    height: 26px; padding: 0 8px;
+    border: 1px solid var(--ui-line-strong); border-radius: var(--ui-r-xs);
+    background: var(--ui-bg-elev); color: var(--ui-text);
+    font: inherit; font-size: 12.5px;
+  }
+  html[data-theme] .field.check { color: var(--ui-text-2); }
+  html[data-theme="dark"] .field.check { color: var(--ui-text-2); }
+
+  /* 移动端：顶栏别挤爆；⋯ 菜单真的换到下一行 */
+  @media (max-width: 900px) {
+    html[data-theme] .appbar { flex-wrap: wrap; }
+    html[data-theme] .appbar.tools-open .appbar-main {
+      position: static; width: 100%; order: 5;
+      flex-direction: row; flex-wrap: wrap;
+      background: transparent; border: 0; box-shadow: none; padding: 0;
+    }
+    html[data-theme] .appbar.tools-open .appbar-main .btn { width: auto; }
+  }
+  @media (max-width: 560px) {
+    /* 窄屏只留星标：保留 GitHub 入口，又不挤顶栏 */
+    html[data-theme] .gh-link { font-size: 0; padding: 0 7px; }
+    html[data-theme] .gh-link .star { font-size: 13px; }
+    html[data-theme] #docList { max-width: 92px; }
+  }
+}
 </style>
 <meta name="application-name" content="简历生成器">
 <!-- 版本号：静态资源都带 ?v= 查询串，改版本号即可让浏览器 / CDN 立刻取到新文件。
      发布前记得把这里和下面 4 处脚本引用的版本号一起改掉。 -->
-<meta name="app-version" content="2.0.0">
+<meta name="app-version" content="2.1.0">
 <link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,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">
 <style id="printPageStyle">@page { size: A4; }</style>
 </head>
@@ -1413,10 +1762,13 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
       </span>
     </div>
 
-    <div class="appbar-main" id="appbarMain">
+    <div class="appbar-title">
       <input id="docName" class="doc-name" type="text" value="我的简历" spellcheck="false"
              title="文档名（同时作为导出 PDF 的文件名）">
       <select id="docList" class="btn-select" title="打开浏览器中已保存的简历"></select>
+    </div>
+
+    <div class="appbar-main" id="appbarMain">
       <button id="btnNew" class="btn" type="button">新建</button>
       <button id="btnSaveAs" class="btn" type="button">另存为</button>
       <button id="btnDelDoc" class="btn" type="button">删除</button>
@@ -1430,14 +1782,16 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
       <input id="backupInput" type="file" accept=".json,application/json" hidden>
       <span class="bar-sep"></span>
       <button id="btnHelp" class="btn" type="button">语法速查</button>
-      <a class="btn gh-link" id="ghLink" href="https://github.com/beiwei91/resume-generator"
-         target="_blank" rel="noreferrer"
-         title="本项目开源在 GitHub —— 欢迎点个 Star ⭐，有问题或想要新功能也可以提 Issue（谢谢喵 🐾）"><span class="star">★</span> GitHub</a>
     </div>
 
     <div class="appbar-actions">
-      <button id="btnTools" class="btn" type="button" title="新建 / 另存为 / 导入导出等">更多 ⋯</button>
+      <a class="btn gh-link" id="ghLink" href="https://github.com/beiwei91/resume-generator"
+         target="_blank" rel="noreferrer"
+         title="本项目开源在 GitHub —— 欢迎点个 Star ⭐，有问题或想要新功能也可以提 Issue（谢谢喵 🐾）"><span class="star">★</span> GitHub</a>
       <button id="btnPdf" class="btn btn-primary" type="button">导出 PDF</button>
+      <button id="btnTools" class="btn btn-ellipsis" type="button" aria-expanded="false"
+              aria-controls="appbarMain" aria-label="更多操作"
+              title="更多操作：新建 / 另存为 / 导入导出 / 备份 / 语法速查">⋯</button>
     </div>
   </header>
 
@@ -1665,7 +2019,7 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
 <div class="toast" id="toast" hidden></div>
 
 <script>
-/* ==== assets/resume-md.js?v=2.0.0 ==== */
+/* ==== assets/resume-md.js?v=2.1.0 ==== */
 /*!
  * resume-md.js —— 轻量 Markdown → 简历 HTML 渲染引擎（零依赖，浏览器 / Node 通用）
  *
@@ -2395,7 +2749,7 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
 });
 </script>
 <script>
-/* ==== assets/resume-form.js?v=2.0.0 ==== */
+/* ==== assets/resume-form.js?v=2.1.0 ==== */
 /*!
  * resume-form.js —— 表单模式的「纯逻辑层」：把 Markdown 拆成模块，并按块改写
  *
@@ -3151,7 +3505,7 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
 });
 </script>
 <script>
-/* ==== assets/form-view.js?v=2.0.0 ==== */
+/* ==== assets/form-view.js?v=2.1.0 ==== */
 /*!
  * form-view.js —— 表单模式的界面层：把模块模型渲染成可折叠、可增删排序的表单
  *
@@ -3743,7 +4097,7 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
 })(window);
 </script>
 <script>
-/* ==== assets/app.js?v=2.0.0 ==== */
+/* ==== assets/app.js?v=2.1.0 ==== */
 /*!
  * app.js —— 简历生成器工作台逻辑
  * 数据流：Markdown 文本（含文首配置块）是唯一数据源 → 解析渲染 → 预览 / 打印导出
@@ -4891,7 +5245,7 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
   function warnInAppBrowser() {
     if (!IN_APP_BROWSER) return false;
     toast('提示：你正在微信 / QQ 等内置浏览器里打开，这类浏览器可能无法导出 PDF 或保存文件。' +
-      '建议点右上角「⋯」→「在浏览器中打开」（Safari / Chrome），或把网址复制到浏览器里打开', 9600);
+      '建议点浏览器菜单里的「⋯」→「在浏览器中打开」（Safari / Chrome），或把网址复制到浏览器里打开', 9600);
     return true;
   }
 
@@ -5144,6 +5498,36 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
     $('railFontSizeSelect').addEventListener('change', function () { patchSettings({ railFontSize: this.value }); });
     $('railColorInput').addEventListener('input', function () { patchSettings({ railColor: this.value }); });
     $('btnFitPage').addEventListener('click', autoLayout);
+
+    // 「⋯」菜单状态统一由这里管：类名、aria-expanded、按钮高亮一起变，文案始终是 ⋯
+    function setToolsOpen(open) {
+      var bar = document.querySelector('.appbar');
+      if (!bar) return;
+      bar.classList.toggle('tools-open', open);
+      var t = $('btnTools');
+      if (t) {
+        t.setAttribute('aria-expanded', open ? 'true' : 'false');
+        t.classList.toggle('is-active', open);
+      }
+      if (open) {
+        var first = bar.querySelector('.appbar-main .btn');
+        if (first) first.focus();          // 键盘用户打开后能直接进菜单
+      } else if (bar.contains(document.activeElement) && document.activeElement !== t) {
+        if (t) t.focus();                  // 关闭时把焦点还给 ⋯，别丢在隐藏的菜单里
+      }
+    }
+
+    // 桌面端「⋯」是浮层菜单：点菜单外或按 Esc 收起（窄屏下它仍然是展开的第二行）
+    document.addEventListener('click', function (ev) {
+      var bar = document.querySelector('.appbar');
+      if (!bar || !bar.classList.contains('tools-open')) return;
+      // 只豁免「⋯」按钮本身：点导出 / GitHub 也应当把菜单收起
+      if (ev.target && ev.target.closest && ev.target.closest('#btnTools')) return;
+      setToolsOpen(false);
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') setToolsOpen(false);
+    });
     $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });
     $('themeSelect').addEventListener('change', function () {
       prefs.theme = this.value;
@@ -5225,14 +5609,11 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
     });
     $('btnTools').addEventListener('click', function () {
       var bar = document.querySelector('.appbar');
-      var open = bar.classList.toggle('tools-open');
-      this.textContent = open ? '收起 ⌃' : '更多 ⋯';
+      setToolsOpen(!bar.classList.contains('tools-open'));
     });
+    $('btnTools').setAttribute('aria-controls', 'appbarMain');
     $('appbarMain').addEventListener('click', function (ev) {
-      if (ev.target && ev.target.tagName === 'BUTTON') {
-        document.querySelector('.appbar').classList.remove('tools-open');
-        $('btnTools').textContent = '更多 ⋯';
-      }
+      if (ev.target && ev.target.tagName === 'BUTTON') setToolsOpen(false);
     });
 
     // 离开页面 / 切到后台时立刻落盘：手机浏览器可能在防抖窗口内就把页面丢弃了

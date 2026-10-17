@@ -851,3 +851,352 @@ html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de;
 @media screen and (max-width: 560px) {
   .ftable.ftable-wide { min-width: 300px; }   /* JS 会按列数覆盖成更合适的值 */
 }
+
+/* ================================================================ macOS 原生感主题（只作用于界面，不影响纸张与打印） */
+
+:root {
+  --ui-bg: #f5f5f7;
+  --ui-bg-elev: #ffffff;
+  --ui-bg-sunken: #ececf0;
+  --ui-bg-hover: #f0f0f3;
+  --ui-line: rgba(0, 0, 0, .10);
+  --ui-line-strong: rgba(0, 0, 0, .17);
+  --ui-text: #1d1d1f;
+  --ui-text-2: #6e6e73;
+  --ui-text-3: #6f6f74;
+  --ui-accent: #0071e3;
+  --ui-accent-hover: #0077ed;
+  --ui-r: 10px;
+  --ui-r-s: 7px;
+  --ui-r-xs: 6px;
+  --ui-sh-1: 0 1px 2px rgba(0, 0, 0, .06);
+  --ui-sh-2: 0 10px 30px rgba(0, 0, 0, .14), 0 1px 3px rgba(0, 0, 0, .08);
+  --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+}
+
+html[data-theme="dark"] {
+  --ui-bg: #1c1c1e;
+  --ui-bg-elev: #2c2c2e;
+  --ui-bg-sunken: #232325;
+  --ui-bg-hover: #3a3a3c;
+  --ui-line: rgba(255, 255, 255, .10);
+  --ui-line-strong: rgba(255, 255, 255, .20);
+  --ui-text: #f5f5f7;
+  --ui-text-2: #a1a1a6;
+  --ui-text-3: #8e8e93;
+  --ui-accent: #0a84ff;
+  --ui-accent-hover: #409cff;
+  --ui-sh-1: 0 1px 2px rgba(0, 0, 0, .35);
+  --ui-sh-2: 0 14px 40px rgba(0, 0, 0, .55), 0 1px 3px rgba(0, 0, 0, .4);
+}
+
+@media screen {
+  html[data-theme] body {
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    font-family: var(--ui-font);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- 顶栏 ---- */
+  html[data-theme] .appbar {
+    position: relative;
+    gap: 10px;
+    padding: 7px 12px;
+    background: var(--ui-bg-elev);
+    border-bottom: 1px solid var(--ui-line);
+    box-shadow: none;
+  }
+  html[data-theme] .appbar-title { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  html[data-theme] .brand .logo {
+    width: 26px; height: 26px; border-radius: 7px; font-size: 13px;
+    background: linear-gradient(160deg, #3b9bff, var(--ui-accent));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 2px rgba(0, 0, 0, .18);
+  }
+  html[data-theme] .brand-text b { font-size: 13.5px; font-weight: 650; }
+  html[data-theme] .brand-text i { font-size: 10.5px; color: var(--ui-text-3); }
+  html[data-theme] .doc-name {
+    width: 180px; height: 28px; padding: 0 9px;
+    border: 1px solid transparent; border-radius: var(--ui-r-xs);
+    background: transparent; color: var(--ui-text);
+    font: inherit; font-size: 13px; font-weight: 600;
+    transition: background .15s, border-color .15s, box-shadow .15s;
+  }
+  html[data-theme] .doc-name:hover { background: var(--ui-bg-hover); }
+  html[data-theme] .doc-name:focus {
+    outline: none; background: var(--ui-bg-elev); border-color: var(--ui-accent);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, .18);
+  }
+  html[data-theme] .btn,
+  html[data-theme] .tool,
+  html[data-theme] .btn-select,
+  html[data-theme] .fbtn {
+    height: 28px; padding: 0 10px;
+    font: inherit; font-size: 12.5px;
+    color: var(--ui-text);
+    background: var(--ui-bg-elev);
+    border: 1px solid var(--ui-line-strong);
+    border-radius: var(--ui-r-xs);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .03);
+    transition: background .12s, border-color .12s, transform .06s;
+  }
+  html[data-theme] .btn:hover,
+  html[data-theme] .tool:hover,
+  html[data-theme] .btn-select:hover,
+  html[data-theme] .fbtn:hover { background: var(--ui-bg-hover); }
+  html[data-theme] .btn:active,
+  html[data-theme] .tool:active,
+  html[data-theme] .fbtn:active { transform: scale(.985); }
+  html[data-theme] .btn-primary,
+  html[data-theme] .fbtn-primary {
+    background: var(--ui-accent); border-color: transparent; color: #fff; font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+  }
+  html[data-theme] .btn-primary:hover,
+  html[data-theme] .fbtn-primary:hover { background: var(--ui-accent-hover); border-color: transparent; }
+  html[data-theme] .bar-sep { height: 18px; background: var(--ui-line); }
+  html[data-theme] .gh-link {
+    background: linear-gradient(180deg, #fff8e3, #fff1c9);
+    border-color: rgba(180, 140, 20, .32); color: #8a5a00; font-weight: 600;
+  }
+  html[data-theme="dark"] .gh-link {
+    background: linear-gradient(180deg, #3a2f14, #302810);
+    border-color: #6b5a24; color: #f0d58a;
+  }
+  html[data-theme] .star { color: #f5a623; }
+
+  /* ---- 面板与分段控件 ---- */
+  html[data-theme] .pane { background: var(--ui-bg-elev); }
+  html[data-theme] .pane-head {
+    /* 不能写死高度，也不能被压缩：它是 flex 子项，显式 min-height 会关掉内容最小高度，
+       一旦父容器不够高就会缩到 36px、把换行的工具栏裁掉 */
+    flex: 0 0 auto;
+    min-height: 36px; height: auto; padding: 5px 10px; gap: 8px;
+    background: var(--ui-bg-elev); border-bottom: 1px solid var(--ui-line);
+  }
+  html[data-theme] .pane-title {
+    font-size: 11px; font-weight: 650; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--ui-text-3);
+  }
+  html[data-theme] .pane-head .tool { height: 24px; padding: 0 9px; font-size: 12px; box-shadow: none; }
+  html[data-theme] .mode-tabs {
+    display: inline-flex; gap: 2px; padding: 2px;
+    background: var(--ui-bg-sunken); border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r-s);
+  }
+  html[data-theme] .mode-tab {
+    height: 24px; padding: 0 12px; border: 0; border-radius: 5px;
+    background: transparent; color: var(--ui-text-2);
+    font: inherit; font-size: 12.5px; font-weight: 500;
+  }
+  html[data-theme] .mode-tab.is-active {
+    background: var(--ui-bg-elev); color: var(--ui-text); font-weight: 600;
+    box-shadow: var(--ui-sh-1);
+  }
+
+  /* ---- 表单卡片 ---- */
+  html[data-theme] .form-view { background: var(--ui-bg); }
+  html[data-theme] .fcard {
+    background: var(--ui-bg-elev);
+    border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r);
+    box-shadow: var(--ui-sh-1);
+  }
+  html[data-theme] .fcard-head { background: transparent; border-bottom: 1px solid var(--ui-line); }
+  html[data-theme] .fcard-title { font-size: 12px; font-weight: 650; color: var(--ui-text-2); }
+  html[data-theme] .fcard-title-input { font-size: 13px; font-weight: 600; color: var(--ui-text); }
+  html[data-theme] .fcard-kind { font-size: 10.5px; color: var(--ui-text-3); }
+  html[data-theme] .fld-label { font-size: 10.5px; letter-spacing: .02em; color: var(--ui-text-3); }
+  html[data-theme] .fld-input {
+    /* 只定公共外观，高度分开写：textarea 不能被压成一行 */
+    border: 1px solid var(--ui-line-strong); border-radius: var(--ui-r-xs);
+    background: var(--ui-bg-elev); color: var(--ui-text);
+    font: inherit; font-size: 13px;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  html[data-theme] input.fld-input { height: 30px; padding: 0 9px; }
+  html[data-theme] textarea.fld-input {
+    min-height: 64px; height: auto; padding: 7px 9px;
+    line-height: 1.55; resize: vertical;
+  }
+  html[data-theme] .fld-input:focus,
+  html[data-theme] .fcard-title-input:focus {
+    outline: none; border-color: var(--ui-accent);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, .16);
+  }
+  html[data-theme] .fentry { border-color: var(--ui-line); }
+  html[data-theme] .fentry-index { color: var(--ui-text-3); }
+  html[data-theme] .ibtn {
+    border: 1px solid var(--ui-line-strong); border-radius: var(--ui-r-xs);
+    background: var(--ui-bg-elev); color: var(--ui-text-2);
+  }
+  html[data-theme] .ibtn:hover:not(:disabled) { background: var(--ui-bg-hover); color: var(--ui-text); }
+
+  /* ---- 预览 / 设置面板 / 状态栏 ---- */
+  html[data-theme] .preview-scroll { background: var(--ui-bg-sunken); }
+  html[data-theme] .sheet-wrap { box-shadow: 0 12px 32px rgba(0, 0, 0, .14), 0 1px 3px rgba(0, 0, 0, .08); }
+  html[data-theme="dark"] .sheet-wrap { box-shadow: 0 16px 40px rgba(0, 0, 0, .6), 0 1px 3px rgba(0, 0, 0, .5); }
+  html[data-theme] .settings-panel {
+    background: var(--ui-bg-elev); border: 1px solid var(--ui-line);
+    border-radius: var(--ui-r); box-shadow: var(--ui-sh-2);
+  }
+  html[data-theme] .splitter::after { background: var(--ui-line); }
+  html[data-theme] .splitter:hover::after,
+  html[data-theme] .splitter.dragging::after { background: var(--ui-accent); }
+  html[data-theme] .statusbar {
+    background: var(--ui-bg-elev); border-top: 1px solid var(--ui-line);
+    color: var(--ui-text-2); font-size: 11.5px;
+  }
+  html[data-theme] .statusbar .dot { color: var(--ui-line-strong); }
+  html[data-theme] .statusbar .tip,
+  html[data-theme] .statusbar .ver { color: var(--ui-text-3); }
+
+  /* ---- 提示条 / toast / 弹窗 ---- */
+  html[data-theme] .gh-banner {
+    background: linear-gradient(180deg, #fffbef, #fff7e0);
+    border-bottom: 1px solid rgba(180, 140, 20, .18);
+    color: #6b4e00; font-size: 12.5px;
+  }
+  html[data-theme="dark"] .gh-banner {
+    background: linear-gradient(180deg, #2a2416, #232013);
+    border-bottom-color: #3d3320; color: #e0c98a;
+  }
+  html[data-theme] .toast {
+    background: rgba(30, 30, 32, .92); color: #fff;
+    border: 0; border-radius: 10px; box-shadow: var(--ui-sh-2);
+    font-size: 12.5px;
+  }
+  html[data-theme="dark"] .toast { background: rgba(60, 60, 64, .95); }
+  html[data-theme] .modal-card {
+    background: var(--ui-bg-elev); border: 1px solid var(--ui-line);
+    border-radius: 12px; box-shadow: var(--ui-sh-2);
+  }
+  html[data-theme] .modal-head,
+  html[data-theme] .modal-body { border-color: var(--ui-line); }
+
+  /* ---- 细滚动条 ---- */
+  html[data-theme] ::-webkit-scrollbar { width: 10px; height: 10px; }
+  html[data-theme] ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, .18); border-radius: 6px;
+    border: 2px solid transparent; background-clip: content-box;
+  }
+  html[data-theme] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, .30); background-clip: content-box; border: 2px solid transparent; }
+  html[data-theme] ::-webkit-scrollbar-track { background: transparent; }
+  html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .22); background-clip: content-box; border: 2px solid transparent; }
+
+  /* ---- 桌面端：⋯ 变浮层菜单，工具栏只留主操作 ---- */
+  @media (min-width: 901px) {
+    html[data-theme] .appbar { flex-wrap: nowrap; }
+    html[data-theme] .appbar-main {
+      position: absolute; top: calc(100% + 6px); right: 12px; z-index: 40;
+      display: none; flex-direction: column; align-items: stretch; gap: 2px;
+      width: 210px; padding: 6px; margin: 0;
+      background: var(--ui-bg-elev); border: 1px solid var(--ui-line);
+      border-radius: 12px; box-shadow: var(--ui-sh-2);
+    }
+    html[data-theme] .appbar.tools-open .appbar-main { display: flex; }
+    html[data-theme] .appbar-main .btn {
+      width: 100%; height: 30px; justify-content: flex-start; text-align: left;
+      border: 0; background: transparent; box-shadow: none; font-size: 13px;
+    }
+    html[data-theme] .appbar-main .btn:hover { background: var(--ui-accent); color: #fff; }
+    html[data-theme] .appbar-main .bar-sep { display: none; }
+    html[data-theme] #btnTools { display: inline-flex; }
+    html[data-theme] .btn-ellipsis { padding: 0 11px; font-size: 16px; line-height: 1; letter-spacing: 1px; }
+  }
+}
+
+/* ---- 主题层收尾：移动端补丁 + 深色补丁 ---- */
+@media screen {
+  /* 移动端：新层要补回被压掉的窄屏规则（文档名宽度、16px 字号防 iOS 聚焦放大） */
+  @media (max-width: 900px) {
+    html[data-theme] .appbar { flex-wrap: nowrap; gap: 8px; }
+    html[data-theme] .appbar-title { flex: 1 1 auto; min-width: 0; gap: 2px; }
+    html[data-theme] .doc-name { width: 118px; height: 26px; padding: 0 6px; font-size: 12.5px; }
+    html[data-theme] .appbar-actions { gap: 5px; flex: 0 0 auto; }
+    html[data-theme] .brand-text { display: none; }
+    html[data-theme] .fld-input,
+    html[data-theme] #editor,
+    html[data-theme] textarea.fld-input { font-size: 16px; }
+    html[data-theme] #btnTools { display: inline-flex; }
+  }
+
+  /* 深色：这些组件原本由旧的深色块用深蓝配色覆盖，统一换成新的中性色 */
+  html[data-theme] #editor { background: var(--ui-bg-elev); color: var(--ui-text); }
+  html[data-theme] .splitter { background: transparent; }
+  html[data-theme] .fentry { background: transparent; }
+  html[data-theme="dark"] #editor { background: var(--ui-bg-elev); color: var(--ui-text); }
+  html[data-theme="dark"] .splitter { background: transparent; }
+  html[data-theme="dark"] .fentry { background: transparent; }
+  html[data-theme="dark"] #mobileView { background: var(--ui-bg-elev); border-color: var(--ui-line); }
+  html[data-theme="dark"] #mobileView .mv-btn {
+    background: var(--ui-bg-elev); border-color: var(--ui-line-strong); color: var(--ui-text);
+  }
+  html[data-theme="dark"] #mobileView .mv-btn.is-active,
+  html[data-theme="dark"] #mobileView .mv-btn-pdf {
+    background: var(--ui-accent); border-color: var(--ui-accent); color: #fff;
+  }
+  html[data-theme="dark"] #docList,
+  html[data-theme="dark"] #tplSelect,
+  html[data-theme="dark"] #fontSelect,
+  html[data-theme="dark"] #marginSelect,
+  html[data-theme="dark"] #zoomSelect,
+  html[data-theme="dark"] #themeSelect,
+  html[data-theme="dark"] #columnsSelect,
+  html[data-theme="dark"] #railFontSizeSelect,
+  html[data-theme="dark"] .btn-select {
+    background: var(--ui-bg-elev); color: var(--ui-text); border-color: var(--ui-line-strong);
+  }
+  html[data-theme="dark"] .help-table code { background: var(--ui-bg-sunken); border-color: var(--ui-line); color: var(--ui-text); }
+  html[data-theme="dark"] .page-guide { border-color: var(--ui-line-strong); }
+  html[data-theme="dark"] .page-guide-label { background: var(--ui-bg-sunken); color: var(--ui-text-2); }
+  /* ⋯ 按钮打开时的按压态 */
+  html[data-theme] .btn-ellipsis.is-active { background: var(--ui-bg-hover); color: var(--ui-text); }
+}
+
+/* ---- 2.1.0 收尾：浅色回归 / 移动端拥挤 / 深色补丁 / 对比度 ---- */
+@media screen {
+  /* 被新层「顺手压掉」的旧细节，补回来 */
+  html[data-theme] .gh-link:hover {
+    background: linear-gradient(180deg, #fff2c9, #ffe9b0);
+    border-color: rgba(180, 140, 20, .45);
+    color: #7a4f00;
+  }
+  html[data-theme="dark"] .gh-link:hover {
+    background: linear-gradient(180deg, #4a3a16, #3a3014);
+    border-color: #8a7431; color: #ffe8a8;
+  }
+  html[data-theme] .ftable th .fld-input { background: var(--ui-bg-sunken); }
+  html[data-theme] .fcard-add { border-style: dashed; background: transparent; }
+  html[data-theme] .fbtn-danger { color: #d70015; border-color: rgba(215, 0, 21, .28); }
+  html[data-theme] .fbtn-danger:hover { background: rgba(215, 0, 21, .08); border-color: rgba(215, 0, 21, .45); }
+  html[data-theme="dark"] .fbtn-danger { color: #ff6961; border-color: rgba(255, 105, 97, .35); }
+  html[data-theme] .sheet-wrap { filter: none; }          /* 旧规则还有一个 drop-shadow，会叠成双层阴影 */
+  html[data-theme] .field input[type="range"] { accent-color: var(--ui-accent); }
+  html[data-theme] .pane-head select,
+  html[data-theme] .settings-panel select {
+    height: 26px; padding: 0 8px;
+    border: 1px solid var(--ui-line-strong); border-radius: var(--ui-r-xs);
+    background: var(--ui-bg-elev); color: var(--ui-text);
+    font: inherit; font-size: 12.5px;
+  }
+  html[data-theme] .field.check { color: var(--ui-text-2); }
+  html[data-theme="dark"] .field.check { color: var(--ui-text-2); }
+
+  /* 移动端：顶栏别挤爆；⋯ 菜单真的换到下一行 */
+  @media (max-width: 900px) {
+    html[data-theme] .appbar { flex-wrap: wrap; }
+    html[data-theme] .appbar.tools-open .appbar-main {
+      position: static; width: 100%; order: 5;
+      flex-direction: row; flex-wrap: wrap;
+      background: transparent; border: 0; box-shadow: none; padding: 0;
+    }
+    html[data-theme] .appbar.tools-open .appbar-main .btn { width: auto; }
+  }
+  @media (max-width: 560px) {
+    /* 窄屏只留星标：保留 GitHub 入口，又不挤顶栏 */
+    html[data-theme] .gh-link { font-size: 0; padding: 0 7px; }
+    html[data-theme] .gh-link .star { font-size: 13px; }
+    html[data-theme] #docList { max-width: 92px; }
+  }
+}

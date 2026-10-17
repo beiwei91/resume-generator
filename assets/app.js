@@ -1145,7 +1145,7 @@
   function warnInAppBrowser() {
     if (!IN_APP_BROWSER) return false;
     toast('提示：你正在微信 / QQ 等内置浏览器里打开，这类浏览器可能无法导出 PDF 或保存文件。' +
-      '建议点右上角「⋯」→「在浏览器中打开」（Safari / Chrome），或把网址复制到浏览器里打开', 9600);
+      '建议点浏览器菜单里的「⋯」→「在浏览器中打开」（Safari / Chrome），或把网址复制到浏览器里打开', 9600);
     return true;
   }
 
@@ -1398,6 +1398,36 @@
     $('railFontSizeSelect').addEventListener('change', function () { patchSettings({ railFontSize: this.value }); });
     $('railColorInput').addEventListener('input', function () { patchSettings({ railColor: this.value }); });
     $('btnFitPage').addEventListener('click', autoLayout);
+
+    // 「⋯」菜单状态统一由这里管：类名、aria-expanded、按钮高亮一起变，文案始终是 ⋯
+    function setToolsOpen(open) {
+      var bar = document.querySelector('.appbar');
+      if (!bar) return;
+      bar.classList.toggle('tools-open', open);
+      var t = $('btnTools');
+      if (t) {
+        t.setAttribute('aria-expanded', open ? 'true' : 'false');
+        t.classList.toggle('is-active', open);
+      }
+      if (open) {
+        var first = bar.querySelector('.appbar-main .btn');
+        if (first) first.focus();          // 键盘用户打开后能直接进菜单
+      } else if (bar.contains(document.activeElement) && document.activeElement !== t) {
+        if (t) t.focus();                  // 关闭时把焦点还给 ⋯，别丢在隐藏的菜单里
+      }
+    }
+
+    // 桌面端「⋯」是浮层菜单：点菜单外或按 Esc 收起（窄屏下它仍然是展开的第二行）
+    document.addEventListener('click', function (ev) {
+      var bar = document.querySelector('.appbar');
+      if (!bar || !bar.classList.contains('tools-open')) return;
+      // 只豁免「⋯」按钮本身：点导出 / GitHub 也应当把菜单收起
+      if (ev.target && ev.target.closest && ev.target.closest('#btnTools')) return;
+      setToolsOpen(false);
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') setToolsOpen(false);
+    });
     $('fontSelect').addEventListener('change', function () { patchSettings({ font: this.value }); });
     $('themeSelect').addEventListener('change', function () {
       prefs.theme = this.value;
@@ -1479,14 +1509,11 @@
     });
     $('btnTools').addEventListener('click', function () {
       var bar = document.querySelector('.appbar');
-      var open = bar.classList.toggle('tools-open');
-      this.textContent = open ? '收起 ⌃' : '更多 ⋯';
+      setToolsOpen(!bar.classList.contains('tools-open'));
     });
+    $('btnTools').setAttribute('aria-controls', 'appbarMain');
     $('appbarMain').addEventListener('click', function (ev) {
-      if (ev.target && ev.target.tagName === 'BUTTON') {
-        document.querySelector('.appbar').classList.remove('tools-open');
-        $('btnTools').textContent = '更多 ⋯';
-      }
+      if (ev.target && ev.target.tagName === 'BUTTON') setToolsOpen(false);
     });
 
     // 离开页面 / 切到后台时立刻落盘：手机浏览器可能在防抖窗口内就把页面丢弃了

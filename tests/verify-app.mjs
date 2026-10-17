@@ -477,6 +477,14 @@ section('压到一页 / 双栏');
   check('排版面板里有界面主题（跟随系统 / 浅色 / 深色）',
     /id="themeSelect"/.test(index) && /applyTheme/.test(appJs) && /prefers-color-scheme: dark/.test(appJs));
   check('深色只改界面，纸张仍是白底', /html\[data-theme="dark"\]/.test(css) && !/data-theme="dark"[^}]*resume-sheet[^}]*background/.test(css));
+  check('工具栏重组：文档名独立成标题区，次要操作收进「⋯」菜单，导出与星标常在右侧',
+    /class="appbar-title"/.test(index) && /id="docName"/.test(index) &&
+    /class="appbar-main"/.test(index) && /class="appbar-actions"[\s\S]{0,400}id="btnPdf"/.test(index) &&
+    /class="appbar-actions"[\s\S]{0,400}id="btnTools"/.test(index) &&
+    /\.appbar\.tools-open \.appbar-main/.test(css) && /#btnTools \{ display: inline-flex; \}/.test(css));
+  check('macOS 主题层：深浅两套设计令牌 + 分段式页签',
+    /--ui-bg:\s*#f5f5f7/.test(css) && /html\[data-theme="dark"\] \{[\s\S]{0,400}--ui-bg: #1c1c1e/.test(css) &&
+    /--ui-bg-elev/.test(css) && /html\[data-theme\] \.mode-tab\.is-active/.test(css));
   check('手机底部栏：编辑 / 预览 + 导出 PDF（顶栏导出按钮在窄屏让位）',
     /id="btnPdfMobile"/.test(index) && /mv-btn-pdf/.test(css) &&
     /\.appbar-actions #btnPdf \{ display: none; \}/.test(css) && /#mobileView \{[\s\S]{0,120}order: 5;/.test(css));
@@ -602,10 +610,22 @@ async function testInteractions() {
     '      var tCells = tRows.length > 1 ? tRows[1].children.length : 0;',
     '      var tInput = doc.querySelector(".ftable tr:nth-child(2) td:nth-child(2) input");',
     '      var T5 = tCells >= 3 && !!tInput && tInput.getBoundingClientRect().width > 60;',
+    '      var barEl = doc.querySelector(".appbar");',
+    '      var T9 = !!barEl && barEl.scrollWidth <= barEl.clientWidth + 2;',
+    '      var ta = doc.querySelector("textarea.fld-input");',
+    '      var T7 = !!ta && ta.getBoundingClientRect().height > 40;',
     '      var tDel = tRows.length > 1 ? tRows[1].querySelector(".ftable-del") : null;',
     '      var tCard = q(".ftable") ? q(".ftable").closest(".fcard") : null;',
     '      var T6 = !!tDel && !!tCard && tDel.getBoundingClientRect().right <= tCard.getBoundingClientRect().right + 1;',
-    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3, T1: T1, T2: T2, T3: T3, T4: T4, S1: S1, A0: A0, A1: A1, A2: A2, T5: T5, T6: T6 }));',
+    '      var mdTab = Array.prototype.slice.call(doc.querySelectorAll(".mode-tab")).filter(function (b) { return b.textContent.indexOf("Markdown") >= 0; })[0];',    // 注意：T6 必须在切换页签之前量；切到 Markdown 后表单被隐藏，矩形会全是 0（会变成空断言）
+    '      if (mdTab) { mdTab.click(); await wait(400); }',
+    '      var head = q(".editor-pane .pane-head");',
+    '      var lastTool = q("#btnPhoto");',
+    '      var T8 = !!head && !!lastTool && lastTool.getBoundingClientRect().bottom <= head.getBoundingClientRect().bottom + 1;',
+    '      var T8a = head ? head.clientHeight : -1;',
+    '      var T8b = head ? head.scrollHeight : -1;',
+    '      var T8c = head && lastTool ? Math.round(lastTool.getBoundingClientRect().bottom - head.getBoundingClientRect().bottom) : -999;',
+    '      say("JSON|" + JSON.stringify({ A: A, B: B, C: C, D: D, rebuilt: rebuilt, E0: E0, E1: E1, E2: E2, hasSlot: hasSlot, slotGone: slotGone, F0: F0, F1: F1, G1: G1, H1: H1, I1: I1, J1: J1, J2: J2, K1: K1, K2: K2, K3: K3, T1: T1, T2: T2, T3: T3, T4: T4, S1: S1, A0: A0, A1: A1, A2: A2, T5: T5, T6: T6, T7: T7, T8: T8, T8a: T8a, T8b: T8b, T8c: T8c, T9: T9 }));',
     '    } catch (e) { say("THROW|" + (e && e.message)); }',
     '  })();',
     '});',
@@ -673,6 +693,10 @@ async function testInteractions() {
   check('自动排版后文档与预览都正常', res.A2 === true, 'A2=' + res.A2);
   check('表格第二列输入框有正常宽度（真实量 DOM 宽度）', res.T5 === true, 'T5=' + res.T5);
   check('表格的删除按钮落在卡片内（2 列表格没有溢出右边界）', res.T6 === true, 'T6=' + res.T6);
+  check('窄屏顶栏没有横向溢出（工具栏重组后 300px 宽也装得下）', res.T9 === true, 'T9=' + res.T9);
+  check('多行文本框没有被压成一行（真实量高度）', res.T7 === true, 'T7=' + res.T7);
+  check('Markdown 工具栏换行时不会被固定高度的面板头裁掉', res.T8 === true,
+    'T8=' + res.T8 + ' 头高=' + res.T8a + ' 内容高=' + res.T8b + ' 溢出=' + res.T8c + 'px');
 }
 
 await testInteractions();
