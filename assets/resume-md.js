@@ -631,8 +631,10 @@
     var railTitles = parseRailTitles(settings.rail);
     var body;
     var railStyle = [];
-    if (settings.railFontSize) railStyle.push('font-size: ' + settings.railFontSize);
-    if (settings.railColor) railStyle.push('--r-rail-ink: ' + settings.railColor, 'color: ' + settings.railColor);
+    // 两个值都已过 normalizeSettings（字号被 clamp 成 NNpx、颜色只允许 hex），这里再 esc 一道，
+    // 免得将来放宽校验时变成属性注入
+    if (settings.railFontSize) railStyle.push('font-size: ' + esc(settings.railFontSize));
+    if (settings.railColor) railStyle.push('--r-rail-ink: ' + esc(settings.railColor), 'color: ' + esc(settings.railColor));
     var railStyleAttr = railStyle.length ? ' style="' + railStyle.join('; ') + '"' : '';
 
     if (settings.columns === '2' && railTitles.length) {

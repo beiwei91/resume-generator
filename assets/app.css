@@ -822,3 +822,32 @@ html[data-theme="dark"] .page-guide { border-color: #38425a; }
 /* 预览区右上角：模板 / 栏数 / 主色 / 适应宽度 / 自动排版 / 排版 —— 放不下就换行，别挤出去 */
 .pane-head .tools { flex-wrap: wrap; row-gap: 4px; }
 .pane-head .tools .inline-field select { max-width: 170px; }
+
+/* ---- 深色模式收尾：对比度与悬停反馈 ---- */
+@media screen {
+html[data-theme="dark"] .color-input { background: #232a38; border-color: #38425a; }
+html[data-theme="dark"] .gh-banner b { color: #f0d58a; }
+html[data-theme="dark"] .gh-banner a:hover { color: #ffe8a8; }
+html[data-theme="dark"] .gh-banner-close:hover { background: #38425a; border-color: #38425a; color: #fff; }
+html[data-theme="dark"] .gh-link:hover { background: linear-gradient(180deg, #4a3a16, #3a3014); border-color: #8a7431; }
+html[data-theme="dark"] .btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+html[data-theme="dark"] .fbtn-danger:hover { background: #7f1d1d; border-color: #7f1d1d; }
+html[data-theme="dark"] .pane-title,
+html[data-theme="dark"] .inline-field,
+html[data-theme="dark"] .fcard-kind,
+html[data-theme="dark"] .fld-label,
+html[data-theme="dark"] .fgroup-title,
+html[data-theme="dark"] .fhint,
+html[data-theme="dark"] .fentry-index,
+html[data-theme="dark"] .field > label,
+html[data-theme="dark"] .statusbar .dot { color: #a7b3c6; }
+html[data-theme="dark"] .frow-sub,
+html[data-theme="dark"] .modal-head,
+html[data-theme="dark"] .help-table th,
+html[data-theme="dark"] .help-table td { border-color: #2b3342; }
+html[data-theme="dark"] .page-guide-label { background: #2d3648; color: #c7d0de; }
+}
+/* ≤560px：3 列以上的表格不至于把中间列挤成几十像素；配合 .ftable-wrap 的横向滚动 */
+@media screen and (max-width: 560px) {
+  .ftable.ftable-wide { min-width: 300px; }   /* JS 会按列数覆盖成更合适的值 */
+}

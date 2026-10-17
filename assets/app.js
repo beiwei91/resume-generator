@@ -602,6 +602,11 @@
    * 定时器醒来时 state.markdown 已经是「另一份文档」的内容，原来那份的最新改动就丢了
    * —— 表现就是「改完内容点一下就变回原来的样子」。
    */
+  /**
+   * 立刻落盘。
+   * 注意：这里有意不判断 prefs.autoSave —— 关掉自动保存只表示「不随手存」，
+   * 切换文档 / 页面隐藏时仍然要把改动写下去，避免用户以为改了却没存。
+   */
   function flushAutoSave() {
     window.clearTimeout(saveTimer);
     saveTimer = null;

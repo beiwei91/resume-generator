@@ -454,8 +454,12 @@
 
     function renderTable(sec, si) {
       var wrap = el('div', 'ftable-wrap');
-      var table = el('table', 'ftable');
       var cols = sec.table.rows[0].length;
+      // 3 列以上才加最小宽度：窄屏时让它横向滚动，而不是把每列挤成几十像素；
+      // 2 列表格不加，永远不出现横向滚动
+      var table = el('table', cols > 2 ? 'ftable ftable-wide' : 'ftable');
+      // 最小宽度按列数给：3 列 300px、每多一列 +80px，保证每列还有可用宽度（配合 wrap 横向滚动）
+      if (cols > 2) table.style.minWidth = (220 + cols * 80) + 'px';
       sec.table.rows.forEach(function (row, ri) {
         var tr = el('tr');
         for (var ci = 0; ci < cols; ci++) {

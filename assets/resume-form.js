@@ -156,6 +156,7 @@
     var quote = false;
     for (var p = start + 1; p < end; p++) {
       if (!lines[p].trim()) continue;
+      if (/^-{3,}\s*$/.test(lines[p].trim())) continue;   // 手动分页不属于正文，别混进可编辑文本
       if (/^>\s?/.test(lines[p].trim())) { quote = true; texts.push(lines[p].trim().replace(/^>\s?/, '')); }
       else texts.push(lines[p].trim());
     }
@@ -571,10 +572,15 @@
         if (s.quote) {
           while (block.length && !block[block.length - 1].replace(/^>\s?/, '').trim()) block.pop();
         }
+        // 这一段里如果有手动分页（---），改完正文要把它留在原处附近，不能被吞掉
+        var hadBreak = false;
+        for (var i = s.start + 1; i < s.end; i++) {
+          if (/^-{3,}\s*$/.test(lines[i].trim())) { hadBreak = true; break; }
+        }
         var head = lines.slice(0, s.start + 1);
         var tail = lines.slice(s.end);
         while (tail.length && !tail[0].trim()) tail.shift();
-        return head.concat([''], block, [''], tail);
+        return head.concat([''], block, [''], hadBreak ? ['---', ''] : [], tail);
       });
     },
 

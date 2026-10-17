@@ -437,6 +437,10 @@ section('复制 / 撤销重做 / 备份');
     /toggle-rail/.test(formViewJs) && /Form\.isTwoCol/.test(formViewJs) && /Form\.setRail/.test(formViewJs));
   check('表格章节的删除按钮单独占一列（不会挤扁数据输入框）',
     /ftable-del/.test(formViewJs) && /\.ftable \.fld-input \{ width: 100%/.test(css));
+  check('只有 3 列以上的表格才加最小宽度/横向滚动（2 列永不滚动）',
+    /cols > 2 \? 'ftable ftable-wide' : 'ftable'/.test(formViewJs) &&
+    /table\.style\.minWidth = \(220 \+ cols \* 80\)/.test(formViewJs) &&
+    /\.ftable\.ftable-wide \{ min-width: 300px; \}/.test(css));
   check('微信 / QQ 内置浏览器会提示可能无法导出',
     /MicroMessenger/.test(appJs) && /warnInAppBrowser/.test(appJs) && /在浏览器中打开/.test(appJs));
   check('提示用冒泡阶段注册（捕获阶段会被动作自己的 toast 覆盖）',
@@ -668,7 +672,7 @@ async function testInteractions() {
   check('点「自动排版」后字号被放大、仍然只有一页（真实点击）', res.A1 === true, 'A1=' + res.A1);
   check('自动排版后文档与预览都正常', res.A2 === true, 'A2=' + res.A2);
   check('表格第二列输入框有正常宽度（真实量 DOM 宽度）', res.T5 === true, 'T5=' + res.T5);
-  check('表格的删除按钮落在卡片内（表格没有溢出右边界）', res.T6 === true, 'T6=' + res.T6);
+  check('表格的删除按钮落在卡片内（2 列表格没有溢出右边界）', res.T6 === true, 'T6=' + res.T6);
 }
 
 await testInteractions();

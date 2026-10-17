@@ -244,6 +244,29 @@ function pdfText(buf) {
   return out;
 }
 
+/** 逐页文本：每个内容流一段（Chrome 打印一般一页一个内容流），用于校验分页位置 */
+function pdfPageTexts(buf) {
+  const byName = fontMaps(buf);
+  const fallback = new Map();
+  byName.forEach((map) => map.forEach((v, k) => { if (!fallback.has(k)) fallback.set(k, v); }));
+  const pages = [];
+  streamsByObject(buf).forEach((txt) => {
+    if (txt.indexOf('\0') !== -1) return;
+    if (!CONTENT_STREAM_RE.test(txt) || !/\bBT\b/.test(txt) || !/\d+ Tf/.test(txt)) return;
+    let cur = fallback;
+    let out = '';
+    const re = /\/([A-Za-z0-9]+)\s+[\d.]+\s+Tf|<([0-9A-Fa-f]+)>/g;
+    let m;
+    while ((m = re.exec(txt))) {
+      if (m[1]) { cur = byName.get('/' + m[1]) || fallback; continue; }
+      const hex = m[2];
+      for (let i = 0; i + 4 <= hex.length; i += 4) out += cur.get(parseInt(hex.substr(i, 4), 16)) || '';
+    }
+    if (out) pages.push(out);
+  });
+  return pages;
+}
+
 /* ---------------------------------------------------------------- 用例 */
 
 fs.mkdirSync(BUILD, { recursive: true });
@@ -368,6 +391,36 @@ console.log('\n双栏（rail）打印');
   check('带左栏的双栏也能导出标准 A4（不是退化成单栏）',
     !!pdf && st && st.pages >= 1 && Math.abs(st.box.w - A4.w) < 2 && Math.abs(st.box.h - A4.h) < 2,
     st ? st.pages + ' 页，' + st.box.w.toFixed(1) + ' × ' + st.box.h.toFixed(1) + ' pt' : '失败');
+}
+
+console.log('\n分页与双栏跨页');
+{
+  // 手动分页：两处 --- 必须真的分页，且「手动分页」这类编辑标记不能漏进 PDF
+  const marked = sample
+    .replace(/\n## 工作经历/, '\n---\n\n## 工作经历')
+    .replace(/\n## 项目经历/, '\n---\n\n## 项目经历');
+  const markedPdf = renderPdf('paging', marked, {});
+  const markedText = markedPdf ? pdfText(markedPdf) : '';
+  const markedMeta = markedPdf ? pageMeta(markedPdf) : null;
+  check('两处手动分页 → 恰好 3 页', !!markedPdf && markedMeta.pages === 3, markedMeta ? markedMeta.pages + ' 页' : '失败');
+  const markedPages = markedPdf ? pdfPageTexts(markedPdf) : [];
+  const introAt = markedPages.findIndex((t) => t.indexOf('个人简介') >= 0);
+  const workAt = markedPages.findIndex((t) => t.indexOf('工作经历') >= 0);
+  check('分页把「个人简介」和「工作经历」切到了不同页',
+    introAt >= 0 && workAt >= 0 && introAt !== workAt, '简介在第 ' + (introAt + 1) + ' 页 / 工作在第 ' + (workAt + 1) + ' 页');
+  check('「手动分页」编辑标记不会印进 PDF', markedText.indexOf('手动分页') < 0);
+  check('分页前后内容都在（不丢段落）',
+    /个人简介|前端开发经验/.test(markedText) && /项目经历|开源项目|轻量表单引擎/.test(markedText));
+
+  // 双栏跨页：第 2 页左侧留白是接受的设计取舍，但内容不能丢、页数要正确
+  const twoCol = MD.upsertFrontMatter(sample, { template: 'classic', columns: '2', rail: '技能清单, 教育背景' })
+    .replace(/\n## 个人简介/, '\n## 附加信息\n\n' + Array.from({ length: 34 }, (_, i) => '- 跨页测试要点 ' + (i + 1)).join('\n') + '\n\n## 个人简介');
+  const twoColPdf = renderPdf('twocol-paging', twoCol, {});
+  const twoColMeta = twoColPdf ? pageMeta(twoColPdf) : null;
+  const twoColText = twoColPdf ? pdfText(twoColPdf) : '';
+  check('双栏内容变长时恰好 2 页', !!twoColPdf && twoColMeta.pages === 2, twoColMeta ? twoColMeta.pages + ' 页' : '失败');
+  check('双栏跨页后左栏与右栏内容都在（没有整栏丢失）',
+    /技能清单/.test(twoColText) && /教育背景/.test(twoColText) && /跨页测试要点/.test(twoColText));
 }
 
 console.log('\n应用界面打印（界面元素不能跟正文一起导出）');

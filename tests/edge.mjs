@@ -693,6 +693,17 @@ section('PWA 预缓存清单完整（离线首开不会缺文件）');
     /ignoreSearch: true/.test(sw) && !/const VERSION = 'v1';/.test(sw));
 }
 
+section('表单编辑段落/引用时不吃掉手动分页');
+{
+  const md = '---\ntemplate: classic\n---\n\n# 甲\n\n前端 | 138\n\n## 个人简介\n\n> 一句话介绍\n\n---\n\n## 工作经历\n\n### 某公司 · 前端\n\n- 做事\n';
+  check('段落/引用章节的可编辑文本里不含手动分页标记',
+    Form.walk(md).sections[0].text.indexOf('---') < 0, JSON.stringify(Form.walk(md).sections[0].text));
+  const rewrote = Form.setSectionText(md, 0, '改过的介绍');
+  check('改写段落文本后手动分页仍在',
+    MD.renderResume(rewrote).stats.manualBreaks === 1, 'manualBreaks=' + MD.renderResume(rewrote).stats.manualBreaks);
+  check('改写后的正文确实换成了新内容', MD.renderResume(rewrote).html.indexOf('改过的介绍') >= 0);
+}
+
 /* ------------------------------------------------------------------ 结果 */
 
 console.log('\n结果');

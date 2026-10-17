@@ -436,10 +436,10 @@
 .resume-sheet.cols-2 .r-rail .r-quote { margin: 0; }
 
 /* 左栏里的表格已由渲染端改成「标签：值」堆叠 */
-.r-pairs { margin: 2px 0 0; }
-.r-pair { margin: 0 0 3px; line-height: 1.5; }
-.r-pair-k { color: var(--r-rail-ink, #6b7280); margin-right: 4px; }
-.r-pair-v { color: inherit; }
+.r-rail .r-pairs { margin: 2px 0 0; }
+.r-rail .r-pair { margin: 0 0 3px; line-height: 1.5; }
+.r-rail .r-pair-k { color: var(--r-rail-ink, #6b7280); margin-right: 4px; }
+.r-rail .r-pair-v { color: inherit; }
 .resume-sheet.cols-2 .r-rail .r-section { margin-top: 12px; }
 .resume-sheet.cols-2 .r-rail .r-section-title {
   border: 0;
